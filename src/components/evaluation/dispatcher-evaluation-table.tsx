@@ -1,0 +1,188 @@
+import {
+  formatAfterSalesTotal,
+  formatAverageOrderAmount,
+  formatEvaluationMetric,
+  formatOrderConversionRate,
+  type DispatcherEvaluationRow,
+} from "@/lib/evaluation-stats";
+
+interface DispatcherEvaluationTableProps {
+  nameColumnLabel: string;
+  rows: DispatcherEvaluationRow[];
+  emptyMessage?: string;
+  footnote?: string;
+  /** 设计师归总：显示转化率 / 平均下单额 / 售后金额 */
+  designerExtendedMetrics?: boolean;
+}
+
+const thClass =
+  "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 whitespace-nowrap";
+const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
+
+const amountColumns = [
+  { key: "notOrdered" as const, label: "未下单数/金额" },
+  { key: "ordered" as const, label: "已下单数/金额" },
+  { key: "refunded" as const, label: "已退单数/金额" },
+];
+
+const designerExtraColumns = [
+  { key: "conversion" as const, label: "下单转化率" },
+  { key: "average" as const, label: "平均下单额" },
+  { key: "afterSales" as const, label: "售后金额" },
+] as const;
+
+export function DispatcherEvaluationTable({
+  nameColumnLabel,
+  rows,
+  emptyMessage = "暂无数据",
+  footnote = "未下单取预算（流程未到已下单）· 已下单取下单金额 · 已退单仅统计「已退单」状态 · 单元格为 数量 / 金额",
+  designerExtendedMetrics = false,
+}: DispatcherEvaluationTableProps) {
+  const dataRows = rows.filter((row) => !row.isWorkflowSummary);
+  const workflowRow = rows.find((row) => row.isWorkflowSummary);
+
+  if (dataRows.length === 0 && !workflowRow) {
+    return (
+      <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  function renderDesignerExtras(row: DispatcherEvaluationRow, emphasis = false) {
+    const textClass = emphasis
+      ? "font-medium text-rose-900"
+      : "text-slate-800";
+    return designerExtraColumns.map((col) => {
+      let content = "—";
+      if (col.key === "conversion") {
+        content = formatOrderConversionRate(row.orderConversionRate);
+      } else if (col.key === "average") {
+        content = formatAverageOrderAmount(row.averageOrderAmount);
+      } else {
+        content = formatAfterSalesTotal(row.afterSalesAmount);
+      }
+      const empty =
+        content === "—"
+          ? "text-slate-300"
+          : col.key === "afterSales"
+            ? "text-amber-800"
+            : textClass;
+      return (
+        <td
+          key={col.key}
+          className={`${tdClass} text-center text-xs ${empty}`}
+        >
+          {content}
+        </td>
+      );
+    });
+  }
+
+  const minWidth = designerExtendedMetrics ? "min-w-[1080px]" : "min-w-[720px]";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className={`w-full ${minWidth} border-collapse text-left`}>
+          <thead>
+            <tr className="border-b border-slate-100 bg-slate-50/80">
+              <th
+                className={`${thClass} min-w-[120px] sticky left-0 bg-slate-50/95`}
+              >
+                {nameColumnLabel}
+              </th>
+              <th className={`${thClass} text-center`}>合计</th>
+              {amountColumns.map((col) => (
+                <th key={col.key} className={`${thClass} text-center`}>
+                  {col.label}
+                </th>
+              ))}
+              {designerExtendedMetrics
+                ? designerExtraColumns.map((col) => (
+                    <th key={col.key} className={`${thClass} text-center`}>
+                      {col.label}
+                    </th>
+                  ))
+                : null}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {dataRows.map((row) => (
+              <tr key={row.key} className="hover:bg-slate-50/50">
+                <td
+                  className={`${tdClass} sticky left-0 bg-white font-medium text-slate-900`}
+                >
+                  <div>{row.label}</div>
+                  {row.subtitle ? (
+                    <div className="text-xs font-normal text-slate-500">
+                      {row.subtitle}
+                    </div>
+                  ) : null}
+                </td>
+                <td
+                  className={`${tdClass} text-center font-semibold text-indigo-700`}
+                >
+                  {formatEvaluationMetric(row.total, row.totalAmount)}
+                </td>
+                {amountColumns.map((col) => {
+                  const cell = row[col.key];
+                  return (
+                    <td
+                      key={col.key}
+                      className={`${tdClass} text-center text-xs ${
+                        cell.count > 0 || cell.amount > 0
+                          ? "text-slate-800"
+                          : "text-slate-300"
+                      }`}
+                    >
+                      {formatEvaluationMetric(cell.count, cell.amount)}
+                    </td>
+                  );
+                })}
+                {designerExtendedMetrics ? renderDesignerExtras(row) : null}
+              </tr>
+            ))}
+            {workflowRow ? (
+              <tr className="border-t-2 border-rose-100 bg-rose-50/40">
+                <td
+                  className={`${tdClass} sticky left-0 bg-rose-50/95 font-semibold text-rose-900`}
+                >
+                  {workflowRow.label}
+                </td>
+                <td
+                  className={`${tdClass} text-center font-semibold text-rose-800`}
+                >
+                  {formatEvaluationMetric(
+                    workflowRow.total,
+                    workflowRow.totalAmount,
+                  )}
+                </td>
+                {amountColumns.map((col) => {
+                  const cell = workflowRow[col.key];
+                  return (
+                    <td
+                      key={col.key}
+                      className={`${tdClass} text-center text-xs font-medium text-rose-900`}
+                    >
+                      {formatEvaluationMetric(cell.count, cell.amount)}
+                    </td>
+                  );
+                })}
+                {designerExtendedMetrics
+                  ? renderDesignerExtras(workflowRow, true)
+                  : null}
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
+        共 {dataRows.length} 条 · {footnote}
+        {designerExtendedMetrics
+          ? " · 下单转化率=已下单金额÷合计金额 · 平均下单额=已下单金额÷已下单数量 · 售后金额为售后金合计"
+          : ""}
+      </p>
+    </div>
+  );
+}
