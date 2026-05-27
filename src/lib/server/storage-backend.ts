@@ -1,3 +1,4 @@
+import { isRedisConfigured } from "./redis-credentials";
 import type { AppSnapshot } from "./snapshot-types";
 
 export type StorageBackendId = "kv" | "file";
@@ -13,11 +14,7 @@ export function resolveStorageBackendId(): StorageBackendId {
   const forced = process.env.SYNC_STORAGE?.trim().toLowerCase();
   if (forced === "file") return "file";
   if (forced === "kv") return "kv";
-  if (
-    (process.env.UPSTASH_REDIS_REST_URL &&
-      process.env.UPSTASH_REDIS_REST_TOKEN) ||
-    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
-  ) {
+  if (isRedisConfigured()) {
     return "kv";
   }
   return "file";

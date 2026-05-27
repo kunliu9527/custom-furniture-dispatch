@@ -48,12 +48,12 @@ Vercel 上不能用本机 `data/snapshot.json`，要用 **Upstash Redis**：
 3. 取名（如 `dispatch-redis`）→ 区域选离用户近的（如 `ap-southeast-1`）  
 4. 创建后点击 **Connect to Project**，选中刚导入的 Next.js 项目  
 
-连接成功后，项目会自动增加环境变量（无需手抄）：
+连接成功后，项目会自动增加环境变量（无需手抄），常见为：
 
-- `UPSTASH_REDIS_REST_URL`  
-- `UPSTASH_REDIS_REST_TOKEN`  
+- `REDIS_URL`（Vercel 默认，本项目已支持）  
+- 或 `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`  
 
-（可能仍有旧的 `KV_REST_API_*`，也可兼容。）
+（也可能有 `KV_REST_API_*`，均可兼容。）
 
 ---
 

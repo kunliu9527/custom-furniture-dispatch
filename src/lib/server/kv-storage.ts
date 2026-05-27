@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { resolveUpstashRestCredentials } from "./redis-credentials";
 import { createInitialSnapshot, normalizeSnapshot } from "./snapshot-normalize";
 import type { AppSnapshot } from "./snapshot-types";
 import type { StorageBackend } from "./storage-backend";
@@ -6,16 +7,13 @@ import type { StorageBackend } from "./storage-backend";
 const SNAPSHOT_KEY = "custom-furniture-dispatch:snapshot";
 
 function createRedisClient(): Redis {
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
-    process.env.KV_REST_API_URL?.trim();
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
-    process.env.KV_REST_API_TOKEN?.trim();
-  if (!url || !token) {
-    throw new Error("未配置 Upstash Redis（UPSTASH_REDIS_REST_URL / TOKEN）");
+  const creds = resolveUpstashRestCredentials();
+  if (!creds) {
+    throw new Error(
+      "未配置 Redis（需要 UPSTASH_REDIS_REST_* 或 Vercel 注入的 REDIS_URL）",
+    );
   }
-  return new Redis({ url, token });
+  return new Redis({ url: creds.url, token: creds.token });
 }
 
 export const kvStorageBackend: StorageBackend = {
