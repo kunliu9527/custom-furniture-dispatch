@@ -126,7 +126,7 @@ export function SupplementForm({
             name="supplementAmount"
             type="number"
             min={1}
-            step={100}
+            step={1}
             required
             placeholder="必填，与主单下单金额区分"
             value={amountInput}

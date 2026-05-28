@@ -372,7 +372,7 @@ export function OrderCard({
             name="orderAmount"
             type="number"
             min={1}
-            step={100}
+            step={1}
             required
             autoFocus
             placeholder="请输入合同/下单实际金额"
