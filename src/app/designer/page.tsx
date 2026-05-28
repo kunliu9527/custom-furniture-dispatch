@@ -15,7 +15,10 @@ import {
   isCrossStoreOrderForDesigner,
 } from "@/lib/designer-staff-store";
 import { countOrdersByStatus, filterOrdersByStatus } from "@/lib/manager-stats";
-import { isSupplementEligibleOrder } from "@/lib/order-utils";
+import {
+  isSupplementEligibleOrder,
+  sortOrdersNewestFirst,
+} from "@/lib/order-utils";
 import {
   canEditOrderOnDesignerPage,
   canEditWorkflowRemarkOnOrder,
@@ -36,12 +39,6 @@ import { getSessionResetKey } from "@/lib/session-user";
 import type { DesignerName, OrderStatus } from "@/lib/types";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-
-function sortOrdersNewestFirst<T extends { createdAt: string }>(list: T[]): T[] {
-  return [...list].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-}
 
 export default function DesignerPage() {
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();

@@ -66,6 +66,14 @@ export function isActiveOrder(order: { status: OrderStatus }): boolean {
   return order.status !== "已安装" && order.status !== "已退单";
 }
 
+export function sortOrdersNewestFirst<T extends { createdAt: string }>(
+  list: T[],
+): T[] {
+  return [...list].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
 /** 进行中订单：派单人/设计师字段与登录姓名一致 */
 export function orderMatchesLoginAccount(
   order: Order,

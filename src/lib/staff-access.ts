@@ -45,3 +45,17 @@ export function permissionsTextForAccessLevel(
 ): string {
   return ACCESS_LEVEL_DESCRIPTIONS[level];
 }
+
+/** 添加人员时可选权限（不含系统管理员） */
+export const ADD_STAFF_ACCESS_OPTIONS = ACCESS_LEVEL_OPTIONS.filter(
+  (o) => o.value !== "admin",
+);
+
+/** 名册行权限下拉：仅系统 admin 行可显示「管理员」 */
+export function accessLevelOptionsForStaffRow(
+  isSystemAdmin: boolean,
+): typeof ACCESS_LEVEL_OPTIONS {
+  return ACCESS_LEVEL_OPTIONS.filter(
+    (opt) => opt.value !== "admin" || isSystemAdmin,
+  );
+}

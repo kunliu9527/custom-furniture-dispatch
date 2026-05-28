@@ -69,17 +69,11 @@ import {
 import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summary";
 import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
-import { isSingleOrderDetailView } from "@/lib/order-utils";
+import { isSingleOrderDetailView, sortOrdersNewestFirst } from "@/lib/order-utils";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, Order, OrderStatus, StoreName } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-function sortOrdersNewestFirst<T extends { createdAt: string }>(list: T[]): T[] {
-  return [...list].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-}
 
 export default function ManagerPage() {
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();

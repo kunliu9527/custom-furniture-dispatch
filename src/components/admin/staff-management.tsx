@@ -12,7 +12,8 @@ import { ROLE_LABELS } from "@/lib/auth-users";
 import {
   ACCESS_LEVEL_DESCRIPTIONS,
   ACCESS_LEVEL_LABELS,
-  ACCESS_LEVEL_OPTIONS,
+  ADD_STAFF_ACCESS_OPTIONS,
+  accessLevelOptionsForStaffRow,
   defaultAccessLevelForPosition,
   type StaffAccessLevel,
 } from "@/lib/staff-access";
@@ -26,7 +27,7 @@ import {
   getDefaultPasswordForStaff,
   type StaffPosition,
 } from "@/lib/staff-roster";
-import { isSystemAdminStaffRecord } from "@/lib/staff-visibility";
+import { isSystemAdminStaffRecord } from "@/lib/staff-admin-rules";
 import { HEADQUARTERS_STORE, getStaffStoreSettingOptions } from "@/lib/stores";
 import type { StoreName } from "@/lib/types";
 import { FormEvent, useMemo, useState } from "react";
@@ -38,10 +39,6 @@ const PANEL_TABS: { id: StaffPanel; label: string }[] = [
   { id: "positions", label: "配置岗位" },
   { id: "stores", label: "门店配置" },
 ];
-
-const ADD_STAFF_ACCESS_OPTIONS = ACCESS_LEVEL_OPTIONS.filter(
-  (o) => o.value !== "admin",
-);
 
 export function StaffManagement() {
   const {
@@ -498,10 +495,7 @@ export function StaffManagement() {
                               }
                               className="w-full min-w-[7rem] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                             >
-                              {ACCESS_LEVEL_OPTIONS.filter(
-                                (opt) =>
-                                  opt.value !== "admin" || isSystemAdmin,
-                              ).map((opt) => (
+                              {accessLevelOptionsForStaffRow(isSystemAdmin).map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </option>
