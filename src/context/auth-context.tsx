@@ -74,10 +74,7 @@ import type { StaffConfigSnapshot } from "@/lib/server/snapshot-types";
 import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import { dedupePhysicalStores } from "@/lib/assigned-stores";
 import { createShortId } from "@/lib/create-id";
-import {
-  resolveLiveSessionUser,
-  sessionUsersEqual,
-} from "@/lib/session-user";
+import { resolveLiveSessionUser, sessionUsersEqual } from "@/lib/session-user";
 import { isHeadquartersStore } from "@/lib/stores";
 import {
   DEFAULT_SITE_BRANDING,
@@ -289,10 +286,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  const liveUser = useMemo(
-    () => resolveLiveSessionUser(sessionUser, staffRecords),
-    [sessionUser, staffRecords],
-  );
+  const liveUser = useMemo(() => {
+    const next = resolveLiveSessionUser(sessionUser, staffRecords);
+    return next;
+  }, [sessionUser, staffRecords]);
+
+  const liveUserStableRef = useRef<SessionUser | null>(null);
+  const liveUserStable = useMemo(() => {
+    const next = liveUser;
+    if (!next) {
+      liveUserStableRef.current = null;
+      return null;
+    }
+    if (
+      liveUserStableRef.current &&
+      sessionUsersEqual(liveUserStableRef.current, next)
+    ) {
+      return liveUserStableRef.current;
+    }
+    liveUserStableRef.current = next;
+    return next;
+  }, [liveUser]);
 
   const designerHomeStoreIndex = useMemo(
     () => buildDesignerHomeStoreIndex(staffRecords),
@@ -831,8 +845,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      user: liveUser,
-      liveUser,
+      user: liveUserStable,
+      liveUser: liveUserStable,
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,
@@ -848,7 +862,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateSiteBranding,
     }),
     [
-      liveUser,
+      liveUserStable,
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,

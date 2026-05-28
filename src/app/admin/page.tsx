@@ -77,7 +77,8 @@ import {
 } from "@/lib/store-stats";
 import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summary";
 import { sumDispatchTotals } from "@/lib/dispatch-totals";
-import { getSessionScopeKey } from "@/lib/session-user";
+import { loadAdminViewMode, saveAdminViewMode } from "@/lib/admin-ui-persistence";
+import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, OrderStatus, StoreName } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -112,6 +113,7 @@ export default function AdminPage() {
     () => getVisibleAdminViewModes(user),
     [user],
   );
+  const allowedAdminModesKey = allowedAdminModes.join(",");
   const assignedStores = user ? resolveAssignedStoresForUser(user) : [];
   const managedStore = user ? resolveManagedStoreForLookup(user) : null;
   const managedStoresLabel =
@@ -124,7 +126,7 @@ export default function AdminPage() {
     () => resolveDispatchPreferredStore(user),
     [user],
   );
-  const sessionScopeKey = getSessionScopeKey(user);
+  const sessionResetKey = getSessionResetKey(user);
 
   const activeOrders = useMemo(() => {
     let list = orders.filter(isActiveOrder);
@@ -281,10 +283,24 @@ export default function AdminPage() {
     }
   }, [viewMode, allowedAdminModes]);
 
+  useEffect(() => {
+    if (!user?.username) return;
+    const saved = loadAdminViewMode(user.username);
+    if (saved && allowedAdminModes.includes(saved)) {
+      setViewMode(saved);
+      return;
+    }
+    setViewMode(getAdminRoleDefaults(user, staffRecords).viewMode);
+  }, [sessionResetKey, allowedAdminModesKey, user]);
+
+  useEffect(() => {
+    if (!user?.username) return;
+    saveAdminViewMode(user.username, viewMode);
+  }, [user?.username, viewMode]);
+
   const resetAdminBoardForSession = useCallback(() => {
     if (!user) return;
     const defaults = getAdminRoleDefaults(user, staffRecords);
-    setViewMode(defaults.viewMode);
     setDispatcherFilter(defaults.dispatcherFilter);
     setDesignerFilter(defaults.designerFilter);
     setStoreFilter(defaults.storeFilter);
@@ -293,7 +309,7 @@ export default function AdminPage() {
     setResultDrill(EMPTY_RESULT_DRILL);
   }, [user, staffRecords]);
 
-  useOnSessionScopeChange(sessionScopeKey, resetAdminBoardForSession);
+  useOnSessionScopeChange(sessionResetKey, resetAdminBoardForSession);
 
   useEffect(() => {
     if (viewMode !== "dispatch") {

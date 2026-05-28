@@ -69,7 +69,7 @@ import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summa
 import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
 import { isSingleOrderDetailView } from "@/lib/order-utils";
-import { getSessionScopeKey } from "@/lib/session-user";
+import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, Order, OrderStatus, StoreName } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -112,7 +112,7 @@ export default function ManagerPage() {
     [managerReadOnly, user],
   );
 
-  const sessionScopeKey = getSessionScopeKey(user);
+  const sessionResetKey = getSessionResetKey(user);
 
   const scopedOrders = useMemo(
     () => scopeOrdersForUser(orders, user),
@@ -255,7 +255,7 @@ export default function ManagerPage() {
     }
   }, [user, staffRecords]);
 
-  useOnSessionScopeChange(sessionScopeKey, resetManagerBoardForSession);
+  useOnSessionScopeChange(sessionResetKey, resetManagerBoardForSession);
 
   useEffect(() => {
     if (!user) return;

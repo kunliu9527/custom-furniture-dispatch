@@ -32,11 +32,13 @@ import {
   canAccessEvaluationPage,
   getSessionBadgeLabel,
 } from "@/lib/nav-access";
-import { getSessionScopeKey } from "@/lib/session-user";
-import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-type EvaluationSubView = "aggregate" | "ranking" | "workflow";
+import {
+  loadEvaluationUi,
+  saveEvaluationUi,
+  type EvaluationSubView,
+} from "@/lib/evaluation-ui-persistence";
+import { getSessionResetKey } from "@/lib/session-user";
+import { useEffect, useMemo, useState } from "react";
 
 const viewConfig: Record<
   EvaluationViewMode,
@@ -66,16 +68,26 @@ export default function EvaluationPage() {
     () => getVisibleEvaluationViewModes(user),
     [user],
   );
+  const allowedModesKey = allowedModes.join(",");
   const [viewMode, setViewMode] = useState<EvaluationViewMode>("dispatcher");
   const [dispatcherSubView, setDispatcherSubView] =
     useState<EvaluationSubView>("aggregate");
   const [storeSubView, setStoreSubView] = useState<EvaluationSubView>("aggregate");
   const [designerSubView, setDesignerSubView] =
     useState<EvaluationSubView>("aggregate");
-  const sessionScopeKey = getSessionScopeKey(user);
+  const sessionResetKey = getSessionResetKey(user);
   const scopeLabel = resolveEvaluationScopeLabel(user);
 
-  const resetEvaluationViewToDefault = useCallback(() => {
+  useEffect(() => {
+    if (!user?.username) return;
+    const saved = loadEvaluationUi(user.username);
+    if (saved && allowedModes.includes(saved.viewMode)) {
+      setViewMode(saved.viewMode);
+      setDispatcherSubView(saved.dispatcherSubView);
+      setStoreSubView(saved.storeSubView);
+      setDesignerSubView(saved.designerSubView);
+      return;
+    }
     const defaults = getDefaultEvaluationViewMode(user);
     setViewMode(
       allowedModes.includes(defaults) ? defaults : (allowedModes[0] ?? "dispatcher"),
@@ -83,15 +95,29 @@ export default function EvaluationPage() {
     setDispatcherSubView("aggregate");
     setStoreSubView("aggregate");
     setDesignerSubView("aggregate");
-  }, [user, allowedModes]);
+  }, [sessionResetKey, allowedModesKey, user]);
 
-  useOnSessionScopeChange(sessionScopeKey, resetEvaluationViewToDefault);
+  useEffect(() => {
+    if (!user?.username) return;
+    saveEvaluationUi(user.username, {
+      viewMode,
+      dispatcherSubView,
+      storeSubView,
+      designerSubView,
+    });
+  }, [
+    user?.username,
+    viewMode,
+    dispatcherSubView,
+    storeSubView,
+    designerSubView,
+  ]);
 
   useEffect(() => {
     if (!allowedModes.includes(viewMode)) {
       setViewMode(allowedModes[0] ?? "dispatcher");
     }
-  }, [allowedModes, viewMode]);
+  }, [allowedModesKey, viewMode]);
 
   const scopedOrdersByView = useMemo(
     () => ({

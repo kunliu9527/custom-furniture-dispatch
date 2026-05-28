@@ -32,7 +32,7 @@ import {
   canViewOtherDesignersOrders,
 } from "@/lib/nav-access";
 import { getDesignerDefaultName } from "@/lib/role-routes";
-import { getSessionScopeKey } from "@/lib/session-user";
+import { getSessionResetKey } from "@/lib/session-user";
 import type { DesignerName, OrderStatus } from "@/lib/types";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -65,7 +65,7 @@ export default function DesignerPage() {
   const pageReadOnly = isPageReadOnly(user, "designer");
   const showSwitcher = canUseDesignerSwitcher(user);
   const designerLookupStores = resolveDesignerLookupStores(user);
-  const sessionScopeKey = getSessionScopeKey(user);
+  const sessionResetKey = getSessionResetKey(user);
 
   useEffect(() => {
     const name = getDesignerDefaultName(user);
@@ -84,7 +84,7 @@ export default function DesignerPage() {
       }
     }
     setStatusFilter("全部");
-  }, [sessionScopeKey, lockedName, designerLookupStores, designerHomeStoreIndex]);
+  }, [sessionResetKey, lockedName, designerLookupStores, designerHomeStoreIndex]);
 
   const homeStore =
     user?.role === "designer" && user.homeStore
