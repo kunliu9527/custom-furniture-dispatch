@@ -92,9 +92,14 @@ async function putRemoteSnapshot(body: {
   });
   if (res.status === 409) {
     const payload = (await res.json()) as { current?: AppSnapshot };
-    if (payload.current) {
-      cache = payload.current;
-      notifySnapshot(payload.current);
+    if (payload.current && cache) {
+      // 保留本次要写入的业务数据，仅对齐 version，避免用旧快照覆盖刚添加的人员等
+      cache = {
+        ...payload.current,
+        orders: body.orders,
+        supplements: body.supplements,
+        staffConfig: body.staffConfig,
+      };
     }
     throw new Error("version_conflict");
   }
@@ -164,7 +169,8 @@ async function flushRemotePush() {
   } catch (err) {
     const message = err instanceof Error ? err.message : "同步失败";
     if (message === "version_conflict") {
-      dirty = false;
+      dirty = true;
+      scheduleRemotePush();
       notifyStatus("connected", "已合并服务器最新数据");
     } else {
       dirty = true;

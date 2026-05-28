@@ -269,7 +269,7 @@ export function DispatchForm({
           name="budget"
           type="number"
           min={1}
-          step={1000}
+          step={1}
           required
           placeholder="请输入具体预算金额"
           value={budgetInput}
@@ -280,7 +280,7 @@ export function DispatchForm({
           name="deposit"
           type="number"
           min={0}
-          step={100}
+          step={1}
           placeholder="0 表示未交定金"
           value={form.deposit === 0 ? "" : String(form.deposit)}
           onChange={(e) =>

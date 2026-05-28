@@ -170,12 +170,19 @@ export function StaffManagement() {
         setError(result.error ?? "添加失败");
         return;
       }
+      const addedName = name.trim();
       setMessage(
-        `已添加「${name.trim()}」，账号 ${name.trim()}，权限 ${ACCESS_LEVEL_LABELS[accessLevel]}`,
+        `已添加「${addedName}」，账号 ${addedName}，权限 ${ACCESS_LEVEL_LABELS[accessLevel]}。请在下方「人员名册」中查看。`,
       );
       setName("");
       setPassword("1");
       setAccessLevel(defaultAccessLevelForPosition(position));
+      setSearchQuery("");
+      requestAnimationFrame(() => {
+        document
+          .getElementById("staff-roster-table")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     } catch (err) {
       const detail = err instanceof Error ? err.message : "未知错误";
       setError(`保存失败：${detail}（若使用 http 访问，请刷新后重试）`);
@@ -384,7 +391,10 @@ export function StaffManagement() {
                 ) : null}
               </div>
             </div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div
+              id="staff-roster-table"
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+            >
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[980px] text-left text-sm">
                   <thead>

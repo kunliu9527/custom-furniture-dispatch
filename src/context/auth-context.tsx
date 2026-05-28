@@ -64,6 +64,7 @@ import {
 } from "@/lib/staff-config-storage";
 import {
   ensureSnapshotCacheReady,
+  getCachedSnapshot,
   getCachedStaffConfig,
   patchSnapshotCache,
   isSnapshotDirty,
@@ -511,6 +512,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const next = [...customStaff, record];
       setCustomStaff(next);
       saveCustomStaff(next);
+      if (isRemoteSyncEnabled() && getCachedSnapshot()) {
+        patchSnapshotCache({
+          staffConfig: {
+            customStaff: next.map(normalizeCustomStaffRecord),
+            accessOverrides,
+            passwordOverrides,
+            homeStoreOverrides,
+            extraStoreOverrides,
+            customPositions: loadCustomPositionDefinitions(),
+            customStores: loadCustomStoreNames(),
+          },
+        });
+      }
       return { ok: true };
     },
     [
