@@ -32,6 +32,7 @@ import {
   resolveEvaluationScopeLabel,
   scopeOrdersForEvaluationView,
 } from "@/lib/evaluation-scope";
+import { filterRankingDisplayRows } from "@/lib/evaluation-ranking";
 import {
   canAccessEvaluationPage,
   getSessionBadgeLabel,
@@ -266,6 +267,23 @@ export default function EvaluationPage() {
     ],
   );
 
+  const companyPeriodOrders = useMemo(
+    () => filterOrdersByPeriod(orders, period),
+    [orders, period],
+  );
+
+  const storeRankingData = useMemo(() => {
+    const rankSource = getStoreDispatcherAmountRows(
+      companyPeriodOrders,
+      periodScopedSupplements,
+      null,
+    );
+    return {
+      rankSource,
+      displayRows: filterRankingDisplayRows(rankSource, rowScope.storeNames),
+    };
+  }, [companyPeriodOrders, periodScopedSupplements, rowScope.storeNames]);
+
   const designerPerformanceRows = useMemo(
     () =>
       getDesignerPerformanceRows(
@@ -349,6 +367,8 @@ export default function EvaluationPage() {
       designerWorkflowRows: designerRows,
       storeDispatcherAmountRows,
       storeWorkflowRows: storeRows,
+      storeRankingDisplayRows: storeRankingData.displayRows,
+      storeRankingRankSource: storeRankingData.rankSource,
     }),
     [
       dispatcherRows,
@@ -356,6 +376,7 @@ export default function EvaluationPage() {
       designerRows,
       storeDispatcherAmountRows,
       storeRows,
+      storeRankingData,
     ],
   );
 
@@ -429,9 +450,14 @@ export default function EvaluationPage() {
                     ) : storeSubView === "ranking" ? (
                       <DispatcherEvaluationRankingTable
                         nameColumnLabel="门店名称"
-                        rows={storeDispatcherAmountRows}
+                        rows={storeRankingData.displayRows}
+                        rankAgainstRows={storeRankingData.rankSource}
                         emptyMessage="当前权限范围内暂无门店排名数据"
-                        footnote="按派单人名册所属门店归集 · 单元格为 数量 / 金额"
+                        footnote={
+                          rowScope.storeNames
+                            ? "名次按全部门店计算 · 仅显示所属门店 · 按派单人名册所属门店归集"
+                            : "按派单人名册所属门店归集 · 单元格为 数量 / 金额"
+                        }
                       />
                     ) : (
                       <DispatcherEvaluationTable

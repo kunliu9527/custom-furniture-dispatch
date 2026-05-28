@@ -1,9 +1,7 @@
 import type { DispatcherEvaluationRow } from "@/lib/evaluation-stats";
 import {
-  computeAggregateRowRankNumbers,
-  computeDesignerExtendedRankNumbers,
+  buildRankingPresentation,
   rankBadgeForPlace,
-  sortRowsByTotalAmountRank,
   type MetricDualRank,
   type RankBadge,
 } from "@/lib/evaluation-ranking";
@@ -11,6 +9,8 @@ import {
 interface DispatcherEvaluationRankingTableProps {
   nameColumnLabel: string;
   rows: DispatcherEvaluationRow[];
+  /** 全量数据集，用于计算名次；未传则与 rows 相同 */
+  rankAgainstRows?: DispatcherEvaluationRow[];
   emptyMessage?: string;
   footnote?: string;
   designerExtendedMetrics?: boolean;
@@ -106,18 +106,17 @@ function RefundedCell({ filled }: { filled: boolean }) {
 export function DispatcherEvaluationRankingTable({
   nameColumnLabel,
   rows,
+  rankAgainstRows,
   emptyMessage = "暂无数据",
   footnote = "数量为左、金额为右，横向显示（如 3/3）· 第1名红旗 · 第2名紫旗 · 无旗保留空白对齐 · 退单仅填充标示",
   designerExtendedMetrics = false,
 }: DispatcherEvaluationRankingTableProps) {
-  const dataRows = rows.filter((row) => !row.isWorkflowSummary);
-  const rankNumbers = computeAggregateRowRankNumbers(rows);
-  const extendedRanks = designerExtendedMetrics
-    ? computeDesignerExtendedRankNumbers(rows)
-    : null;
-  const sortedRows = sortRowsByTotalAmountRank(dataRows, rankNumbers);
+  const { rankNumbers, extendedRanks, sortedRows } = buildRankingPresentation(
+    rows,
+    { rankAgainstRows, designerExtended: designerExtendedMetrics },
+  );
 
-  if (dataRows.length === 0) {
+  if (sortedRows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500">
         {emptyMessage}

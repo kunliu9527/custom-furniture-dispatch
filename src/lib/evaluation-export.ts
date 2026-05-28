@@ -1,8 +1,6 @@
 import { ORDER_STATUSES } from "./constants";
 import {
-  computeAggregateRowRankNumbers,
-  computeDesignerExtendedRankNumbers,
-  sortRowsByTotalAmountRank,
+  buildRankingPresentation,
 } from "./evaluation-ranking";
 import {
   formatAfterSalesTotal,
@@ -114,13 +112,16 @@ function rankingCsvSection(
   title: string,
   nameLabel: string,
   rows: DispatcherEvaluationRow[],
-  designerExtended = false,
+  options: {
+    rankAgainstRows?: DispatcherEvaluationRow[];
+    designerExtended?: boolean;
+  } = {},
 ): string {
-  const rankNumbers = computeAggregateRowRankNumbers(rows);
-  const extendedRanks = designerExtended
-    ? computeDesignerExtendedRankNumbers(rows)
-    : null;
-  const sorted = sortRowsByTotalAmountRank(dataRows(rows), rankNumbers);
+  const { rankNumbers, extendedRanks, sortedRows } = buildRankingPresentation(
+    rows,
+    options,
+  );
+  const designerExtended = options.designerExtended ?? false;
 
   const formatDual = (count: number | null, amount: number | null) => {
     const c = count == null ? "—" : String(count);
@@ -139,7 +140,7 @@ function rankingCsvSection(
     "已退单",
   ];
 
-  const body = sorted.map((row) => {
+  const body = sortedRows.map((row) => {
     const ranks = rankNumbers.get(row.key);
     const extended = extendedRanks?.get(row.key);
     return [
@@ -228,6 +229,10 @@ export interface EvaluationExportPayload {
   designerWorkflowRows: WorkflowEvaluationRow[];
   storeDispatcherAmountRows: DispatcherEvaluationRow[];
   storeWorkflowRows: WorkflowEvaluationRow[];
+  /** 门店排名：展示行（权限内） */
+  storeRankingDisplayRows?: DispatcherEvaluationRow[];
+  /** 门店排名：全部门店数据（用于名次） */
+  storeRankingRankSource?: DispatcherEvaluationRow[];
 }
 
 export function exportEvaluationData(payload: EvaluationExportPayload): void {
@@ -274,7 +279,7 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
         "设计师排名",
         "设计师",
         payload.designerAmountRows,
-        true,
+        { designerExtended: true },
       ),
     );
     downloadCsv(
@@ -294,7 +299,8 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
     rankingCsvSection(
       "门店排名",
       "门店名称",
-      payload.storeDispatcherAmountRows,
+      payload.storeRankingDisplayRows ?? payload.storeDispatcherAmountRows,
+      { rankAgainstRows: payload.storeRankingRankSource },
     ),
   );
   downloadCsv(

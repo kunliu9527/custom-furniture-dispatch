@@ -206,3 +206,39 @@ export function sortRowsByTotalAmountRank(
     return a.label.localeCompare(b.label, "zh-CN");
   });
 }
+
+export function filterRankingDisplayRows(
+  rows: DispatcherEvaluationRow[],
+  scopeKeys: string[] | null,
+): DispatcherEvaluationRow[] {
+  const data = rows.filter((row) => !row.isWorkflowSummary);
+  if (scopeKeys === null) return data;
+  const allowed = new Set(scopeKeys);
+  return data.filter((row) => allowed.has(row.key));
+}
+
+export interface RankingPresentationOptions {
+  rankAgainstRows?: DispatcherEvaluationRow[];
+  designerExtended?: boolean;
+}
+
+export interface RankingPresentation {
+  rankNumbers: Map<string, AggregateRowRankNumbers>;
+  extendedRanks: Map<string, DesignerExtendedRankNumbers> | null;
+  sortedRows: DispatcherEvaluationRow[];
+}
+
+/** 展示行 + 可选全量名次源 → 排名表所需数据 */
+export function buildRankingPresentation(
+  displayRows: DispatcherEvaluationRow[],
+  options: RankingPresentationOptions = {},
+): RankingPresentation {
+  const rankSource = options.rankAgainstRows ?? displayRows;
+  const rankNumbers = computeAggregateRowRankNumbers(rankSource);
+  const extendedRanks = options.designerExtended
+    ? computeDesignerExtendedRankNumbers(rankSource)
+    : null;
+  const dataRows = displayRows.filter((row) => !row.isWorkflowSummary);
+  const sortedRows = sortRowsByTotalAmountRank(dataRows, rankNumbers);
+  return { rankNumbers, extendedRanks, sortedRows };
+}
