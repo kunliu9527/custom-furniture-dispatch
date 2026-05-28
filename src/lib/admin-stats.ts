@@ -1,15 +1,14 @@
-import { getEffectiveDispatcherRoster } from "./dispatchers";
+import {
+  getDispatcherHomeStore,
+  getEffectiveDispatcherRoster,
+} from "./dispatchers";
+import type { StoreName } from "./types";
 import { createEmptyStatusCounts } from "./manager-stats";
 import type { StaffRecord } from "./staff-roster";
 import type { Order, OrderStatus } from "./types";
 
-export type AdminViewMode =
-  | "dispatch"
-  | "dispatcher"
-  | "designer"
-  | "store"
-  | "staff"
-  | "branding";
+/** 门店派单页 Tab（查找统计在设计经理看板 /manager） */
+export type AdminViewMode = "dispatch" | "staff" | "branding";
 
 export function normalizeDispatcherName(name: string): string {
   const trimmed = name.trim();
@@ -23,9 +22,19 @@ export interface DispatcherOrderStats {
   byStatus: Record<OrderStatus, number>;
 }
 
+function dispatcherInStoreFilter(
+  dispatcherName: string,
+  storeFilter: StoreName[],
+  staffRecords: StaffRecord[],
+): boolean {
+  const home = getDispatcherHomeStore(dispatcherName, "东岸天冠", staffRecords);
+  return storeFilter.includes(home);
+}
+
 export function getDispatcherStats(
   orders: Order[],
   staffRecords: StaffRecord[] = [],
+  storeFilter?: StoreName[] | null,
 ): DispatcherOrderStats[] {
   const map = new Map<string, Order[]>();
 
@@ -36,7 +45,7 @@ export function getDispatcherStats(
     map.set(key, list);
   }
 
-  const stats = [...map.entries()].map(([dispatcher, dispatcherOrders]) => {
+  let stats = [...map.entries()].map(([dispatcher, dispatcherOrders]) => {
     const byStatus = createEmptyStatusCounts();
     for (const order of dispatcherOrders) {
       byStatus[order.status] += 1;
@@ -48,8 +57,17 @@ export function getDispatcherStats(
     };
   });
 
+  if (storeFilter?.length) {
+    stats = stats.filter((s) =>
+      dispatcherInStoreFilter(s.dispatcher, storeFilter, staffRecords),
+    );
+  }
+
   const seen = new Set(stats.map((s) => s.dispatcher));
   for (const profile of getEffectiveDispatcherRoster(staffRecords)) {
+    if (storeFilter?.length && !storeFilter.includes(profile.homeStore)) {
+      continue;
+    }
     if (seen.has(profile.name)) continue;
     seen.add(profile.name);
     stats.push({

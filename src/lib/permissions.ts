@@ -153,12 +153,6 @@ export function canAccessAdminPage(user: SessionUser | null): boolean {
   return user.role === "dispatcher" || user.role === "designer";
 }
 
-/** 店长看板：派单录入以外区域只读 */
-export function isAdminLookupReadOnly(user: SessionUser | null): boolean {
-  if (!user) return true;
-  return !isDesignManagerAccess(user);
-}
-
 export function canEditManagerPage(user: SessionUser | null): boolean {
   return isLoggedIn(user) && isDesignManagerAccess(user);
 }
@@ -232,13 +226,6 @@ export function hasGlobalDispatcherLookup(user: SessionUser | null): boolean {
 /** 店长 / 本店设计经理：本店派单人「全部」 */
 export function hasStoreDispatcherLookup(user: SessionUser | null): boolean {
   return hasStoreLevelLookupScope(user);
-}
-
-/** @deprecated 使用 hasGlobalDispatcherLookup / hasStoreDispatcherLookup */
-export function canViewAllDispatchersInLookup(
-  user: SessionUser | null,
-): boolean {
-  return hasGlobalDispatcherLookup(user) || hasStoreDispatcherLookup(user);
 }
 
 /** 按门店汇总是否显示「全部门店」（全公司或多门店所属汇总） */
@@ -315,6 +302,18 @@ export function scopeOrdersForDispatcherLookup(
   user: SessionUser | null,
 ): Order[] {
   return scopeOrdersForAdminBoard(orders, user);
+}
+
+/** 按派单人查找汇总条：非全公司时仅展示所属门店派单人 */
+export function resolveDispatcherStatsStoreFilter(
+  user: SessionUser | null,
+): StoreName[] | null {
+  if (!user || hasFullOrderScope(user)) return null;
+  const assignedStores = resolveAssignedStoresForUser(user);
+  if (assignedStores.length > 0) return assignedStores;
+  const managedStore = resolveManagedStoreForLookup(user);
+  if (managedStore) return [managedStore];
+  return null;
 }
 
 export function scopeOrdersForDesignerLookup(

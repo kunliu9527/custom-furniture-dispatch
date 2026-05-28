@@ -7,21 +7,6 @@ const tabs: { id: AdminViewMode; label: string; description: string }[] = [
     description: "录入客户信息并指派设计师",
   },
   {
-    id: "dispatcher",
-    label: "按派单人查找",
-    description: "按派单人姓名查找订单并查看统计",
-  },
-  {
-    id: "designer",
-    label: "按设计师查找",
-    description: "按本店订单关联的设计师查找并查看统计",
-  },
-  {
-    id: "store",
-    label: "按门店汇总",
-    description: "按派单人所属门店汇总订单数与明细",
-  },
-  {
     id: "staff",
     label: "人员管理",
     description: "人员名册、配置岗位与门店配置",
@@ -76,7 +61,7 @@ export function AdminViewTabs({
           </button>
           {tab.id === "dispatch" ? (
             <div className="flex max-w-[220px] items-center rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-xs leading-snug text-amber-900">
-              此页面仅用于派单和查找定单
+              订单查找与统计请使用「设计经理看板」
             </div>
           ) : null}
         </div>

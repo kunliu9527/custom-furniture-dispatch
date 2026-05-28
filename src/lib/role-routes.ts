@@ -15,7 +15,6 @@ import {
 } from "./permissions";
 import { getDesignerHomeStore } from "./designers";
 import type { DesignerName } from "./types";
-import type { AdminViewMode } from "./admin-stats";
 
 /** 登录后默认进入的板块 */
 export function getDefaultPathForRole(
@@ -36,13 +35,6 @@ export function getDefaultPathForRole(
     default:
       return "/";
   }
-}
-
-export interface AdminRoleDefaults {
-  viewMode: AdminViewMode;
-  dispatcherFilter: string | "全部";
-  designerFilter: DesignerName | "全部";
-  storeFilter: StoreName | "全部";
 }
 
 /** 按派单人查找默认选中：店长权限优先本人（名册内），否则全部；个人派单人仅本人 */
@@ -69,67 +61,6 @@ export function getDefaultDesignerFilter(
     return user.displayName as DesignerName;
   }
   return "全部";
-}
-
-export function getAdminRoleDefaults(
-  user: SessionUser | null,
-  staffRecords: StaffRecord[] = [],
-): AdminRoleDefaults {
-  if (!user) {
-    return {
-      viewMode: "dispatch",
-      dispatcherFilter: "全部",
-      designerFilter: "全部",
-      storeFilter: "全部",
-    };
-  }
-
-  if (hasStoreLevelLookupScope(user)) {
-    const assigned = resolveAssignedStoresForUser(user);
-    const store =
-      assigned.length === 1
-        ? assigned[0]
-        : assigned.length > 1
-          ? ("全部" as const)
-          : (resolveManagedStoreForLookup(user) ?? resolveUserHomeStore(user));
-    return {
-      viewMode: "dispatch",
-      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
-      designerFilter: "全部",
-      storeFilter: store,
-    };
-  }
-
-  if (user.role === "dispatcher") {
-    const store =
-      user.homeStore ??
-      getDispatcherHomeStore(user.displayName, "东岸天冠");
-    return {
-      viewMode: "dispatch",
-      dispatcherFilter: user.displayName,
-      designerFilter: "全部",
-      storeFilter: store,
-    };
-  }
-
-  if (user.role === "designer") {
-    const store =
-      user.homeStore ??
-      getDesignerHomeStore(user.displayName as DesignerName);
-    return {
-      viewMode: "dispatch",
-      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
-      designerFilter: getDefaultDesignerFilter(user),
-      storeFilter: store,
-    };
-  }
-
-  return {
-    viewMode: "dispatch",
-    dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
-    designerFilter: "全部",
-    storeFilter: "全部",
-  };
 }
 
 export function getDesignerDefaultName(

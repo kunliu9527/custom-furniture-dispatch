@@ -26,6 +26,7 @@ import {
   hasFullOrderScope,
   resolveManagedStoreForLookup,
   resolveDesignerLookupStores,
+  resolveDispatcherStatsStoreFilter,
   scopeOrdersForDispatcherLookup,
   scopeOrdersForDesignerLookup,
   scopeOrdersForUser,
@@ -170,9 +171,18 @@ export default function ManagerPage() {
     }
     return all;
   }, [scopedOrders, assignedStores, managedStore, user]);
+  const dispatcherStatsStoreFilter = useMemo(
+    () => resolveDispatcherStatsStoreFilter(user),
+    [user],
+  );
   const dispatcherStats = useMemo(
-    () => getDispatcherStats(dispatcherLookupOrders, staffRecords),
-    [dispatcherLookupOrders, staffRecords],
+    () =>
+      getDispatcherStats(
+        dispatcherLookupOrders,
+        staffRecords,
+        dispatcherStatsStoreFilter,
+      ),
+    [dispatcherLookupOrders, staffRecords, dispatcherStatsStoreFilter],
   );
 
   const searchResults = useMemo(() => {
@@ -456,7 +466,6 @@ export default function ManagerPage() {
                 isKeywordSearch={isSearching}
                 drill={resultDrill}
                 onDrillChange={setResultDrill}
-                board="manager"
                 managerViewMode={viewMode}
                 statusFilter={statusFilter}
                 designerFilter={designerFilter}

@@ -1,5 +1,4 @@
 import type { ViewMode } from "./manager-stats";
-import type { AdminViewMode } from "./admin-stats";
 import type { DrillFlow } from "./result-drill";
 import type { DesignerName, OrderStatus } from "./types";
 
@@ -19,19 +18,4 @@ export function getManagerDrillFlow(
     return ["status", "designer"];
   }
   return ["status"];
-}
-
-/** 店长看板 */
-export function getAdminDrillFlow(
-  viewMode: AdminViewMode,
-  designerFilter?: DesignerName | "全部",
-): DrillFlow {
-  if (viewMode === "store") return ["status", "dispatcher"];
-  if (viewMode === "designer") {
-    return designerFilter === "全部"
-      ? ["status", "designer"]
-      : ["status"];
-  }
-  if (viewMode === "dispatcher") return ["status", "designer"];
-  return ["status", "designer"];
 }

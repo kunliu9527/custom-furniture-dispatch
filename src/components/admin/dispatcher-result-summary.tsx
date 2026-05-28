@@ -1,5 +1,5 @@
 import { ResultSummaryShell } from "@/components/shared/result-summary-shell";
-import { getAdminDrillFlow } from "@/lib/drill-flow";
+import { getManagerDrillFlow } from "@/lib/drill-flow";
 import type { ResultDrillFilters } from "@/lib/result-drill";
 import type { Order, SupplementOrder } from "@/lib/types";
 
@@ -27,7 +27,7 @@ export function DispatcherResultSummary({
       supplements={supplements}
       drill={drill}
       onDrillChange={onDrillChange}
-      flow={getAdminDrillFlow("dispatcher")}
+      flow={getManagerDrillFlow("dispatcher", "全部", "全部")}
       totalAmountClassName="text-emerald-700"
     />
   );
