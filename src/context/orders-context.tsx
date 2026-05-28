@@ -39,6 +39,7 @@ import {
   patchSnapshotCache,
   subscribeSnapshot,
 } from "@/lib/snapshot-cache";
+import { createShortId } from "@/lib/create-id";
 import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import type {
   DesignerName,
@@ -249,7 +250,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }
     const createdAt = new Date().toISOString();
     const order: Order = {
-      id: `ord-${crypto.randomUUID().slice(0, 8)}`,
+      id: createShortId("ord-"),
       customerName: data.customerName,
       phone: data.phone,
       address: data.address,
@@ -388,7 +389,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             transferRecords: [
               ...order.transferRecords,
               {
-                id: `tr-${crypto.randomUUID().slice(0, 8)}`,
+                id: createShortId("tr-"),
                 fromDesigner: order.designer,
                 toDesigner: designer,
                 transferredAt: new Date().toISOString(),
@@ -412,7 +413,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       const parent = orders.find((o) => o.id === parentOrderId);
       if (!parent || !isSupplementEligibleOrder(parent)) return;
       const supplement: SupplementOrder = {
-        id: `sup-${crypto.randomUUID().slice(0, 8)}`,
+        id: createShortId("sup-"),
         parentOrderId,
         customerName: parent.customerName,
         designer,

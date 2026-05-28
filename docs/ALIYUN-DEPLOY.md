@@ -182,12 +182,11 @@ bash scripts/install-server.sh
 
 （若目录已有文件，脚本会尝试 `git pull` 或覆盖安装。）
 
-### 4. 想绑自己的域名
+### 4. 想绑域名并启用 HTTPS（推荐，更稳定）
 
-1. 域名 DNS **A 记录** 指向 `121.199.20.177`
-2. 修改 Nginx：`nano /etc/nginx/sites-available/dispatch`，`server_name` 改为你的域名
-3. `nginx -t && systemctl reload nginx`
-4. 可用 **certbot** 申请免费 HTTPS（需域名已备案，按阿里云政策）
+详见 **[ALIYUN-HTTPS.md](./ALIYUN-HTTPS.md)**（域名 + 免费证书分步说明）。
+
+简要：域名 A 记录 → 安全组放行 443 → 服务器执行 `certbot --nginx -d 你的域名`
 
 ---
 

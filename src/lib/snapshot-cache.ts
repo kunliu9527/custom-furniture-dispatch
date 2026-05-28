@@ -99,6 +99,10 @@ export function getCachedStaffConfig(): StaffConfigSnapshot {
   return cache?.staffConfig ?? { ...EMPTY_STAFF_CONFIG };
 }
 
+export function isSnapshotDirty(): boolean {
+  return dirty;
+}
+
 export function markSnapshotDirty(): void {
   if (!isRemoteSyncEnabled() || !cache) return;
   dirty = true;

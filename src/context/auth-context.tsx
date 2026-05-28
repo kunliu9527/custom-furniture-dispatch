@@ -66,11 +66,13 @@ import {
   ensureSnapshotCacheReady,
   getCachedStaffConfig,
   patchSnapshotCache,
+  isSnapshotDirty,
   subscribeSnapshot,
 } from "@/lib/snapshot-cache";
 import type { StaffConfigSnapshot } from "@/lib/server/snapshot-types";
 import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import { dedupePhysicalStores } from "@/lib/assigned-stores";
+import { createShortId } from "@/lib/create-id";
 import {
   resolveLiveSessionUser,
   sessionUsersEqual,
@@ -331,6 +333,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isRemoteSyncEnabled()) return;
     return subscribeSnapshot((snap) => {
+      if (isSnapshotDirty()) return;
       staffApplyingRemoteRef.current = true;
       applyStaffConfig(snap.staffConfig);
       queueMicrotask(() => {
@@ -494,7 +497,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : undefined;
 
       const record: StaffRecord = {
-        id: `custom-${crypto.randomUUID().slice(0, 8)}`,
+        id: createShortId("custom-"),
         name,
         position: data.position,
         homeStore: data.homeStore,

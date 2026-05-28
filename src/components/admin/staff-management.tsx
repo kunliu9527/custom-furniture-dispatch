@@ -154,27 +154,32 @@ export function StaffManagement() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const result = addStaffMember({
-      name,
-      position,
-      homeStore,
-      extraStores:
-        accessLevel === "design_manager" ? extraStores : undefined,
-      password,
-      accessLevel,
-    });
-    if (!result.ok) {
-      setError(result.error ?? "添加失败");
-      setMessage("");
-      return;
-    }
     setError("");
-    setMessage(
-      `已添加「${name.trim()}」，账号 ${name.trim()}，权限 ${ACCESS_LEVEL_LABELS[accessLevel]}`,
-    );
-    setName("");
-    setPassword("1");
-    setAccessLevel(defaultAccessLevelForPosition(position));
+    setMessage("");
+    try {
+      const result = addStaffMember({
+        name,
+        position,
+        homeStore,
+        extraStores:
+          accessLevel === "design_manager" ? extraStores : undefined,
+        password,
+        accessLevel,
+      });
+      if (!result.ok) {
+        setError(result.error ?? "添加失败");
+        return;
+      }
+      setMessage(
+        `已添加「${name.trim()}」，账号 ${name.trim()}，权限 ${ACCESS_LEVEL_LABELS[accessLevel]}`,
+      );
+      setName("");
+      setPassword("1");
+      setAccessLevel(defaultAccessLevelForPosition(position));
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : "未知错误";
+      setError(`保存失败：${detail}（若使用 http 访问，请刷新后重试）`);
+    }
   }
 
   function handleAccessChange(staffId: string, level: StaffAccessLevel) {
@@ -328,13 +333,19 @@ export function StaffManagement() {
                     ? ` · 所属门店：${[homeStore, ...extraStores].join("、")}`
                     : ""}
               </div>
-              <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-                <Button type="submit">保存人员</Button>
+              <div className="sm:col-span-2 space-y-2">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="submit">保存人员</Button>
+                </div>
                 {message ? (
-                  <span className="text-sm text-emerald-600">{message}</span>
+                  <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
+                    {message}
+                  </p>
                 ) : null}
                 {error ? (
-                  <span className="text-sm text-red-600">{error}</span>
+                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800 ring-1 ring-red-200">
+                    {error}
+                  </p>
                 ) : null}
               </div>
             </form>
