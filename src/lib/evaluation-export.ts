@@ -222,6 +222,7 @@ function workflowCsvSection(
 
 export interface EvaluationExportPayload {
   viewMode: EvaluationViewMode;
+  periodLabel?: string;
   dispatcherRows: DispatcherEvaluationRow[];
   designerAmountRows: DispatcherEvaluationRow[];
   designerWorkflowRows: WorkflowEvaluationRow[];
@@ -231,6 +232,9 @@ export interface EvaluationExportPayload {
 
 export function exportEvaluationData(payload: EvaluationExportPayload): void {
   const stamp = new Date().toISOString().slice(0, 10);
+  const periodPart = payload.periodLabel
+    ? `-${payload.periodLabel.replace(/\s/g, "")}`
+    : "";
   const sections: string[] = [];
 
   if (payload.viewMode === "dispatcher") {
@@ -246,7 +250,10 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
         payload.dispatcherRows,
       ),
     );
-    downloadCsv(`评价看板-派单人数据-${stamp}.csv`, sections.join("\n\n"));
+    downloadCsv(
+      `评价看板-派单人数据${periodPart}-${stamp}.csv`,
+      sections.join("\n\n"),
+    );
     return;
   }
 
@@ -270,7 +277,10 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
         true,
       ),
     );
-    downloadCsv(`评价看板-设计师数据-${stamp}.csv`, sections.join("\n\n"));
+    downloadCsv(
+      `评价看板-设计师数据${periodPart}-${stamp}.csv`,
+      sections.join("\n\n"),
+    );
     return;
   }
 
@@ -287,5 +297,8 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
       payload.storeDispatcherAmountRows,
     ),
   );
-  downloadCsv(`评价看板-门店数据-${stamp}.csv`, sections.join("\n\n"));
+  downloadCsv(
+    `评价看板-门店数据${periodPart}-${stamp}.csv`,
+    sections.join("\n\n"),
+  );
 }

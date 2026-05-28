@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
-    "dep": "node scripts/deploy.mjs"
+    "dep": "node scripts/deploy.mjs",
+    "digest:cron": "node scripts/weekly-digest-cron.mjs",
+    "digest:preview": "node scripts/weekly-digest-cron.mjs --preview"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

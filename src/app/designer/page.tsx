@@ -15,6 +15,7 @@ import {
   isCrossStoreOrderForDesigner,
 } from "@/lib/designer-staff-store";
 import { countOrdersByStatus, filterOrdersByStatus } from "@/lib/manager-stats";
+import { needsDesignerAcceptance } from "@/lib/designer-load";
 import {
   isSupplementEligibleOrder,
   sortOrdersNewestFirst,
@@ -50,6 +51,7 @@ export default function DesignerPage() {
     revertOrderStatus,
     markPendingRefund,
     confirmRefund,
+    confirmDesignerAccept,
     addSupplementOrder,
     isHydrated,
   } = useOrders();
@@ -132,6 +134,7 @@ export default function DesignerPage() {
   }, [effectiveDesigner]);
 
   const pendingCount = myOrders.filter((o) => o.status === "待量尺").length;
+  const acceptPendingCount = myOrders.filter(needsDesignerAcceptance).length;
   const crossStoreCount = myOrders.filter((o) =>
     isCrossStoreOrderForDesigner(
       o.dispatchStore,
@@ -183,6 +186,11 @@ export default function DesignerPage() {
           ) : (
             <p className="mt-1 text-indigo-600">暂无待量尺订单</p>
           )}
+          {acceptPendingCount > 0 ? (
+            <p className="mt-1 font-medium text-amber-700">
+              {acceptPendingCount} 笔待确认接单
+            </p>
+          ) : null}
           {crossStoreCount > 0 ? (
             <p className="mt-1 text-red-600">
               {crossStoreCount} 笔跨店派单（地址标红）
@@ -270,6 +278,10 @@ export default function DesignerPage() {
                   canEditOwn ? markPendingRefund : undefined
                 }
                 onConfirmRefund={canEditOwn ? confirmRefund : undefined}
+                onConfirmDesignerAccept={
+                  canEditOwn ? confirmDesignerAccept : undefined
+                }
+                showAcceptAction={canEditOwn}
                 showAfterSales
               />
             </div>

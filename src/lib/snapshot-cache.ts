@@ -7,6 +7,7 @@ import {
   getSyncPollIntervalMs,
   isRemoteSyncEnabled,
 } from "@/lib/sync-config";
+import { apiFetch } from "@/lib/client-api";
 import type { Order, SupplementOrder } from "@/lib/types";
 
 export type SyncConnectionStatus =
@@ -74,7 +75,7 @@ function syncHeaders(): HeadersInit {
 }
 
 export async function fetchRemoteSnapshot(): Promise<AppSnapshot> {
-  const res = await fetch("/api/sync", { cache: "no-store" });
+  const res = await apiFetch("/api/sync", { cache: "no-store" });
   if (!res.ok) throw new Error(`拉取失败 (${res.status})`);
   return (await res.json()) as AppSnapshot;
 }
@@ -85,7 +86,7 @@ async function putRemoteSnapshot(body: {
   supplements: SupplementOrder[];
   staffConfig: StaffConfigSnapshot;
 }): Promise<AppSnapshot> {
-  const res = await fetch("/api/sync", {
+  const res = await apiFetch("/api/sync", {
     method: "PUT",
     headers: syncHeaders(),
     body: JSON.stringify(body),

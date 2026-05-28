@@ -12,13 +12,18 @@ type EvaluationExportData = Omit<EvaluationExportPayload, "viewMode">;
 interface EvaluationExportButtonProps {
   mode: EvaluationViewMode;
   data: EvaluationExportData;
+  periodLabel?: string;
 }
 
-export function EvaluationExportButton({ mode, data }: EvaluationExportButtonProps) {
+export function EvaluationExportButton({
+  mode,
+  data,
+  periodLabel,
+}: EvaluationExportButtonProps) {
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
     event.preventDefault();
-    exportEvaluationData({ ...data, viewMode: mode });
+    exportEvaluationData({ ...data, viewMode: mode, periodLabel });
   }
 
   return (

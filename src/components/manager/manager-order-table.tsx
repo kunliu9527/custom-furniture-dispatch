@@ -24,7 +24,14 @@ import {
   getSupplementsForOrder,
   sumSupplementAmount,
 } from "@/lib/supplement-utils";
-import type { DesignerName, Order, StoreName, SupplementOrder } from "@/lib/types";
+import { OrderIssueTagsCell } from "@/components/manager/order-issue-tags-cell";
+import type {
+  DesignerName,
+  Order,
+  OrderIssueTag,
+  StoreName,
+  SupplementOrder,
+} from "@/lib/types";
 
 const thClass =
   "px-2.5 py-2 text-xs font-medium uppercase tracking-wide text-slate-500";
@@ -41,6 +48,7 @@ interface ManagerOrderTableProps {
   isOrderReadOnly?: (order: Order) => boolean;
   onReassign?: (orderId: string, designer: DesignerName) => void;
   onSetAfterSalesAmount?: (orderId: string, amount: number | null) => void;
+  onSetIssueTags?: (orderId: string, tags: OrderIssueTag[]) => void;
   /** 管理员删除订单 */
   onDeleteOrder?: (orderId: string) => void;
   /** 转派下拉可选设计师（默认全员名册） */
@@ -57,11 +65,13 @@ export function ManagerOrderTable({
   isOrderReadOnly,
   onReassign,
   onSetAfterSalesAmount,
+  onSetIssueTags,
   onDeleteOrder,
   designerRoster = DESIGNER_ROSTER,
 }: ManagerOrderTableProps) {
   const canReassign = !readOnly && Boolean(onReassign);
   const canEditAfterSales = !readOnly && Boolean(onSetAfterSalesAmount);
+  const canEditIssueTags = !readOnly && Boolean(onSetIssueTags);
   const canDelete = Boolean(onDeleteOrder);
   if (orders.length === 0) {
     return (
@@ -98,6 +108,9 @@ export function ManagerOrderTable({
               <th className={`${thClass} w-[76px]`}>售后金</th>
               {detailMode ? (
                 <th className={`${thClass} w-[68px]`}>定制空间</th>
+              ) : null}
+              {canEditIssueTags ? (
+                <th className={`${thClass} min-w-[140px]`}>问题标签</th>
               ) : null}
               <th className={`${thClass} min-w-[100px]`}>备注</th>
               {detailMode ? (
@@ -236,6 +249,14 @@ export function ManagerOrderTable({
                   {detailMode ? (
                     <td className={`${tdClass} text-xs`}>
                       {formatSpaces(order.spaces)}
+                    </td>
+                  ) : null}
+                  {canEditIssueTags && onSetIssueTags ? (
+                    <td className={`${tdClass} min-w-[140px]`}>
+                      <OrderIssueTagsCell
+                        tags={order.issueTags ?? []}
+                        onSave={(tags) => onSetIssueTags(order.id, tags)}
+                      />
                     </td>
                   ) : null}
                   <td

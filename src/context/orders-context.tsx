@@ -10,8 +10,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/context/auth-context";
 import { STORAGE_KEY } from "@/lib/constants";
+import { normalizeIssueTags } from "@/lib/issue-tags";
 import { INITIAL_DATA } from "@/lib/initial-data";
+import { appendOrderEvent, normalizeOrderEvents } from "@/lib/order-events";
+import {
+  countDesignerInProgress,
+  DESIGNER_MAX_IN_PROGRESS,
+  isDispatchBlocked,
+} from "@/lib/designer-load";
 import { normalizeBudget, normalizeSpaces } from "@/lib/order-format";
 import {
   getNextStatus,
@@ -46,6 +54,8 @@ import type {
   DispatchFormData,
   FlowOrderStatus,
   Order,
+  OrderEventKind,
+  OrderIssueTag,
   SupplementOrder,
   WorkflowRemarkStage,
 } from "@/lib/types";
@@ -72,9 +82,19 @@ interface OrdersContextValue {
   ) => void;
   addWorkflowRemark: (id: string, text: string, stage?: WorkflowRemarkStage) => void;
   revertOrderStatus: (id: string) => void;
-  markPendingRefund: (id: string, remark?: string) => void;
-  confirmRefund: (id: string, remark?: string) => void;
+  markPendingRefund: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
+  confirmRefund: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
   reassignOrder: (id: string, designer: DesignerName) => void;
+  confirmDesignerAccept: (id: string) => void;
+  setOrderIssueTags: (id: string, tags: OrderIssueTag[]) => void;
   addSupplementOrder: (
     parentOrderId: string,
     supplementAmount: number,
@@ -134,9 +154,33 @@ function normalizeOrder(raw: Record<string, unknown>): Order {
       raw.totalElapsedDays != null && Number.isFinite(Number(raw.totalElapsedDays))
         ? Number(raw.totalElapsedDays)
         : null,
+    designerAcceptedAt:
+      typeof raw.designerAcceptedAt === "string"
+        ? raw.designerAcceptedAt
+        : null,
+    orderEvents: normalizeOrderEvents(raw.orderEvents),
+    issueTags: normalizeIssueTags(raw.issueTags),
     createdAt: String(raw.createdAt ?? new Date().toISOString()),
   };
   return reconcileOrderBusinessRules(order);
+}
+
+function withEvent(
+  order: Order,
+  actorName: string,
+  kind: OrderEventKind,
+  extra?: {
+    fromStatus?: Order["status"];
+    toStatus?: Order["status"];
+    note?: string;
+  },
+): Order {
+  return appendOrderEvent(order, {
+    kind,
+    at: new Date().toISOString(),
+    actorName,
+    ...extra,
+  });
 }
 
 function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
@@ -168,6 +212,8 @@ function persistData(orders: Order[], supplements: SupplementOrder[]) {
 }
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const actorRef = useRef("系统");
   const [orders, setOrders] = useState<Order[]>(INITIAL_DATA.orders);
   const [supplements, setSupplements] = useState<SupplementOrder[]>(
     INITIAL_DATA.supplements,
@@ -175,6 +221,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const applyingRemoteRef = useRef(false);
   const remoteReadyRef = useRef(false);
+
+  useEffect(() => {
+    actorRef.current = user?.displayName ?? "系统";
+  }, [user?.displayName]);
 
   useEffect(() => {
     if (!isRemoteSyncEnabled()) {
@@ -243,13 +293,18 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }, [orders, supplements, isHydrated]);
 
   const addOrder = useCallback((data: DispatchFormData) => {
+    const inProgress = countDesignerInProgress(orders, data.designer);
+    if (isDispatchBlocked(inProgress) && !data.forceOverCapacity) {
+      return;
+    }
+    const actor = actorRef.current;
     const remarks = [];
     const dispatchNote = data.dispatchRemark?.trim();
     if (dispatchNote) {
       remarks.push(createWorkflowRemarkEntry("派单录入", dispatchNote));
     }
     const createdAt = new Date().toISOString();
-    const order: Order = {
+    let order: Order = {
       id: createShortId("ord-"),
       customerName: data.customerName,
       phone: data.phone,
@@ -268,10 +323,19 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       workflowRemark: null,
       workflowRemarks: remarks,
       statusEnteredAt: { 待量尺: createdAt },
+      designerAcceptedAt: null,
+      orderEvents: [],
+      issueTags: [],
       createdAt,
     };
+    order = withEvent(order, actor, "派单录入", {
+      toStatus: "待量尺",
+      note: data.forceOverCapacity
+        ? `指派 ${data.designer}（超额，在途 ${inProgress}/${DESIGNER_MAX_IN_PROGRESS}）`
+        : `指派 ${data.designer}`,
+    });
     setOrders((prev) => [reconcileOrderBusinessRules(order), ...prev]);
-  }, []);
+  }, [orders]);
 
   const addWorkflowRemarkToOrder = useCallback(
     (id: string, text: string, stage?: WorkflowRemarkStage) => {
@@ -281,7 +345,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         prev.map((order) => {
           if (order.id !== id) return order;
           const remarkStage = stage ?? (order.status as WorkflowRemarkStage);
-          return appendWorkflowRemark(order, remarkStage, trimmed);
+          const updated = appendWorkflowRemark(order, remarkStage, trimmed);
+          return withEvent(updated, actorRef.current, "流程备注", {
+            note: trimmed,
+            toStatus: remarkStage as Order["status"],
+          });
         }),
       );
     },
@@ -306,17 +374,27 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             next,
             atIso,
           );
+          const actor = actorRef.current;
           if (next === "已下单") {
             const amount = orderAmount ?? 0;
             if (amount <= 0) return order;
-            return {
+            const nextOrder = {
               ...updated,
               ...intervalUpdates,
               status: next,
               orderAmount: amount,
             };
+            return withEvent(nextOrder, actor, "状态推进", {
+              fromStatus: order.status,
+              toStatus: next,
+              note: `下单 ¥${amount.toLocaleString("zh-CN")}`,
+            });
           }
-          return { ...updated, ...intervalUpdates, status: next };
+          const nextOrder = { ...updated, ...intervalUpdates, status: next };
+          return withEvent(nextOrder, actor, "状态推进", {
+            fromStatus: order.status,
+            toStatus: next,
+          });
         }),
       );
     },
@@ -345,34 +423,54 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         if (!revertedFrom.includes(order.status)) {
           updates.revertedFromStatuses = [...revertedFrom, order.status];
         }
-        return { ...order, ...updates };
+        const reverted = { ...order, ...updates };
+        return withEvent(reverted, actorRef.current, "状态撤回", {
+          fromStatus: revertedFromStatus,
+          toStatus: prevStatus,
+        });
       }),
     );
   }, []);
 
-  const markPendingRefund = useCallback((id: string, remark?: string) => {
+  const markPendingRefund = useCallback(
+    (id: string, remark?: string, issueTags?: OrderIssueTag[]) => {
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id !== id) return order;
         if (!canMarkPendingRefund(order.status)) return order;
-        let updated: Order = { ...order, status: "待退单" };
+        let updated: Order = {
+          ...order,
+          status: "待退单",
+          issueTags: issueTags?.length ? issueTags : order.issueTags,
+        };
         if (remark?.trim()) {
           updated = appendWorkflowRemark(updated, "待退单", remark.trim());
         }
-        return updated;
+        return withEvent(updated, actorRef.current, "待退单", {
+          fromStatus: order.status,
+          toStatus: "待退单",
+        });
       }),
     );
   }, []);
 
-  const confirmRefund = useCallback((id: string, remark?: string) => {
+  const confirmRefund = useCallback(
+    (id: string, remark?: string, issueTags?: OrderIssueTag[]) => {
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id !== id || order.status !== "待退单") return order;
-        let updated: Order = { ...order, status: "已退单" };
+        let updated: Order = {
+          ...order,
+          status: "已退单",
+          issueTags: issueTags?.length ? issueTags : order.issueTags,
+        };
         if (remark?.trim()) {
           updated = appendWorkflowRemark(updated, "已退单", remark.trim());
         }
-        return updated;
+        return withEvent(updated, actorRef.current, "已退单", {
+          fromStatus: "待退单",
+          toStatus: "已退单",
+        });
       }),
     );
   }, []);
@@ -382,10 +480,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       prev.map((order) => {
         if (order.id !== id || order.designer === designer) return order;
         const note = `转派：${order.designer}→${designer}`;
-        return appendWorkflowRemark(
+        const reassigned = appendWorkflowRemark(
           {
             ...order,
             designer,
+            designerAcceptedAt: null,
             transferRecords: [
               ...order.transferRecords,
               {
@@ -399,6 +498,42 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
           order.status as WorkflowRemarkStage,
           note,
         );
+        return withEvent(reassigned, actorRef.current, "转派", {
+          note,
+          toStatus: order.status,
+        });
+      }),
+    );
+  }, []);
+
+  const confirmDesignerAccept = useCallback((id: string) => {
+    const at = new Date().toISOString();
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+        if (order.status !== "待量尺" || order.designerAcceptedAt) return order;
+        const updated = {
+          ...order,
+          designerAcceptedAt: at,
+        };
+        return withEvent(updated, actorRef.current, "接单确认", {
+          toStatus: "待量尺",
+        });
+      }),
+    );
+  }, []);
+
+  const setOrderIssueTags = useCallback((id: string, tags: OrderIssueTag[]) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+        const normalized = normalizeIssueTags(tags);
+        const updated = { ...order, issueTags: normalized };
+        if (normalized.join() === (order.issueTags ?? []).join()) return order;
+        return withEvent(updated, actorRef.current, "问题标记", {
+          note: normalized.join("、"),
+          toStatus: order.status,
+        });
       }),
     );
   }, []);
@@ -423,15 +558,18 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       };
       setSupplements((prev) => [supplement, ...prev]);
       setOrders((prev) =>
-        prev.map((o) =>
-          o.id === parentOrderId
-            ? appendWorkflowRemark(
-                o,
-                "已下单",
-                `增补单 ¥${supplementAmount.toLocaleString("zh-CN")}`,
-              )
-            : o,
-        ),
+        prev.map((o) => {
+          if (o.id !== parentOrderId) return o;
+          const noted = appendWorkflowRemark(
+            o,
+            "已下单",
+            `增补单 ¥${supplementAmount.toLocaleString("zh-CN")}`,
+          );
+          return withEvent(noted, actorRef.current, "增补单", {
+            note: `¥${supplementAmount.toLocaleString("zh-CN")}`,
+            toStatus: "已下单",
+          });
+        }),
       );
     },
     [orders],
@@ -453,6 +591,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
               "已下单",
               `售后金 ${normalized.toLocaleString("zh-CN")} 元`,
             );
+            return withEvent(updated, actorRef.current, "售后金", {
+              note: `${normalized.toLocaleString("zh-CN")} 元`,
+              toStatus: "已下单",
+            });
           }
           return updated;
         }),
@@ -479,6 +621,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       markPendingRefund,
       confirmRefund,
       reassignOrder,
+      confirmDesignerAccept,
+      setOrderIssueTags,
       addSupplementOrder,
       setAfterSalesAmount,
       deleteOrder,
@@ -494,6 +638,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       markPendingRefund,
       confirmRefund,
       reassignOrder,
+      confirmDesignerAccept,
+      setOrderIssueTags,
       addSupplementOrder,
       setAfterSalesAmount,
       deleteOrder,

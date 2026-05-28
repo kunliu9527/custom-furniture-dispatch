@@ -2,6 +2,7 @@
 
 import { LoginPanel } from "@/components/auth/login-panel";
 import { SyncStatusBadge } from "@/components/sync/sync-status-badge";
+import { ManagerNotificationBell } from "@/components/manager/manager-notification-bell";
 import { useAuth } from "@/context/auth-context";
 import { getVisibleNavLinks } from "@/lib/nav-access";
 import Link from "next/link";
@@ -31,6 +32,7 @@ export function AppNav() {
         );
       })}
       <SyncStatusBadge />
+      <ManagerNotificationBell />
       <LoginPanel variant="inline" redirectOnLogin={false} />
     </nav>
   );

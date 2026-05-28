@@ -157,6 +157,11 @@ export function canEditManagerPage(user: SessionUser | null): boolean {
   return isLoggedIn(user) && isDesignManagerAccess(user);
 }
 
+/** 超额派单：仅设计经理/管理员可确认突破在途上限 */
+export function canOverrideDispatchLimit(user: SessionUser | null): boolean {
+  return isAdminAccess(user) || isDesignManagerAccess(user);
+}
+
 export function canManageStaff(user: SessionUser | null): boolean {
   return isAdminAccess(user);
 }

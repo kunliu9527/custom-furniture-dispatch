@@ -1,6 +1,6 @@
 import { OrderCard } from "@/components/orders/order-card";
 import type { AdvanceOrderOptions } from "@/context/orders-context";
-import type { Order } from "@/lib/types";
+import type { Order, OrderIssueTag } from "@/lib/types";
 
 interface OrderListProps {
   orders: Order[];
@@ -11,8 +11,18 @@ interface OrderListProps {
   onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => void;
   onAddWorkflowRemark?: (id: string, text: string) => void;
   onRevertStatus?: (id: string) => void;
-  onMarkPendingRefund?: (id: string) => void;
-  onConfirmRefund?: (id: string) => void;
+  onMarkPendingRefund?: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
+  onConfirmRefund?: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
+  onConfirmDesignerAccept?: (id: string) => void;
+  showAcceptAction?: boolean;
   showAfterSales?: boolean;
   canRevertOrder?: (order: Order) => boolean;
   canEditRemark?: (order: Order) => boolean;
@@ -30,6 +40,8 @@ export function OrderList({
   onRevertStatus,
   onMarkPendingRefund,
   onConfirmRefund,
+  onConfirmDesignerAccept,
+  showAcceptAction = false,
   showAfterSales = false,
   canRevertOrder,
   canEditRemark,
@@ -57,6 +69,8 @@ export function OrderList({
           onRevertStatus={onRevertStatus}
           onMarkPendingRefund={onMarkPendingRefund}
           onConfirmRefund={onConfirmRefund}
+          onConfirmDesignerAccept={onConfirmDesignerAccept}
+          showAcceptAction={showAcceptAction}
           showAfterSales={showAfterSales}
           canRevertOrder={canRevertOrder}
           canEditRemark={canEditRemark}

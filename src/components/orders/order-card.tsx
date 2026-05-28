@@ -37,7 +37,12 @@ import {
   formatTotalElapsedDisplay,
   getStageTimeoutAlert,
 } from "@/lib/stage-intervals";
-import type { Order } from "@/lib/types";
+import { IssueTagsEditor } from "@/components/shared/issue-tags-editor";
+import {
+  isAcceptanceOverdue,
+  needsDesignerAcceptance,
+} from "@/lib/designer-load";
+import type { Order, OrderIssueTag } from "@/lib/types";
 import { FormEvent, useState } from "react";
 
 interface OrderCardProps {
@@ -48,8 +53,18 @@ interface OrderCardProps {
   onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => void;
   onAddWorkflowRemark?: (id: string, text: string) => void;
   onRevertStatus?: (id: string) => void;
-  onMarkPendingRefund?: (id: string) => void;
-  onConfirmRefund?: (id: string) => void;
+  onMarkPendingRefund?: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
+  onConfirmRefund?: (
+    id: string,
+    remark?: string,
+    issueTags?: OrderIssueTag[],
+  ) => void;
+  onConfirmDesignerAccept?: (id: string) => void;
+  showAcceptAction?: boolean;
   showAfterSales?: boolean;
   canRevertOrder?: (order: Order) => boolean;
   canEditRemark?: (order: Order) => boolean;
@@ -66,6 +81,8 @@ export function OrderCard({
   onRevertStatus,
   onMarkPendingRefund,
   onConfirmRefund,
+  onConfirmDesignerAccept,
+  showAcceptAction = false,
   showAfterSales = false,
   canRevertOrder,
   canEditRemark: canEditRemarkCheck,
@@ -74,8 +91,14 @@ export function OrderCard({
   const { designerHomeStoreIndex } = useAuth();
   const nextStatus = getNextStatus(order.status);
   const requiresOrderAmount = nextStatus === "已下单";
+  const [showRefundPanel, setShowRefundPanel] = useState(false);
+  const [refundTags, setRefundTags] = useState<OrderIssueTag[]>([]);
+  const pendingAccept =
+    showAcceptAction && needsDesignerAcceptance(order);
+  const acceptOverdue = pendingAccept && isAcceptanceOverdue(order);
   const canAdvance =
     !readOnly &&
+    !pendingAccept &&
     Boolean(onAdvanceStatus && nextStatus && !isRefundStatus(order.status));
   const canMarkRefund =
     !readOnly &&
@@ -189,6 +212,17 @@ export function OrderCard({
             {hasBeenTransferred(order) ? (
               <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
                 已转派
+              </span>
+            ) : null}
+            {pendingAccept ? (
+              <span
+                className={`rounded-md px-2 py-0.5 text-xs font-medium ring-1 ${
+                  acceptOverdue
+                    ? "bg-amber-50 text-amber-800 ring-amber-200"
+                    : "bg-sky-50 text-sky-700 ring-sky-200"
+                }`}
+              >
+                {acceptOverdue ? "接单超时" : "待确认接单"}
               </span>
             ) : null}
           </div>
@@ -403,6 +437,41 @@ export function OrderCard({
             </Button>
           </div>
         </form>
+      ) : pendingAccept && onConfirmDesignerAccept ? (
+        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+          <p className="text-xs text-amber-800">
+            请先确认接单，再推进量尺等后续流程。
+          </p>
+          <Button type="button" onClick={() => onConfirmDesignerAccept(order.id)}>
+            确认接单
+          </Button>
+        </div>
+      ) : showRefundPanel && canMarkRefund ? (
+        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+          <p className="text-xs font-medium text-slate-600">退单问题标签（可选）</p>
+          <IssueTagsEditor value={refundTags} onChange={setRefundTags} />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                onMarkPendingRefund?.(order.id, remarkDraft.trim() || undefined, refundTags);
+                setShowRefundPanel(false);
+                setRefundTags([]);
+                setRemarkDraft("");
+              }}
+            >
+              确认标记待退单
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowRefundPanel(false)}
+            >
+              取消
+            </Button>
+          </div>
+        </div>
       ) : canAdvance || canRevert || canMarkRefund || canConfirmRefund || canDelete ? (
         <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           {canAdvance ? (
@@ -427,7 +496,7 @@ export function OrderCard({
             <Button
               variant="secondary"
               className="w-full sm:w-auto"
-              onClick={() => onMarkPendingRefund?.(order.id)}
+              onClick={() => setShowRefundPanel(true)}
             >
               标记待退单
             </Button>

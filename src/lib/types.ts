@@ -48,6 +48,40 @@ export interface WorkflowRemarkEntry {
   at: string;
 }
 
+/** 订单操作日志（推进、转派、退单等） */
+export type OrderEventKind =
+  | "派单录入"
+  | "状态推进"
+  | "状态撤回"
+  | "待退单"
+  | "已退单"
+  | "转派"
+  | "增补单"
+  | "售后金"
+  | "接单确认"
+  | "流程备注"
+  | "问题标记";
+
+export interface OrderEvent {
+  id: string;
+  kind: OrderEventKind;
+  at: string;
+  actorName: string;
+  fromStatus?: OrderStatus;
+  toStatus?: OrderStatus;
+  note?: string;
+}
+
+/** 设计经理标记的问题类型 */
+export type OrderIssueTag =
+  | "效果图未过"
+  | "工艺错误"
+  | "沟通问题"
+  | "客户变卦"
+  | "派单信息不全"
+  | "效率过慢"
+  | "其他";
+
 /** 设计经理转派记录 */
 export interface TransferRecord {
   id: string;
@@ -85,6 +119,12 @@ export interface Order {
   stageIntervalDays?: StageIntervalDays;
   /** 待量尺→已下单累计天数；无完整间隔记录时为 null */
   totalElapsedDays?: number | null;
+  /** 设计师确认接单时间 */
+  designerAcceptedAt?: string | null;
+  /** 操作日志 */
+  orderEvents?: OrderEvent[];
+  /** 问题标签（经理维护） */
+  issueTags?: OrderIssueTag[];
   createdAt: string;
 }
 
@@ -111,6 +151,8 @@ export interface DispatchFormData {
   designer: DesignerName;
   /** 派单录入时的备注 */
   dispatchRemark?: string;
+  /** 设计经理确认超额派单 */
+  forceOverCapacity?: boolean;
 }
 
 export interface AppPersistedData {

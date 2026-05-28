@@ -7,6 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { SpaceMultiSelect } from "@/components/ui/space-multi-select";
 import { useAuth } from "@/context/auth-context";
+import { useOrders } from "@/context/orders-context";
+import {
+  countDesignerInProgress,
+  formatDesignerLoadHint,
+  isDispatchBlocked,
+} from "@/lib/designer-load";
+import { canOverrideDispatchLimit } from "@/lib/permissions";
 import { getDispatchStoreOptions } from "@/lib/stores";
 import {
   getEffectiveDesignerHomeStore,
@@ -101,7 +108,8 @@ export function DispatchForm({
   preferredStore = null,
   readOnly = false,
 }: DispatchFormProps) {
-  const { designerHomeStoreIndex, staffRecords } = useAuth();
+  const { designerHomeStoreIndex, staffRecords, user } = useAuth();
+  const { orders } = useOrders();
   const [form, setForm] = useState<DispatchFormData>(() =>
     buildInitial(
       lockedDispatcherName,
@@ -113,6 +121,8 @@ export function DispatchForm({
   );
   const [submitted, setSubmitted] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
+  const [forceOverCapacity, setForceOverCapacity] = useState(false);
+  const [dispatchError, setDispatchError] = useState("");
 
   const dispatcherValue = lockedDispatcherName ?? form.dispatcherName;
   const designerValue = (lockedDesignerName ?? form.designer) as DesignerName;
@@ -143,6 +153,24 @@ export function DispatchForm({
     [sortedDispatchers],
   );
 
+  const designerLoadHint = useMemo(
+    () =>
+      formatDesignerLoadHint(
+        designerValue,
+        countDesignerInProgress(orders, designerValue),
+      ),
+    [orders, designerValue],
+  );
+
+  const inProgressCount = useMemo(
+    () => countDesignerInProgress(orders, designerValue),
+    [orders, designerValue],
+  );
+
+  const dispatchBlocked = isDispatchBlocked(inProgressCount);
+  const canOverride = canOverrideDispatchLimit(user);
+  const submitBlocked = dispatchBlocked && !(canOverride && forceOverCapacity);
+
   const designerOptions = useMemo(
     () =>
       sortedDesigners.map((d) => ({
@@ -169,6 +197,12 @@ export function DispatchForm({
     if (readOnly) return;
     const budget = Number(budgetInput);
     if (!Number.isFinite(budget) || budget <= 0) return;
+    if (submitBlocked) {
+      setDispatchError(
+        `设计师在途已达 ${inProgressCount} 单，无法继续派单。${canOverride ? "请勾选经理确认超额派单。" : "请联系设计经理协调。"}`,
+      );
+      return;
+    }
 
     onSubmit({
       ...form,
@@ -178,7 +212,10 @@ export function DispatchForm({
       dispatcherName: dispatcherValue,
       designer: designerValue,
       dispatchStore: form.dispatchStore,
+      forceOverCapacity: canOverride && forceOverCapacity,
     });
+    setForceOverCapacity(false);
+    setDispatchError("");
     setForm(
       buildInitial(
         lockedDispatcherName,
@@ -325,6 +362,30 @@ export function DispatchForm({
             onChange={(e) => update("dispatchRemark", e.target.value)}
           />
         </div>
+        {designerLoadHint ? (
+          <div
+            className={`sm:col-span-2 rounded-lg border px-3 py-2 text-xs ${
+              dispatchBlocked
+                ? "border-rose-200 bg-rose-50 text-rose-900"
+                : "border-amber-200 bg-amber-50 text-amber-900"
+            }`}
+          >
+            {designerLoadHint}
+          </div>
+        ) : null}
+        {dispatchBlocked && canOverride ? (
+          <label className="sm:col-span-2 flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+            <input
+              type="checkbox"
+              checked={forceOverCapacity}
+              onChange={(e) => setForceOverCapacity(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              设计经理确认：已知在途超限，仍要派给「{designerValue}」
+            </span>
+          </label>
+        ) : null}
         <div className="sm:col-span-2">
           {lockedDesignerName ? (
             <div className="rounded-lg border border-emerald-100 bg-emerald-50/50 px-3.5 py-2.5">
@@ -348,7 +409,12 @@ export function DispatchForm({
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button type="submit">确认派单</Button>
+        <Button type="submit" disabled={submitBlocked}>
+          确认派单
+        </Button>
+        {dispatchError ? (
+          <span className="text-sm text-rose-600">{dispatchError}</span>
+        ) : null}
         {submitted ? (
           <span className="text-sm text-emerald-600">派单成功，已加入列表</span>
         ) : null}

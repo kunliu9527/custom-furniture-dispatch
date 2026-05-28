@@ -36,6 +36,7 @@ interface EvaluationViewTabsProps {
   summaries: Record<EvaluationViewMode, EvaluationTabSummary>;
   allowedModes: EvaluationViewMode[];
   exportData: EvaluationExportData;
+  periodLabel?: string;
 }
 
 export function EvaluationViewTabs({
@@ -44,6 +45,7 @@ export function EvaluationViewTabs({
   summaries,
   allowedModes,
   exportData,
+  periodLabel,
 }: EvaluationViewTabsProps) {
   const visibleTabs = tabs.filter((tab) => allowedModes.includes(tab.id));
   const gridClass =
@@ -89,7 +91,11 @@ export function EvaluationViewTabs({
                   {tab.description}
                 </p>
               </button>
-              <EvaluationExportButton mode={tab.id} data={exportData} />
+              <EvaluationExportButton
+                mode={tab.id}
+                data={exportData}
+                periodLabel={periodLabel}
+              />
             </div>
             <button
               type="button"

@@ -7,6 +7,9 @@ import { DispatcherResultSummary } from "@/components/admin/dispatcher-result-su
 import { DispatcherSummaryBar } from "@/components/admin/dispatcher-summary-bar";
 import { ManagerResultSummary } from "@/components/manager/manager-result-summary";
 import { ManagerSupplementTable } from "@/components/manager/manager-supplement-table";
+import { ManagerAlertPanel } from "@/components/manager/manager-alert-panel";
+import { ManagerPendingAcceptancePanel } from "@/components/manager/manager-pending-acceptance-panel";
+import { WeeklyDigestPanel } from "@/components/manager/weekly-digest-panel";
 import { ManagerOrderTable } from "@/components/manager/manager-order-table";
 import { StatusSummaryBar } from "@/components/manager/status-summary-bar";
 import { ViewTabs } from "@/components/manager/view-tabs";
@@ -69,6 +72,7 @@ import {
 import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summary";
 import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
+import { getManagerAlerts } from "@/lib/manager-alerts";
 import { isSingleOrderDetailView, sortOrdersNewestFirst } from "@/lib/order-utils";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
@@ -77,8 +81,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function ManagerPage() {
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();
-  const { orders, supplements, isHydrated, reassignOrder, setAfterSalesAmount } =
-    useOrders();
+  const {
+    orders,
+    supplements,
+    isHydrated,
+    reassignOrder,
+    setAfterSalesAmount,
+    setOrderIssueTags,
+  } = useOrders();
   const managerReadOnly = !canEditManagerPage(user);
   const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "全部">("全部");
@@ -112,6 +122,22 @@ export default function ManagerPage() {
   const scopedOrders = useMemo(
     () => scopeOrdersForUser(orders, user),
     [orders, user],
+  );
+
+  const managerAlerts = useMemo(
+    () => getManagerAlerts(scopedOrders),
+    [scopedOrders],
+  );
+
+  const handleAlertDesignerSelect = useCallback(
+    (designer: string) => {
+      setViewMode("designer");
+      setDesignerFilter(designer as DesignerName);
+      setSearchQuery("");
+      setStatusFilter("全部");
+      setResultDrill(EMPTY_RESULT_DRILL);
+    },
+    [],
   );
 
   const dispatcherLookupOrders = useMemo(
@@ -333,6 +359,22 @@ export default function ManagerPage() {
     <RouteGuard canAccess={canAccessManagerPage(user)}>
     <AppShell title="设计经理看板" badge="经理">
       <div className="space-y-6">
+        {isHydrated ? (
+          <>
+            <WeeklyDigestPanel orders={scopedOrders} supplements={supplements} />
+            <ManagerPendingAcceptancePanel
+              orders={scopedOrders}
+              onSelectDesigner={handleAlertDesignerSelect}
+            />
+            {managerAlerts.length > 0 ? (
+              <ManagerAlertPanel
+                alerts={managerAlerts}
+                onSelectDesigner={handleAlertDesignerSelect}
+              />
+            ) : null}
+          </>
+        ) : null}
+
         <ViewTabs value={viewMode} onChange={setViewMode} />
 
         {!isHydrated ? (
@@ -400,6 +442,9 @@ export default function ManagerPage() {
                 onReassign={managerReadOnly ? undefined : reassignOrder}
                 onSetAfterSalesAmount={
                   managerReadOnly ? undefined : setAfterSalesAmount
+                }
+                onSetIssueTags={
+                  managerReadOnly ? undefined : setOrderIssueTags
                 }
                 emptyMessage={
                   isSearching
@@ -476,6 +521,9 @@ export default function ManagerPage() {
                 onReassign={managerReadOnly ? undefined : reassignOrder}
                 onSetAfterSalesAmount={
                   managerReadOnly ? undefined : setAfterSalesAmount
+                }
+                onSetIssueTags={
+                  managerReadOnly ? undefined : setOrderIssueTags
                 }
                 emptyMessage={
                   isSearching
@@ -559,6 +607,9 @@ export default function ManagerPage() {
                 onReassign={managerReadOnly ? undefined : reassignOrder}
                 onSetAfterSalesAmount={
                   managerReadOnly ? undefined : setAfterSalesAmount
+                }
+                onSetIssueTags={
+                  managerReadOnly ? undefined : setOrderIssueTags
                 }
                 emptyMessage={
                   isSearching

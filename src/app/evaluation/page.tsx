@@ -3,10 +3,14 @@
 import { RouteGuard } from "@/components/auth/route-guard";
 import { DispatcherEvaluationRankingTable } from "@/components/evaluation/dispatcher-evaluation-ranking-table";
 import { DispatcherEvaluationTable } from "@/components/evaluation/dispatcher-evaluation-table";
+import { DesignerPerformanceTable } from "@/components/evaluation/designer-performance-table";
 import { EvaluationSectionToggle } from "@/components/evaluation/evaluation-section-toggle";
 import { EvaluationStatsTable } from "@/components/evaluation/evaluation-stats-table";
 import { EvaluationViewTabs } from "@/components/evaluation/evaluation-view-tabs";
+import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
+import { MonthlySnapshotPanel } from "@/components/evaluation/monthly-snapshot-panel";
 import { AppShell } from "@/components/layout/app-shell";
+import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import {
@@ -33,12 +37,25 @@ import {
   getSessionBadgeLabel,
 } from "@/lib/nav-access";
 import {
+  getDesignerPerformanceRows,
+  getMonthlyReportOverview,
+} from "@/lib/designer-performance";
+import {
   loadEvaluationUi,
   saveEvaluationUi,
   type EvaluationSubView,
 } from "@/lib/evaluation-ui-persistence";
+import { aggregateIssueTags } from "@/lib/issue-tag-stats";
+import { exportMonthlyDesignerReport } from "@/lib/monthly-report-export";
+import {
+  DEFAULT_PERIOD,
+  filterOrdersByPeriod,
+  filterSupplementsByPeriod,
+  formatPeriodLabel,
+  type PeriodSelection,
+} from "@/lib/period-filter";
 import { getSessionResetKey } from "@/lib/session-user";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const viewConfig: Record<
   EvaluationViewMode,
@@ -75,7 +92,9 @@ export default function EvaluationPage() {
   const [storeSubView, setStoreSubView] = useState<EvaluationSubView>("aggregate");
   const [designerSubView, setDesignerSubView] =
     useState<EvaluationSubView>("aggregate");
+  const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
   const sessionResetKey = getSessionResetKey(user);
+  const periodLabel = formatPeriodLabel(period);
   const scopeLabel = resolveEvaluationScopeLabel(user);
 
   useEffect(() => {
@@ -86,6 +105,7 @@ export default function EvaluationPage() {
       setDispatcherSubView(saved.dispatcherSubView);
       setStoreSubView(saved.storeSubView);
       setDesignerSubView(saved.designerSubView);
+      setPeriod(saved.period);
       return;
     }
     const defaults = getDefaultEvaluationViewMode(user);
@@ -95,6 +115,7 @@ export default function EvaluationPage() {
     setDispatcherSubView("aggregate");
     setStoreSubView("aggregate");
     setDesignerSubView("aggregate");
+    setPeriod(DEFAULT_PERIOD);
   }, [sessionResetKey, allowedModesKey, user]);
 
   useEffect(() => {
@@ -104,6 +125,7 @@ export default function EvaluationPage() {
       dispatcherSubView,
       storeSubView,
       designerSubView,
+      period,
     });
   }, [
     user?.username,
@@ -111,6 +133,7 @@ export default function EvaluationPage() {
     dispatcherSubView,
     storeSubView,
     designerSubView,
+    period,
   ]);
 
   useEffect(() => {
@@ -138,6 +161,23 @@ export default function EvaluationPage() {
     [orders, user, staffRecords],
   );
 
+  const periodScopedOrdersByView = useMemo(
+    () => ({
+      dispatcher: filterOrdersByPeriod(
+        scopedOrdersByView.dispatcher,
+        period,
+      ),
+      designer: filterOrdersByPeriod(scopedOrdersByView.designer, period),
+      store: filterOrdersByPeriod(scopedOrdersByView.store, period),
+    }),
+    [scopedOrdersByView, period],
+  );
+
+  const periodScopedSupplements = useMemo(
+    () => filterSupplementsByPeriod(supplements, period),
+    [supplements, period],
+  );
+
   const rowScope = useMemo(
     () =>
       resolveEvaluationRowScope(
@@ -151,14 +191,14 @@ export default function EvaluationPage() {
   const dispatcherRows = useMemo(
     () =>
       getDispatcherEvaluationRows(
-        scopedOrdersByView.dispatcher,
-        supplements,
+        periodScopedOrdersByView.dispatcher,
+        periodScopedSupplements,
         rowScope.dispatcherNames,
         staffRecords,
       ),
     [
-      scopedOrdersByView.dispatcher,
-      supplements,
+      periodScopedOrdersByView.dispatcher,
+      periodScopedSupplements,
       rowScope.dispatcherNames,
       staffRecords,
     ],
@@ -167,15 +207,15 @@ export default function EvaluationPage() {
   const designerRows = useMemo(
     () =>
       getDesignerEvaluationRows(
-        scopedOrdersByView.designer,
-        supplements,
+        periodScopedOrdersByView.designer,
+        periodScopedSupplements,
         rowScope.designerNames,
         (name) => getDesignerSubtitleForEvaluation(name, staffRecords),
         staffRecords,
       ),
     [
-      scopedOrdersByView.designer,
-      supplements,
+      periodScopedOrdersByView.designer,
+      periodScopedSupplements,
       rowScope.designerNames,
       staffRecords,
     ],
@@ -184,15 +224,15 @@ export default function EvaluationPage() {
   const designerAmountRows = useMemo(
     () =>
       getDesignerAmountRows(
-        scopedOrdersByView.designer,
-        supplements,
+        periodScopedOrdersByView.designer,
+        periodScopedSupplements,
         rowScope.designerNames,
         (name) => getDesignerSubtitleForEvaluation(name, staffRecords),
         staffRecords,
       ),
     [
-      scopedOrdersByView.designer,
-      supplements,
+      periodScopedOrdersByView.designer,
+      periodScopedSupplements,
       rowScope.designerNames,
       staffRecords,
     ],
@@ -201,22 +241,73 @@ export default function EvaluationPage() {
   const storeRows = useMemo(
     () =>
       getStoreEvaluationRows(
-        scopedOrdersByView.store,
-        supplements,
+        periodScopedOrdersByView.store,
+        periodScopedSupplements,
         rowScope.storeNames,
       ),
-    [scopedOrdersByView.store, supplements, rowScope.storeNames],
+    [
+      periodScopedOrdersByView.store,
+      periodScopedSupplements,
+      rowScope.storeNames,
+    ],
   );
 
   const storeDispatcherAmountRows = useMemo(
     () =>
       getStoreDispatcherAmountRows(
-        scopedOrdersByView.dispatcher,
-        supplements,
+        periodScopedOrdersByView.dispatcher,
+        periodScopedSupplements,
         rowScope.storeNames,
       ),
-    [scopedOrdersByView.dispatcher, supplements, rowScope.storeNames],
+    [
+      periodScopedOrdersByView.dispatcher,
+      periodScopedSupplements,
+      rowScope.storeNames,
+    ],
   );
+
+  const designerPerformanceRows = useMemo(
+    () =>
+      getDesignerPerformanceRows(
+        scopedOrdersByView.designer,
+        supplements,
+        rowScope.designerNames,
+        (name) => getDesignerSubtitleForEvaluation(name, staffRecords),
+        staffRecords,
+        period,
+      ),
+    [
+      scopedOrdersByView.designer,
+      supplements,
+      rowScope.designerNames,
+      staffRecords,
+      period,
+    ],
+  );
+
+  const monthlyOverview = useMemo(
+    () =>
+      getMonthlyReportOverview(
+        scopedOrdersByView.designer,
+        supplements,
+        period,
+      ),
+    [scopedOrdersByView.designer, supplements, period],
+  );
+
+  const issueTagStats = useMemo(
+    () => aggregateIssueTags(scopedOrdersByView.designer, period),
+    [scopedOrdersByView.designer, period],
+  );
+
+  const handleExportMonthlyReport = useCallback(() => {
+    exportMonthlyDesignerReport(
+      monthlyOverview,
+      designerPerformanceRows,
+      period,
+      scopedOrdersByView.designer,
+    );
+  }, [monthlyOverview, designerPerformanceRows, period, scopedOrdersByView.designer]);
 
   useEffect(() => {
     if (viewMode === "dispatcher") {
@@ -278,12 +369,15 @@ export default function EvaluationPage() {
             </div>
           ) : (
             <>
+              <PeriodFilterBar value={period} onChange={setPeriod} />
+
               <EvaluationViewTabs
                 value={viewMode}
                 onChange={setViewMode}
                 summaries={tabSummaries}
                 allowedModes={allowedModes}
                 exportData={exportData}
+                periodLabel={periodLabel}
               />
 
               <section className="space-y-4">
@@ -386,8 +480,36 @@ export default function EvaluationPage() {
                         active={designerSubView === "ranking"}
                         onSelect={() => setDesignerSubView("ranking")}
                       />
+                      <EvaluationSectionToggle
+                        title="设计师绩效月报"
+                        active={designerSubView === "performance"}
+                        onSelect={() => setDesignerSubView("performance")}
+                        suffix="贡献分 · 周期 · 超时"
+                      />
                     </div>
-                    {designerSubView === "workflow" ? (
+                    {designerSubView === "performance" ? (
+                      <div className="space-y-4">
+                        <MonthlySnapshotPanel
+                          orders={scopedOrdersByView.designer}
+                          supplements={supplements}
+                          period={period}
+                          designerNames={rowScope.designerNames}
+                          staffRecords={staffRecords}
+                          scopeLabel={scopeLabel ?? undefined}
+                          savedBy={user?.displayName}
+                        />
+                        <MonthlyOverviewCard
+                          overview={monthlyOverview}
+                          issueTagStats={issueTagStats}
+                        />
+                        <DesignerPerformanceTable
+                          rows={designerPerformanceRows}
+                          emptyMessage="当前周期与权限范围内暂无设计师数据"
+                          periodLabel={periodLabel}
+                          onExportReport={handleExportMonthlyReport}
+                        />
+                      </div>
+                    ) : designerSubView === "workflow" ? (
                       <EvaluationStatsTable
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={designerRows}
