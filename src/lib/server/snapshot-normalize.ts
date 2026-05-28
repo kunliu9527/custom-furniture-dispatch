@@ -38,6 +38,9 @@ export function normalizeStaffConfig(
       raw.extraStoreOverrides && typeof raw.extraStoreOverrides === "object"
         ? raw.extraStoreOverrides
         : {},
+    removedStaffIds: Array.isArray(raw.removedStaffIds)
+      ? raw.removedStaffIds.filter((id): id is string => typeof id === "string")
+      : [],
     customPositions: Array.isArray(raw.customPositions) ? raw.customPositions : [],
     customStores: Array.isArray(raw.customStores) ? raw.customStores : [],
     siteBranding: normalizeSiteBranding(raw.siteBranding),

@@ -26,6 +26,7 @@ import {
   getDefaultPasswordForStaff,
   type StaffPosition,
 } from "@/lib/staff-roster";
+import { isSystemAdminStaffRecord } from "@/lib/staff-visibility";
 import { HEADQUARTERS_STORE, getStaffStoreSettingOptions } from "@/lib/stores";
 import type { StoreName } from "@/lib/types";
 import { FormEvent, useMemo, useState } from "react";
@@ -38,6 +39,10 @@ const PANEL_TABS: { id: StaffPanel; label: string }[] = [
   { id: "stores", label: "门店配置" },
 ];
 
+const ADD_STAFF_ACCESS_OPTIONS = ACCESS_LEVEL_OPTIONS.filter(
+  (o) => o.value !== "admin",
+);
+
 export function StaffManagement() {
   const {
     user,
@@ -47,6 +52,7 @@ export function StaffManagement() {
     updateStaffHomeStore,
     updateStaffExtraStores,
     resetStaffPassword,
+    deleteStaffMember,
   } = useAuth();
   const [panel, setPanel] = useState<StaffPanel>("roster");
   const [configRevision, setConfigRevision] = useState(0);
@@ -66,6 +72,7 @@ export function StaffManagement() {
     {},
   );
   const [resetMessage, setResetMessage] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   const positionOptions = useMemo(
     () => getAddablePositionOptions(),
@@ -212,6 +219,25 @@ export function StaffManagement() {
     window.setTimeout(() => setResetMessage(""), 3000);
   }
 
+  function handleDeleteStaff(staffId: string) {
+    const target = staffRecords.find((s) => s.id === staffId);
+    if (!target) return;
+    if (
+      !window.confirm(
+        `确定从名册中删除「${target.name}」？删除后该账号将无法登录（历史订单数据保留）。`,
+      )
+    ) {
+      return;
+    }
+    const result = deleteStaffMember(staffId);
+    if (!result.ok) {
+      setDeleteMessage(result.error ?? "删除失败");
+      return;
+    }
+    setDeleteMessage(`已删除「${target.name}」`);
+    window.setTimeout(() => setDeleteMessage(""), 3000);
+  }
+
   function handleResetCustom(staffId: string) {
     const value = resetPasswords[staffId]?.trim();
     if (!value) {
@@ -294,7 +320,7 @@ export function StaffManagement() {
                 label="权限设置"
                 name="accessLevel"
                 value={accessLevel}
-                options={ACCESS_LEVEL_OPTIONS.map((o) => ({
+                options={ADD_STAFF_ACCESS_OPTIONS.map((o) => ({
                   value: o.value,
                   label: o.label,
                 }))}
@@ -389,6 +415,11 @@ export function StaffManagement() {
                     {resetMessage}
                   </span>
                 ) : null}
+                {deleteMessage ? (
+                  <span className="text-sm text-emerald-600">
+                    {deleteMessage}
+                  </span>
+                ) : null}
               </div>
             </div>
             <div
@@ -396,7 +427,7 @@ export function StaffManagement() {
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-left text-sm">
+                <table className="w-full min-w-[1080px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500">
                       <th className="px-4 py-3">姓名</th>
@@ -406,11 +437,12 @@ export function StaffManagement() {
                       <th className="px-4 py-3">说明</th>
                       <th className="px-4 py-3">来源</th>
                       <th className="px-4 py-3">重置密码</th>
+                      <th className="px-4 py-3">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredStaff.map((row) => {
-                      const isSystemAdmin = row.id === ADMIN_STAFF_RECORD.id;
+                      const isSystemAdmin = isSystemAdminStaffRecord(row);
                       return (
                         <tr key={row.id} className="hover:bg-slate-50/50">
                           <td className="px-4 py-3 font-medium text-slate-900">
@@ -466,7 +498,10 @@ export function StaffManagement() {
                               }
                               className="w-full min-w-[7rem] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                             >
-                              {ACCESS_LEVEL_OPTIONS.map((opt) => (
+                              {ACCESS_LEVEL_OPTIONS.filter(
+                                (opt) =>
+                                  opt.value !== "admin" || isSystemAdmin,
+                              ).map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </option>
@@ -513,6 +548,20 @@ export function StaffManagement() {
                                 默认
                               </Button>
                             </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {isSystemAdmin ? (
+                              <span className="text-xs text-slate-400">—</span>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => handleDeleteStaff(row.id)}
+                              >
+                                删除
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       );

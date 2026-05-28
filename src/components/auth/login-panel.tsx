@@ -23,7 +23,7 @@ export function LoginPanel({
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("1");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -46,7 +46,7 @@ export function LoginPanel({
     setError("");
     setOpen(false);
     setUsername("");
-    setPassword("1");
+    setPassword("");
 
     if (redirectOnLogin) {
       router.push(getDefaultPathForRole(result.role, result.accessLevel));
@@ -211,7 +211,9 @@ export function LoginPanel({
               label="密码"
               name="password"
               type="password"
+              autoComplete="current-password"
               required
+              placeholder="请输入密码"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);

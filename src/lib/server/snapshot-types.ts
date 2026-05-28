@@ -14,6 +14,8 @@ export interface StaffConfigSnapshot {
   passwordOverrides: StaffPasswordOverrides;
   homeStoreOverrides: StaffHomeStoreOverrides;
   extraStoreOverrides: StaffExtraStoresOverrides;
+  /** 已删除的内置人员 id（builtin-disp-* / builtin-des-*） */
+  removedStaffIds: string[];
   customPositions: CustomPositionDefinition[];
   customStores: string[];
   siteBranding: SiteBranding;
@@ -31,6 +33,7 @@ export const EMPTY_STAFF_CONFIG: StaffConfigSnapshot = {
   passwordOverrides: {},
   homeStoreOverrides: {},
   extraStoreOverrides: {},
+  removedStaffIds: [],
   customPositions: [],
   customStores: [],
   siteBranding: { ...DEFAULT_SITE_BRANDING },
