@@ -25,16 +25,45 @@ let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let pushing = false;
 let dirty = false;
+let lastStatus: SyncConnectionStatus | null = null;
+let lastStatusDetail: string | undefined;
+let syncingIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
 const snapshotListeners = new Set<SnapshotListener>();
 const statusListeners = new Set<StatusListener>();
+
+function snapshotPayload(snap: AppSnapshot) {
+  return JSON.stringify({
+    orders: snap.orders,
+    supplements: snap.supplements,
+    staffConfig: snap.staffConfig,
+  });
+}
 
 function notifySnapshot(snap: AppSnapshot) {
   for (const fn of snapshotListeners) fn(snap);
 }
 
 function notifyStatus(status: SyncConnectionStatus, detail?: string) {
+  if (lastStatus === status && lastStatusDetail === detail) return;
+  lastStatus = status;
+  lastStatusDetail = detail;
   for (const fn of statusListeners) fn(status, detail);
+}
+
+function clearSyncingIndicatorTimer() {
+  if (syncingIndicatorTimer) {
+    clearTimeout(syncingIndicatorTimer);
+    syncingIndicatorTimer = null;
+  }
+}
+
+/** 仅长时间上传时显示「保存中」，避免徽章闪烁 */
+function markSyncingSoon() {
+  clearSyncingIndicatorTimer();
+  syncingIndicatorTimer = setTimeout(() => {
+    if (pushing) notifyStatus("syncing");
+  }, 500);
 }
 
 function syncHeaders(): HeadersInit {
@@ -121,7 +150,7 @@ async function flushRemotePush() {
   if (!cache || !dirty || pushing) return;
   pushing = true;
   dirty = false;
-  notifyStatus("syncing");
+  markSyncingSoon();
   try {
     const next = await putRemoteSnapshot({
       version: cache.version,
@@ -130,7 +159,7 @@ async function flushRemotePush() {
       staffConfig: cache.staffConfig,
     });
     cache = next;
-    notifySnapshot(next);
+    // 本页已是最新数据，不再 notifySnapshot，避免触发 orders/auth 回写 → 再次上传 的循环
     notifyStatus("connected");
   } catch (err) {
     const message = err instanceof Error ? err.message : "同步失败";
@@ -144,6 +173,10 @@ async function flushRemotePush() {
     }
   } finally {
     pushing = false;
+    clearSyncingIndicatorTimer();
+    if (lastStatus === "syncing") {
+      notifyStatus("connected");
+    }
   }
 }
 
@@ -162,6 +195,8 @@ async function pullRemoteIfNewer() {
       cache = remote;
       notifySnapshot(remote);
       notifyStatus("connected");
+    } else if (lastStatus === "error") {
+      notifyStatus("connected");
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "拉取失败";
@@ -173,11 +208,15 @@ export function patchSnapshotCache(
   partial: Partial<Pick<AppSnapshot, "orders" | "supplements" | "staffConfig">>,
 ): void {
   if (!cache) return;
-  cache = {
+  const next: AppSnapshot = {
     ...cache,
     ...partial,
     staffConfig: partial.staffConfig ?? cache.staffConfig,
   };
+  if (snapshotPayload(next) === snapshotPayload(cache)) {
+    return;
+  }
+  cache = next;
   markSnapshotDirty();
 }
 
