@@ -2,7 +2,8 @@
 
 适合：**中国大陆**门店通过公网 IP 或域名访问，不依赖 Vercel。
 
-推荐：**腾讯云轻量应用服务器（Lighthouse）** 或 **阿里云 ECS**，系统选 **Ubuntu 22.04**。
+- **阿里云 ECS 分步（推荐你当前使用）** → [ALIYUN-DEPLOY.md](./ALIYUN-DEPLOY.md)  
+- 本文：通用说明；腾讯云 / 阿里云 Ubuntu 均适用。
 
 ---
 
