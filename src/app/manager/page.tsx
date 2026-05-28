@@ -70,6 +70,7 @@ import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
 import { isSingleOrderDetailView } from "@/lib/order-utils";
 import { getSessionScopeKey } from "@/lib/session-user";
+import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, Order, OrderStatus, StoreName } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -240,7 +241,7 @@ export default function ManagerPage() {
 
   const orderTableDetailMode = isSingleOrderDetailView(displayOrders);
 
-  useEffect(() => {
+  const resetManagerBoardForSession = useCallback(() => {
     if (!user) return;
     const defaults = getManagerRoleDefaults(user, staffRecords);
     setDesignerFilter(defaults.designerFilter);
@@ -252,7 +253,9 @@ export default function ManagerPage() {
     if (user.role === "designer") {
       setViewMode("designer");
     }
-  }, [sessionScopeKey, user?.role]);
+  }, [user, staffRecords]);
+
+  useOnSessionScopeChange(sessionScopeKey, resetManagerBoardForSession);
 
   useEffect(() => {
     if (!user) return;
@@ -274,7 +277,8 @@ export default function ManagerPage() {
     if (viewMode === "dispatcher") {
       setDispatcherFilter(getDefaultDispatcherFilter(user, staffRecords));
     }
-  }, [viewMode, user, staffRecords]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅切换 Tab 时重置
+  }, [viewMode, user]);
 
   useEffect(() => {
     if (!user || storeSummaryShowAll) return;

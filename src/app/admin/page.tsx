@@ -78,8 +78,9 @@ import {
 import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summary";
 import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { getSessionScopeKey } from "@/lib/session-user";
+import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, OrderStatus, StoreName } from "@/lib/types";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function sortOrdersNewestFirst<T extends { createdAt: string }>(list: T[]): T[] {
   return [...list].sort(
@@ -280,7 +281,7 @@ export default function AdminPage() {
     }
   }, [viewMode, allowedAdminModes]);
 
-  useEffect(() => {
+  const resetAdminBoardForSession = useCallback(() => {
     if (!user) return;
     const defaults = getAdminRoleDefaults(user, staffRecords);
     setViewMode(defaults.viewMode);
@@ -290,7 +291,9 @@ export default function AdminPage() {
     setSearchQuery("");
     setActiveOrderSearchQuery("");
     setResultDrill(EMPTY_RESULT_DRILL);
-  }, [sessionScopeKey, staffRecords]);
+  }, [user, staffRecords]);
+
+  useOnSessionScopeChange(sessionScopeKey, resetAdminBoardForSession);
 
   useEffect(() => {
     if (viewMode !== "dispatch") {
@@ -318,6 +321,7 @@ export default function AdminPage() {
     } else if (hasFullOrderScope(user) && viewMode === "store") {
       setStoreFilter("全部");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅切换 Tab 时重置，不因云端同步刷新名册而清空输入
   }, [viewMode, user]);
 
   useEffect(() => {

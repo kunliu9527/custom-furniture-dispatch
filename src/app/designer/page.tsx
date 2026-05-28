@@ -84,14 +84,7 @@ export default function DesignerPage() {
       }
     }
     setStatusFilter("全部");
-  }, [
-    sessionScopeKey,
-    lockedName,
-    designerLookupStores,
-    designerHomeStoreIndex,
-    staffRecords,
-    user,
-  ]);
+  }, [sessionScopeKey, lockedName, designerLookupStores, designerHomeStoreIndex]);
 
   const homeStore =
     user?.role === "designer" && user.homeStore

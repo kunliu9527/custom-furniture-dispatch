@@ -162,13 +162,7 @@ export function DispatchForm({
         staffRecords,
       ),
     );
-  }, [
-    lockedDispatcherName,
-    lockedDesignerName,
-    preferredStore,
-    designerHomeStoreIndex,
-    staffRecords,
-  ]);
+  }, [lockedDispatcherName, lockedDesignerName, preferredStore]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();

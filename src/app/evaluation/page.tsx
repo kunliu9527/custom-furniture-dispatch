@@ -33,7 +33,8 @@ import {
   getSessionBadgeLabel,
 } from "@/lib/nav-access";
 import { getSessionScopeKey } from "@/lib/session-user";
-import { useEffect, useMemo, useState } from "react";
+import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type EvaluationSubView = "aggregate" | "ranking" | "workflow";
 
@@ -74,12 +75,17 @@ export default function EvaluationPage() {
   const sessionScopeKey = getSessionScopeKey(user);
   const scopeLabel = resolveEvaluationScopeLabel(user);
 
-  useEffect(() => {
+  const resetEvaluationViewToDefault = useCallback(() => {
     const defaults = getDefaultEvaluationViewMode(user);
     setViewMode(
       allowedModes.includes(defaults) ? defaults : (allowedModes[0] ?? "dispatcher"),
     );
-  }, [sessionScopeKey, allowedModes, user]);
+    setDispatcherSubView("aggregate");
+    setStoreSubView("aggregate");
+    setDesignerSubView("aggregate");
+  }, [user, allowedModes]);
+
+  useOnSessionScopeChange(sessionScopeKey, resetEvaluationViewToDefault);
 
   useEffect(() => {
     if (!allowedModes.includes(viewMode)) {
@@ -196,7 +202,7 @@ export default function EvaluationPage() {
     if (viewMode === "designer") {
       setDesignerSubView("aggregate");
     }
-  }, [viewMode, sessionScopeKey]);
+  }, [viewMode]);
 
   const storeAggregateSummary = useMemo(
     () => getDispatcherTabSummary(storeDispatcherAmountRows),
