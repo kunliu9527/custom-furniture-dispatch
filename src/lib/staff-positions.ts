@@ -7,7 +7,7 @@ import {
   POSITION_TO_ROLE,
   type StaffPosition,
   type UserRole,
-} from "./staff-roster";
+} from "./staff-types";
 
 /** 添加人员时可选的固定岗位（不含管理员） */
 export const BUILTIN_ADDABLE_POSITIONS = [

@@ -1,5 +1,5 @@
 import { resolveDefaultAccessLevelForPosition } from "./staff-positions";
-import type { StaffPosition } from "./staff-roster";
+import type { StaffPosition } from "./staff-types";
 
 /** 人员权限级别（管理员可在人员管理中调整） */
 export type StaffAccessLevel =

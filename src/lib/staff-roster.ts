@@ -5,19 +5,13 @@ import {
   permissionsTextForAccessLevel,
   type StaffAccessLevel,
 } from "./staff-access";
+import type { StaffPosition, UserRole } from "./staff-types";
+import { POSITION_TO_ROLE } from "./staff-types";
 import type { StoreName } from "./types";
 
 export type { StaffAccessLevel };
-
-export type UserRole = "admin" | "design_manager" | "dispatcher" | "designer";
-
-export type StaffPosition =
-  | "管理员"
-  | "设计经理"
-  | "总经理"
-  | "派单人"
-  | "设计师"
-  | (string & {});
+export type { StaffPosition, UserRole };
+export { POSITION_TO_ROLE };
 
 export interface StaffRecord {
   id: string;
@@ -33,14 +27,6 @@ export interface StaffRecord {
   /** 权限说明（展示用） */
   permissions: string;
 }
-
-export const POSITION_TO_ROLE: Record<string, UserRole> = {
-  管理员: "admin",
-  设计经理: "design_manager",
-  总经理: "design_manager",
-  派单人: "dispatcher",
-  设计师: "designer",
-};
 
 export const POSITION_PERMISSIONS: Record<string, string> = {
   管理员: "全站查看与修改；人员管理；删除订单",
