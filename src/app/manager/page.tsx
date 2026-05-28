@@ -130,8 +130,9 @@ export default function ManagerPage() {
     return getEffectiveDesignersInStores(
       designerLookupStores,
       designerHomeStoreIndex,
+      staffRecords,
     );
-  }, [designerLookupStores, designerHomeStoreIndex]);
+  }, [designerLookupStores, designerHomeStoreIndex, staffRecords]);
 
   const designerLookupOrders = useMemo(
     () => scopeOrdersForDesignerLookup(orders, user, staffRecords),
@@ -148,8 +149,14 @@ export default function ManagerPage() {
         designerLookupOrders,
         designerLookupStores,
         designerHomeStoreIndex,
+        staffRecords,
       ),
-    [designerLookupOrders, designerLookupStores, designerHomeStoreIndex],
+    [
+      designerLookupOrders,
+      designerLookupStores,
+      designerHomeStoreIndex,
+      staffRecords,
+    ],
   );
   const storeStats = useMemo(() => {
     const all = getStoreStatsByDispatcher(scopedOrders);
@@ -163,8 +170,8 @@ export default function ManagerPage() {
     return all;
   }, [scopedOrders, assignedStores, managedStore, user]);
   const dispatcherStats = useMemo(
-    () => getDispatcherStats(dispatcherLookupOrders),
-    [dispatcherLookupOrders],
+    () => getDispatcherStats(dispatcherLookupOrders, staffRecords),
+    [dispatcherLookupOrders, staffRecords],
   );
 
   const searchResults = useMemo(() => {
@@ -235,7 +242,7 @@ export default function ManagerPage() {
 
   useEffect(() => {
     if (!user) return;
-    const defaults = getManagerRoleDefaults(user);
+    const defaults = getManagerRoleDefaults(user, staffRecords);
     setDesignerFilter(defaults.designerFilter);
     setStoreFilter(defaults.storeFilter);
     setDispatcherFilter(defaults.dispatcherFilter);
@@ -251,7 +258,7 @@ export default function ManagerPage() {
     if (!user) return;
     setStatusFilter("全部");
     if (user.role === "dispatcher") {
-      const defaults = getManagerRoleDefaults(user);
+      const defaults = getManagerRoleDefaults(user, staffRecords);
       if (viewMode === "designer") {
         setDesignerFilter(defaults.designerFilter);
       }
@@ -260,14 +267,14 @@ export default function ManagerPage() {
       }
     } else if (!hasFullOrderScope(user) && user.role !== "designer") {
       setDesignerFilter("全部");
-      setStoreFilter(getManagerRoleDefaults(user).storeFilter);
+      setStoreFilter(getManagerRoleDefaults(user, staffRecords).storeFilter);
     }
     setSearchQuery("");
     setResultDrill(EMPTY_RESULT_DRILL);
     if (viewMode === "dispatcher") {
-      setDispatcherFilter(getDefaultDispatcherFilter(user));
+      setDispatcherFilter(getDefaultDispatcherFilter(user, staffRecords));
     }
-  }, [viewMode, user]);
+  }, [viewMode, user, staffRecords]);
 
   useEffect(() => {
     if (!user || storeSummaryShowAll) return;
@@ -281,14 +288,16 @@ export default function ManagerPage() {
       return;
     }
     const allowed = new Set(
-      getEffectiveDesignersInStores(designerLookupStores, designerHomeStoreIndex).map(
-        (d) => d.name,
-      ),
+      getEffectiveDesignersInStores(
+        designerLookupStores,
+        designerHomeStoreIndex,
+        staffRecords,
+      ).map((d) => d.name),
     );
     if (!allowed.has(designerFilter)) {
       setDesignerFilter("全部");
     }
-  }, [user, designerFilter, designerLookupStores, designerHomeStoreIndex]);
+  }, [user, designerFilter, designerLookupStores, designerHomeStoreIndex, staffRecords]);
 
   useEffect(() => {
     setResultDrill(EMPTY_RESULT_DRILL);

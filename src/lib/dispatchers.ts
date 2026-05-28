@@ -1,4 +1,10 @@
 import { normalizeDispatcherName } from "./admin-stats";
+import {
+  buildDispatcherHomeStoreIndex,
+  buildEffectiveDispatcherRoster,
+  filterRosterByStores,
+} from "./personnel-roster";
+import type { StaffRecord } from "./staff-roster";
 import type { Order, StoreName } from "./types";
 
 /** 派单人所属门店（静态名册，来源：2026 直营门店订单数据归纳） */
@@ -23,37 +29,65 @@ export const DISPATCHER_ROSTER = [
 
 export type DispatcherName = (typeof DISPATCHER_ROSTER)[number]["name"];
 
+export function getEffectiveDispatcherRoster(staffRecords: StaffRecord[] = []) {
+  return buildEffectiveDispatcherRoster(staffRecords);
+}
+
+export function getDispatchersInStore(
+  store: StoreName,
+  staffRecords: StaffRecord[] = [],
+) {
+  return filterRosterByStores(
+    getEffectiveDispatcherRoster(staffRecords),
+    [store],
+  );
+}
+
 export function getDispatcherHomeStore(
   dispatcherName: string,
   fallback?: StoreName,
+  staffRecords: StaffRecord[] = [],
 ): StoreName {
   const name = normalizeDispatcherName(dispatcherName);
   if (name === "未填写") {
     return fallback ?? "东岸天冠";
   }
-  const found = DISPATCHER_ROSTER.find((d) => d.name === name);
-  if (found) return found.homeStore;
+  const index = buildDispatcherHomeStoreIndex(staffRecords);
+  if (index.has(name)) return index.get(name)!;
   return fallback ?? "东岸天冠";
 }
 
-export function getDispatchersInStore(store: StoreName) {
-  return DISPATCHER_ROSTER.filter((d) => d.homeStore === store);
-}
-
-export function getDefaultDispatcherForStore(store: StoreName): string {
-  return getDispatchersInStore(store)[0]?.name ?? DISPATCHER_ROSTER[0].name;
+export function getDefaultDispatcherForStore(
+  store: StoreName,
+  staffRecords: StaffRecord[] = [],
+): string {
+  return (
+    getDispatchersInStore(store, staffRecords)[0]?.name ??
+    DISPATCHER_ROSTER[0].name
+  );
 }
 
 /** 店长看板：订单归属门店 = 派单人所属门店（名册外派单人用该单派单门店） */
-export function getOrderStoreByDispatcher(order: Order): StoreName {
-  return getDispatcherHomeStore(order.dispatcherName, order.dispatchStore);
+export function getOrderStoreByDispatcher(
+  order: Order,
+  staffRecords: StaffRecord[] = [],
+): StoreName {
+  return getDispatcherHomeStore(
+    order.dispatcherName,
+    order.dispatchStore,
+    staffRecords,
+  );
 }
 
 /** 按门店汇总 / 筛选：派单门店一致，或派单人所属门店一致 */
 export function orderBelongsToStoreSummary(
   order: Order,
   store: StoreName,
+  staffRecords: StaffRecord[] = [],
 ): boolean {
   if (order.dispatchStore === store) return true;
-  return getDispatcherHomeStore(order.dispatcherName, order.dispatchStore) === store;
+  return (
+    getDispatcherHomeStore(order.dispatcherName, order.dispatchStore, staffRecords) ===
+    store
+  );
 }

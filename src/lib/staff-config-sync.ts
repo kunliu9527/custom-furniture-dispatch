@@ -9,8 +9,10 @@ import { loadStaffExtraStoresOverrides } from "./staff-extra-stores-storage";
 import { loadStaffHomeStoreOverrides } from "./staff-home-store-storage";
 import { loadStaffPasswordOverrides } from "./staff-password-storage";
 import { loadCustomStaff, normalizeCustomStaffRecord } from "./staff-storage";
+import { loadSiteBranding } from "./site-branding-storage";
 
 export const STAFF_CONFIG_STORAGE_KEYS = [
+  "custom-furniture-dispatch-site-branding-v1",
   "custom-furniture-dispatch-staff-v1",
   "custom-furniture-dispatch-staff-access-v1",
   "custom-furniture-dispatch-staff-home-store-v1",
@@ -30,6 +32,7 @@ export function buildStaffConfigSnapshotFromBrowserStorage() {
     extraStoreOverrides: config.extraStoreOverrides,
     customPositions: loadCustomPositionDefinitions(),
     customStores: loadCustomStoreNames(),
+    siteBranding: loadSiteBranding(),
   };
 }
 
@@ -40,6 +43,7 @@ export function loadStaffConfigFromStorage() {
     passwordOverrides: loadStaffPasswordOverrides(),
     homeStoreOverrides: loadStaffHomeStoreOverrides(),
     extraStoreOverrides: loadStaffExtraStoresOverrides(),
+    siteBranding: loadSiteBranding(),
   };
 }
 

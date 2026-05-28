@@ -26,6 +26,11 @@ const tabs: { id: AdminViewMode; label: string; description: string }[] = [
     label: "人员管理",
     description: "人员名册、配置岗位与门店配置",
   },
+  {
+    id: "branding",
+    label: "公司名修改",
+    description: "修改首页徽章与主标题文案",
+  },
 ];
 
 interface AdminViewTabsProps {

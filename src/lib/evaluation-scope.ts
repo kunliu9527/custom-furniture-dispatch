@@ -1,5 +1,5 @@
 import { normalizeDispatcherName } from "./admin-stats";
-import { DISPATCHER_ROSTER } from "./dispatchers";
+import { getEffectiveDispatcherRoster } from "./dispatchers";
 import {
   buildDesignerHomeStoreIndex,
   getEffectiveDesignerHomeStore,
@@ -77,7 +77,11 @@ export function resolveEvaluationRowScope(
   scopedOrders: Order[],
 ): EvaluationRowScope {
   return {
-    dispatcherNames: resolveEvaluationDispatcherNames(user, scopedOrders),
+    dispatcherNames: resolveEvaluationDispatcherNames(
+      user,
+      scopedOrders,
+      staffRecords,
+    ),
     designerNames: resolveEvaluationDesignerNames(user, staffRecords),
     storeNames: resolveEvaluationStoreNames(user),
   };
@@ -86,18 +90,23 @@ export function resolveEvaluationRowScope(
 function resolveEvaluationDispatcherNames(
   user: SessionUser | null,
   orders: Order[],
+  staffRecords: StaffRecord[],
 ): string[] | null {
   if (!user || hasFullOrderScope(user)) return null;
   if (isPersonalAccess(user)) return [];
 
   const assignedStores = resolveAssignedStoresForUser(user);
   if (assignedStores.length > 0) {
-    return collectDispatcherNamesForStores(assignedStores, orders);
+    return collectDispatcherNamesForStores(assignedStores, orders, staffRecords);
   }
 
   const managedStore = resolveManagedStoreForLookup(user);
   if (managedStore) {
-    return collectDispatcherNamesForStores([managedStore], orders);
+    return collectDispatcherNamesForStores(
+      [managedStore],
+      orders,
+      staffRecords,
+    );
   }
 
   if (
@@ -106,7 +115,11 @@ function resolveEvaluationDispatcherNames(
     user.homeStore &&
     !isHeadquartersStore(user.homeStore)
   ) {
-    return collectDispatcherNamesForStores([user.homeStore], orders);
+    return collectDispatcherNamesForStores(
+      [user.homeStore],
+      orders,
+      staffRecords,
+    );
   }
 
   return [];
@@ -115,17 +128,19 @@ function resolveEvaluationDispatcherNames(
 function collectDispatcherNamesForStores(
   stores: StoreName[],
   orders: Order[],
+  staffRecords: StaffRecord[],
 ): string[] {
   const allowed = new Set(stores);
   const names = new Set<string>();
-  for (const profile of DISPATCHER_ROSTER) {
+  const roster = getEffectiveDispatcherRoster(staffRecords);
+  for (const profile of roster) {
     if (allowed.has(profile.homeStore)) {
       names.add(profile.name);
     }
   }
   for (const order of orders) {
     const name = normalizeDispatcherName(order.dispatcherName);
-    const profile = DISPATCHER_ROSTER.find((d) => d.name === name);
+    const profile = roster.find((d) => d.name === name);
     if (profile && allowed.has(profile.homeStore)) {
       names.add(name);
     }
@@ -143,7 +158,7 @@ function resolveEvaluationDesignerNames(
   const lookupStores = resolveDesignerLookupStores(user);
   if (lookupStores?.length) {
     const index = buildDesignerHomeStoreIndex(staffRecords);
-    return getEffectiveDesignersInStores(lookupStores, index).map(
+    return getEffectiveDesignersInStores(lookupStores, index, staffRecords).map(
       (d) => d.name,
     );
   }

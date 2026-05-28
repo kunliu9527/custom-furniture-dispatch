@@ -68,7 +68,7 @@ export function getVisibleAdminViewModes(
   user: SessionUser | null,
 ): AdminViewMode[] {
   if (!user) return ["dispatch"];
-  if (canManageStaff(user)) return ["dispatch", "staff"];
+  if (canManageStaff(user)) return ["dispatch", "staff", "branding"];
   return ["dispatch"];
 }
 

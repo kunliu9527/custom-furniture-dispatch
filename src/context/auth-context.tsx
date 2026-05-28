@@ -79,6 +79,12 @@ import {
   sessionUsersEqual,
 } from "@/lib/session-user";
 import { isHeadquartersStore } from "@/lib/stores";
+import {
+  DEFAULT_SITE_BRANDING,
+  normalizeSiteBranding,
+  type SiteBranding,
+} from "@/lib/site-branding";
+import { saveSiteBranding } from "@/lib/site-branding-storage";
 import type { StoreName } from "@/lib/types";
 import {
   createContext,
@@ -136,6 +142,11 @@ interface AuthContextValue {
     staffId: string,
     password?: string,
   ) => { ok: boolean; error?: string };
+  siteBranding: SiteBranding;
+  updateSiteBranding: (patch: Partial<SiteBranding>) => {
+    ok: boolean;
+    error?: string;
+  };
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -200,6 +211,26 @@ function staffConfigFromStorage(): StaffConfigSnapshot {
   return buildStaffConfigSnapshotFromBrowserStorage();
 }
 
+function buildStaffConfigForSync(
+  customStaff: StaffRecord[],
+  accessOverrides: StaffAccessOverrides,
+  passwordOverrides: StaffPasswordOverrides,
+  homeStoreOverrides: StaffHomeStoreOverrides,
+  extraStoreOverrides: StaffExtraStoresOverrides,
+  branding: SiteBranding,
+): StaffConfigSnapshot {
+  return {
+    customStaff: customStaff.map(normalizeCustomStaffRecord),
+    accessOverrides,
+    passwordOverrides,
+    homeStoreOverrides,
+    extraStoreOverrides,
+    customPositions: loadCustomPositionDefinitions(),
+    customStores: loadCustomStoreNames(),
+    siteBranding: normalizeSiteBranding(branding),
+  };
+}
+
 function persistStaffConfigToLocalStorage(config: StaffConfigSnapshot): void {
   saveCustomStaff(config.customStaff);
   saveStaffAccessOverrides(config.accessOverrides);
@@ -208,6 +239,7 @@ function persistStaffConfigToLocalStorage(config: StaffConfigSnapshot): void {
   saveStaffExtraStoresOverrides(config.extraStoreOverrides);
   saveCustomPositionDefinitions(config.customPositions);
   saveCustomStoreNames(config.customStores);
+  saveSiteBranding(normalizeSiteBranding(config.siteBranding));
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -222,6 +254,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useState<StaffHomeStoreOverrides>({});
   const [extraStoreOverrides, setExtraStoreOverrides] =
     useState<StaffExtraStoresOverrides>({});
+  const [siteBranding, setSiteBranding] = useState<SiteBranding>({
+    ...DEFAULT_SITE_BRANDING,
+  });
   const [isHydrated, setIsHydrated] = useState(false);
   const staffApplyingRemoteRef = useRef(false);
   const staffRemoteReadyRef = useRef(false);
@@ -232,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPasswordOverrides(config.passwordOverrides);
     setHomeStoreOverrides(config.homeStoreOverrides);
     setExtraStoreOverrides(config.extraStoreOverrides);
+    setSiteBranding(normalizeSiteBranding(config.siteBranding));
     persistStaffConfigToLocalStorage(config);
   }, []);
 
@@ -349,15 +385,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (staffApplyingRemoteRef.current) return;
     patchSnapshotCache({
-      staffConfig: {
+      staffConfig: buildStaffConfigForSync(
         customStaff,
         accessOverrides,
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
-        customPositions: loadCustomPositionDefinitions(),
-        customStores: loadCustomStoreNames(),
-      },
+        siteBranding,
+      ),
     });
   }, [
     isHydrated,
@@ -366,6 +401,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     passwordOverrides,
     homeStoreOverrides,
     extraStoreOverrides,
+    siteBranding,
   ]);
 
   useEffect(() => {
@@ -514,15 +550,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveCustomStaff(next);
       if (isRemoteSyncEnabled() && getCachedSnapshot()) {
         patchSnapshotCache({
-          staffConfig: {
-            customStaff: next.map(normalizeCustomStaffRecord),
+          staffConfig: buildStaffConfigForSync(
+            next,
             accessOverrides,
             passwordOverrides,
             homeStoreOverrides,
             extraStoreOverrides,
-            customPositions: loadCustomPositionDefinitions(),
-            customStores: loadCustomStoreNames(),
-          },
+            siteBranding,
+          ),
         });
       }
       return { ok: true };
@@ -533,6 +568,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      siteBranding,
       liveUser,
     ],
   );
@@ -753,6 +789,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [staffRecords, customStaff, passwordOverrides, liveUser],
   );
 
+  const updateSiteBranding = useCallback(
+    (patch: Partial<SiteBranding>) => {
+      if (!isAdminAccess(liveUser)) {
+        return { ok: false as const, error: "仅管理员可修改公司名" };
+      }
+      const next = normalizeSiteBranding({ ...siteBranding, ...patch });
+      if (
+        next.badgeLabel === siteBranding.badgeLabel &&
+        next.headlineTitle === siteBranding.headlineTitle
+      ) {
+        return { ok: true as const };
+      }
+      setSiteBranding(next);
+      saveSiteBranding(next);
+      if (isRemoteSyncEnabled()) {
+        patchSnapshotCache({
+          staffConfig: buildStaffConfigForSync(
+            customStaff,
+            accessOverrides,
+            passwordOverrides,
+            homeStoreOverrides,
+            extraStoreOverrides,
+            next,
+          ),
+        });
+      }
+      return { ok: true as const };
+    },
+    [
+      liveUser,
+      siteBranding,
+      customStaff,
+      accessOverrides,
+      passwordOverrides,
+      homeStoreOverrides,
+      extraStoreOverrides,
+      siteBranding,
+    ],
+  );
+
   const value = useMemo(
     () => ({
       user: liveUser,
@@ -760,6 +836,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,
+      siteBranding,
       login,
       logout,
       changeOwnPassword,
@@ -768,12 +845,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateStaffHomeStore,
       updateStaffExtraStores,
       resetStaffPassword,
+      updateSiteBranding,
     }),
     [
       liveUser,
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,
+      siteBranding,
       login,
       logout,
       changeOwnPassword,
@@ -782,6 +861,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateStaffHomeStore,
       updateStaffExtraStores,
       resetStaffPassword,
+      updateSiteBranding,
     ],
   );
 

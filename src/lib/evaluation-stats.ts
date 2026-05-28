@@ -1,9 +1,14 @@
 import { normalizeDispatcherName } from "./admin-stats";
 import { ORDER_STATUSES } from "./constants";
 import { formatDispatchMoney } from "./dispatch-totals";
-import { DISPATCHER_ROSTER, getDispatcherHomeStore } from "./dispatchers";
-import { orderBelongsToStoreSummary } from "./dispatchers";
-import { DESIGNER_ROSTER } from "./designers";
+import {
+  getDispatcherHomeStore,
+  getEffectiveDispatcherRoster,
+  orderBelongsToStoreSummary,
+} from "./dispatchers";
+import { buildDesignerHomeStoreIndex } from "./designer-staff-store";
+import { buildEffectiveDesignerRoster } from "./personnel-roster";
+import type { StaffRecord } from "./staff-roster";
 import { createEmptyStatusCounts } from "./manager-stats";
 import { isRefundStatus } from "./order-utils";
 import { sumSupplementAmount } from "./supplement-utils";
@@ -218,12 +223,14 @@ export function getDispatcherEvaluationRows(
   orders: Order[],
   supplements: SupplementOrder[],
   nameFilter: string[] | null = null,
+  staffRecords: StaffRecord[] = [],
 ): DispatcherEvaluationRow[] {
   const allowedNames = nameFilter ? new Set(nameFilter) : null;
   const seen = new Set<string>();
   const dataRows: DispatcherEvaluationRow[] = [];
+  const roster = getEffectiveDispatcherRoster(staffRecords);
 
-  for (const profile of DISPATCHER_ROSTER) {
+  for (const profile of roster) {
     if (allowedNames && !allowedNames.has(profile.name)) continue;
     seen.add(profile.name);
     const personOrders = orders.filter(
@@ -270,13 +277,16 @@ export function getDesignerAmountRows(
   supplements: SupplementOrder[],
   nameFilter: string[] | null = null,
   resolveSubtitle?: (name: string) => string | undefined,
+  staffRecords: StaffRecord[] = [],
 ): DispatcherEvaluationRow[] {
   const allowedNames = nameFilter ? new Set(nameFilter) : null;
-  const rosterNames = new Set<string>(DESIGNER_ROSTER.map((d) => d.name));
+  const designerIndex = buildDesignerHomeStoreIndex(staffRecords);
+  const roster = buildEffectiveDesignerRoster(staffRecords, designerIndex);
+  const rosterNames = new Set<string>(roster.map((d) => d.name));
   const seen = new Set<string>();
   const dataRows: DispatcherEvaluationRow[] = [];
 
-  for (const profile of DESIGNER_ROSTER) {
+  for (const profile of roster) {
     if (allowedNames && !allowedNames.has(profile.name)) continue;
     seen.add(profile.name);
     const personOrders = orders.filter((o) => o.designer === profile.name);
@@ -421,14 +431,17 @@ export function getDesignerEvaluationRows(
   supplements: SupplementOrder[],
   nameFilter: string[] | null = null,
   resolveSubtitle?: (name: string) => string | undefined,
+  staffRecords: StaffRecord[] = [],
 ): WorkflowEvaluationRow[] {
-  const rosterNames = new Set<string>(DESIGNER_ROSTER.map((d) => d.name));
+  const designerIndex = buildDesignerHomeStoreIndex(staffRecords);
+  const roster = buildEffectiveDesignerRoster(staffRecords, designerIndex);
+  const rosterNames = new Set<string>(roster.map((d) => d.name));
   const targetNames = new Set<string>();
 
   if (nameFilter?.length) {
     for (const name of nameFilter) targetNames.add(name);
   } else {
-    for (const d of DESIGNER_ROSTER) targetNames.add(d.name);
+    for (const d of roster) targetNames.add(d.name);
     for (const order of orders) {
       if (!rosterNames.has(order.designer)) {
         targetNames.add(order.designer);
@@ -439,7 +452,7 @@ export function getDesignerEvaluationRows(
   const dataRows: WorkflowEvaluationRow[] = [];
   for (const name of targetNames) {
     const personOrders = orders.filter((o) => o.designer === name);
-    const rosterProfile = DESIGNER_ROSTER.find((d) => d.name === name);
+    const rosterProfile = roster.find((d) => d.name === name);
     dataRows.push(
       buildWorkflowRow(
         name,

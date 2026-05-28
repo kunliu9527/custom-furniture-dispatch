@@ -1,4 +1,8 @@
-import { DISPATCHER_ROSTER, getDispatcherHomeStore, getOrderStoreByDispatcher } from "./dispatchers";
+import {
+  getDispatcherHomeStore,
+  getEffectiveDispatcherRoster,
+  getOrderStoreByDispatcher,
+} from "./dispatchers";
 import type { SessionUser } from "./permissions";
 import {
   getEffectiveDesignerHomeStore,
@@ -6,6 +10,7 @@ import {
 } from "./designer-staff-store";
 import { getDesignerHomeStore } from "./designers";
 import { createEmptyStatusCounts } from "./manager-stats";
+import type { StaffRecord } from "./staff-roster";
 import type { DesignerName, Order, OrderStatus, StoreName } from "./types";
 import { isHeadquartersStore } from "./stores";
 
@@ -87,8 +92,13 @@ export function filterOrdersByDispatcherAffiliatedStores(
   return orders.filter((o) => allowed.has(getOrderStoreByDispatcher(o)));
 }
 
-export function getDispatcherNamesInStore(store: StoreName): string[] {
-  return DISPATCHER_ROSTER.filter((d) => d.homeStore === store).map((d) => d.name);
+export function getDispatcherNamesInStore(
+  store: StoreName,
+  staffRecords: StaffRecord[] = [],
+): string[] {
+  return getEffectiveDispatcherRoster(staffRecords)
+    .filter((d) => d.homeStore === store)
+    .map((d) => d.name);
 }
 
 export interface StoreDesignerOrderStats {

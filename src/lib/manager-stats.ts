@@ -5,6 +5,7 @@ import {
   type DesignerHomeStoreIndex,
 } from "./designer-staff-store";
 import { ORDER_STATUSES } from "./constants";
+import type { StaffRecord } from "./staff-roster";
 import type { DesignerName, Order, OrderStatus, StoreName } from "./types";
 
 export type ViewMode = "status" | "dispatcher" | "designer" | "store";
@@ -38,13 +39,14 @@ export function getDesignerStats(
   orders: Order[],
   designerStores?: StoreName[] | null,
   designerStoreIndex?: DesignerHomeStoreIndex,
+  staffRecords: StaffRecord[] = [],
 ): DesignerOrderStats[] {
   const roster = designerStoreIndex
     ? designerStores?.length
-      ? getEffectiveDesignerRoster(designerStoreIndex).filter((d) =>
-          designerStores.includes(d.homeStore),
+      ? getEffectiveDesignerRoster(designerStoreIndex, staffRecords).filter(
+          (d) => designerStores.includes(d.homeStore),
         )
-      : getEffectiveDesignerRoster(designerStoreIndex)
+      : getEffectiveDesignerRoster(designerStoreIndex, staffRecords)
     : designerStores?.length
       ? DESIGNER_ROSTER.filter((d) => designerStores.includes(d.homeStore))
       : [...DESIGNER_ROSTER];

@@ -77,13 +77,21 @@ export default function DesignerPage() {
       const roster = getEffectiveDesignersInStores(
         designerLookupStores,
         designerHomeStoreIndex,
+        staffRecords,
       );
       if (roster.length > 0) {
-        setCurrentDesigner(roster[0].name);
+        setCurrentDesigner(roster[0].name as DesignerName);
       }
     }
     setStatusFilter("全部");
-  }, [sessionScopeKey, lockedName, designerLookupStores, designerHomeStoreIndex, user]);
+  }, [
+    sessionScopeKey,
+    lockedName,
+    designerLookupStores,
+    designerHomeStoreIndex,
+    staffRecords,
+    user,
+  ]);
 
   const homeStore =
     user?.role === "designer" && user.homeStore

@@ -1,7 +1,8 @@
 import type { UserRole } from "./staff-roster";
 import type { StoreName } from "./types";
 import type { SessionUser } from "./permissions";
-import { DISPATCHER_ROSTER, getDispatcherHomeStore } from "./dispatchers";
+import { getDispatcherHomeStore, getEffectiveDispatcherRoster } from "./dispatchers";
+import type { StaffRecord } from "./staff-roster";
 import {
   hasFullOrderScope,
   hasGlobalDispatcherLookup,
@@ -47,11 +48,14 @@ export interface AdminRoleDefaults {
 /** 按派单人查找默认选中：店长权限优先本人（名册内），否则全部；个人派单人仅本人 */
 export function getDefaultDispatcherFilter(
   user: SessionUser | null,
+  staffRecords: StaffRecord[] = [],
 ): string | "全部" {
   if (!user) return "全部";
   if (isPersonalDispatcherLookup(user)) return user.displayName;
   if (hasGlobalDispatcherLookup(user) || hasStoreDispatcherLookup(user)) {
-    const inRoster = DISPATCHER_ROSTER.some((d) => d.name === user.displayName);
+    const inRoster = getEffectiveDispatcherRoster(staffRecords).some(
+      (d) => d.name === user.displayName,
+    );
     return inRoster ? user.displayName : "全部";
   }
   return "全部";
@@ -67,7 +71,10 @@ export function getDefaultDesignerFilter(
   return "全部";
 }
 
-export function getAdminRoleDefaults(user: SessionUser | null): AdminRoleDefaults {
+export function getAdminRoleDefaults(
+  user: SessionUser | null,
+  staffRecords: StaffRecord[] = [],
+): AdminRoleDefaults {
   if (!user) {
     return {
       viewMode: "dispatch",
@@ -87,7 +94,7 @@ export function getAdminRoleDefaults(user: SessionUser | null): AdminRoleDefault
           : (resolveManagedStoreForLookup(user) ?? resolveUserHomeStore(user));
     return {
       viewMode: "dispatch",
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
       designerFilter: "全部",
       storeFilter: store,
     };
@@ -111,7 +118,7 @@ export function getAdminRoleDefaults(user: SessionUser | null): AdminRoleDefault
       getDesignerHomeStore(user.displayName as DesignerName);
     return {
       viewMode: "dispatch",
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
       designerFilter: getDefaultDesignerFilter(user),
       storeFilter: store,
     };
@@ -119,7 +126,7 @@ export function getAdminRoleDefaults(user: SessionUser | null): AdminRoleDefault
 
   return {
     viewMode: "dispatch",
-    dispatcherFilter: getDefaultDispatcherFilter(user),
+    dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
     designerFilter: "全部",
     storeFilter: "全部",
   };
@@ -132,7 +139,10 @@ export function getDesignerDefaultName(
   return user.displayName as DesignerName;
 }
 
-export function getManagerRoleDefaults(user: SessionUser | null): {
+export function getManagerRoleDefaults(
+  user: SessionUser | null,
+  staffRecords: StaffRecord[] = [],
+): {
   designerFilter: DesignerName | "全部";
   storeFilter: StoreName | "全部";
   dispatcherFilter: string | "全部";
@@ -141,7 +151,7 @@ export function getManagerRoleDefaults(user: SessionUser | null): {
     return {
       designerFilter: "全部",
       storeFilter: "全部",
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
     };
   }
 
@@ -156,7 +166,7 @@ export function getManagerRoleDefaults(user: SessionUser | null): {
     return {
       designerFilter: "全部",
       storeFilter: store,
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
     };
   }
 
@@ -167,7 +177,7 @@ export function getManagerRoleDefaults(user: SessionUser | null): {
     return {
       designerFilter: user.displayName as DesignerName,
       storeFilter: store,
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
     };
   }
 
@@ -175,13 +185,13 @@ export function getManagerRoleDefaults(user: SessionUser | null): {
     return {
       designerFilter: "全部",
       storeFilter: user.homeStore,
-      dispatcherFilter: getDefaultDispatcherFilter(user),
+      dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
     };
   }
 
   return {
     designerFilter: "全部",
     storeFilter: "全部",
-    dispatcherFilter: getDefaultDispatcherFilter(user),
+    dispatcherFilter: getDefaultDispatcherFilter(user, staffRecords),
   };
 }

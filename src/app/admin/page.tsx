@@ -4,6 +4,7 @@ import { AdminDesignerResultSummary } from "@/components/admin/admin-designer-re
 import { AdminViewTabs } from "@/components/admin/admin-view-tabs";
 import { DispatcherResultSummary } from "@/components/admin/dispatcher-result-summary";
 import { DispatcherSummaryBar } from "@/components/admin/dispatcher-summary-bar";
+import { SiteBrandingSettings } from "@/components/admin/site-branding-settings";
 import { StaffManagement } from "@/components/admin/staff-management";
 import { DesignerSummaryBar } from "@/components/manager/designer-summary-bar";
 import { AppShell } from "@/components/layout/app-shell";
@@ -166,8 +167,8 @@ export default function AdminPage() {
   const installedCount = scopedOrders.filter((o) => o.status === "已安装").length;
 
   const dispatcherStats = useMemo(
-    () => getDispatcherStats(dispatcherLookupOrders),
-    [dispatcherLookupOrders],
+    () => getDispatcherStats(dispatcherLookupOrders, staffRecords),
+    [dispatcherLookupOrders, staffRecords],
   );
   const storeStats = useMemo(() => {
     const all = getStoreStatsByDispatcher(scopedOrders);
@@ -187,6 +188,7 @@ export default function AdminPage() {
         designerLookupOrders,
         undefined,
         designerHomeStoreIndex,
+        staffRecords,
       );
     }
     if (designerLookupStores?.length) {
@@ -194,6 +196,7 @@ export default function AdminPage() {
         designerLookupOrders,
         designerLookupStores,
         designerHomeStoreIndex,
+        staffRecords,
       );
     }
     return getDesignerStatsFromStoreOrders(
@@ -204,6 +207,7 @@ export default function AdminPage() {
     designerLookupOrders,
     designerLookupStores,
     designerHomeStoreIndex,
+    staffRecords,
     user,
   ]);
 
@@ -278,7 +282,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    const defaults = getAdminRoleDefaults(user);
+    const defaults = getAdminRoleDefaults(user, staffRecords);
     setViewMode(defaults.viewMode);
     setDispatcherFilter(defaults.dispatcherFilter);
     setDesignerFilter(defaults.designerFilter);
@@ -286,7 +290,7 @@ export default function AdminPage() {
     setSearchQuery("");
     setActiveOrderSearchQuery("");
     setResultDrill(EMPTY_RESULT_DRILL);
-  }, [sessionScopeKey]);
+  }, [sessionScopeKey, staffRecords]);
 
   useEffect(() => {
     if (viewMode !== "dispatch") {
@@ -299,13 +303,13 @@ export default function AdminPage() {
     setSearchQuery("");
     setResultDrill(EMPTY_RESULT_DRILL);
     if (viewMode === "dispatcher") {
-      setDispatcherFilter(getDefaultDispatcherFilter(user));
+      setDispatcherFilter(getDefaultDispatcherFilter(user, staffRecords));
     } else if (viewMode === "designer") {
       setDesignerFilter(getDefaultDesignerFilter(user));
     } else if (isStoreManagerAccess(user) && viewMode === "store") {
       setStoreFilter(resolveUserHomeStore(user));
     } else if (user.role === "dispatcher" && viewMode === "store") {
-      setStoreFilter(getAdminRoleDefaults(user).storeFilter);
+      setStoreFilter(getAdminRoleDefaults(user, staffRecords).storeFilter);
     } else if (user.role === "designer" && viewMode === "store") {
       setStoreFilter(
         user.homeStore ??
@@ -408,6 +412,8 @@ export default function AdminPage() {
           </div>
         ) : viewMode === "staff" ? (
           <StaffManagement />
+        ) : viewMode === "branding" ? (
+          <SiteBrandingSettings />
         ) : viewMode === "store" ? (
           <>
             <OrderSearchBar

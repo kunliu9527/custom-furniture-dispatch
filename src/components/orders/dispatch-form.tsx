@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { SpaceMultiSelect } from "@/components/ui/space-multi-select";
 import { useAuth } from "@/context/auth-context";
-import { DESIGNER_ROSTER } from "@/lib/constants";
 import { getDispatchStoreOptions } from "@/lib/stores";
 import {
   getEffectiveDesignerHomeStore,
@@ -16,10 +15,11 @@ import {
   type DesignerHomeStoreIndex,
 } from "@/lib/designer-staff-store";
 import {
-  DISPATCHER_ROSTER,
   getDefaultDispatcherForStore,
   getDispatcherHomeStore,
+  getEffectiveDispatcherRoster,
 } from "@/lib/dispatchers";
+import type { StaffRecord } from "@/lib/staff-roster";
 import {
   sortByHomeStore,
   sortStoresByPreferred,
@@ -39,9 +39,14 @@ function resolveInitialStore(
   lockedDesigner: string | null,
   preferredStore: StoreName | null,
   designerStoreIndex: DesignerHomeStoreIndex,
+  staffRecords: StaffRecord[],
 ): StoreName {
   if (lockedDispatcher) {
-    return getDispatcherHomeStore(lockedDispatcher, preferredStore ?? "东岸天冠");
+    return getDispatcherHomeStore(
+      lockedDispatcher,
+      preferredStore ?? "东岸天冠",
+      staffRecords,
+    );
   }
   if (lockedDesigner) {
     return getEffectiveDesignerHomeStore(lockedDesigner, designerStoreIndex);
@@ -54,18 +59,26 @@ function buildInitial(
   lockedDesigner: string | null,
   preferredStore: StoreName | null,
   designerStoreIndex: DesignerHomeStoreIndex,
+  staffRecords: StaffRecord[],
 ): DispatchFormData {
   const dispatchStore = resolveInitialStore(
     lockedDispatcher,
     lockedDesigner,
     preferredStore,
     designerStoreIndex,
+    staffRecords,
   );
   const dispatcher =
-    lockedDispatcher ?? getDefaultDispatcherForStore(dispatchStore);
+    lockedDispatcher ?? getDefaultDispatcherForStore(dispatchStore, staffRecords);
+  const designerRoster = getEffectiveDesignersInStores(
+    [dispatchStore],
+    designerStoreIndex,
+    staffRecords,
+  );
   const designer = (lockedDesigner ??
-    getEffectiveDesignersInStores([dispatchStore], designerStoreIndex)[0]?.name ??
-    DESIGNER_ROSTER[0].name) as DesignerName;
+    designerRoster[0]?.name ??
+    getEffectiveDesignerRoster(designerStoreIndex, staffRecords)[0]?.name ??
+    "汤雷") as DesignerName;
 
   return {
     customerName: "",
@@ -88,13 +101,14 @@ export function DispatchForm({
   preferredStore = null,
   readOnly = false,
 }: DispatchFormProps) {
-  const { designerHomeStoreIndex } = useAuth();
+  const { designerHomeStoreIndex, staffRecords } = useAuth();
   const [form, setForm] = useState<DispatchFormData>(() =>
     buildInitial(
       lockedDispatcherName,
       lockedDesignerName,
       preferredStore,
       designerHomeStoreIndex,
+      staffRecords,
     ),
   );
   const [submitted, setSubmitted] = useState(false);
@@ -104,12 +118,16 @@ export function DispatchForm({
   const designerValue = (lockedDesignerName ?? form.designer) as DesignerName;
 
   const sortedDispatchers = useMemo(
-    () => sortByHomeStore(DISPATCHER_ROSTER, preferredStore),
-    [preferredStore],
+    () => sortByHomeStore(getEffectiveDispatcherRoster(staffRecords), preferredStore),
+    [staffRecords, preferredStore],
   );
   const sortedDesigners = useMemo(
-    () => sortByHomeStore(getEffectiveDesignerRoster(designerHomeStoreIndex), preferredStore),
-    [designerHomeStoreIndex, preferredStore],
+    () =>
+      sortByHomeStore(
+        getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords),
+        preferredStore,
+      ),
+    [designerHomeStoreIndex, staffRecords, preferredStore],
   );
   const sortedStores = useMemo(
     () => sortStoresByPreferred(getDispatchStoreOptions(), preferredStore),
@@ -141,9 +159,16 @@ export function DispatchForm({
         lockedDesignerName,
         preferredStore,
         designerHomeStoreIndex,
+        staffRecords,
       ),
     );
-  }, [lockedDispatcherName, lockedDesignerName, preferredStore]);
+  }, [
+    lockedDispatcherName,
+    lockedDesignerName,
+    preferredStore,
+    designerHomeStoreIndex,
+    staffRecords,
+  ]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -166,6 +191,7 @@ export function DispatchForm({
         lockedDesignerName,
         preferredStore,
         designerHomeStoreIndex,
+        staffRecords,
       ),
     );
     setBudgetInput("");
@@ -183,18 +209,23 @@ export function DispatchForm({
         next.dispatchStore = getDispatcherHomeStore(
           value,
           prev.dispatchStore,
+          staffRecords,
         );
       }
       if (key === "dispatchStore" && typeof value === "string") {
         const store = value as StoreName;
         if (!lockedDispatcherName) {
-          next.dispatcherName = getDefaultDispatcherForStore(store);
+          next.dispatcherName = getDefaultDispatcherForStore(store, staffRecords);
         }
         if (!lockedDesignerName) {
           next.designer = (getEffectiveDesignersInStores(
             [store],
             designerHomeStoreIndex,
-          )[0]?.name ?? DESIGNER_ROSTER[0].name) as DesignerName;
+            staffRecords,
+          )[0]?.name ??
+            getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords)[0]
+              ?.name ??
+            "汤雷") as DesignerName;
         }
       }
       return next;

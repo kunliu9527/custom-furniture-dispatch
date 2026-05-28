@@ -17,10 +17,10 @@ export function DesignerSwitcher({
   onChange,
   stores = null,
 }: DesignerSwitcherProps) {
-  const { designerHomeStoreIndex } = useAuth();
+  const { designerHomeStoreIndex, staffRecords } = useAuth();
   const roster = stores?.length
-    ? getEffectiveDesignersInStores(stores, designerHomeStoreIndex)
-    : getEffectiveDesignerRoster(designerHomeStoreIndex);
+    ? getEffectiveDesignersInStores(stores, designerHomeStoreIndex, staffRecords)
+    : getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords);
 
   return (
     <select

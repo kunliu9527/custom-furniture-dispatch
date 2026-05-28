@@ -122,8 +122,14 @@ export default function EvaluationPage() {
         scopedOrdersByView.dispatcher,
         supplements,
         rowScope.dispatcherNames,
+        staffRecords,
       ),
-    [scopedOrdersByView.dispatcher, supplements, rowScope.dispatcherNames],
+    [
+      scopedOrdersByView.dispatcher,
+      supplements,
+      rowScope.dispatcherNames,
+      staffRecords,
+    ],
   );
 
   const designerRows = useMemo(
@@ -133,6 +139,7 @@ export default function EvaluationPage() {
         supplements,
         rowScope.designerNames,
         (name) => getDesignerSubtitleForEvaluation(name, staffRecords),
+        staffRecords,
       ),
     [
       scopedOrdersByView.designer,
@@ -149,6 +156,7 @@ export default function EvaluationPage() {
         supplements,
         rowScope.designerNames,
         (name) => getDesignerSubtitleForEvaluation(name, staffRecords),
+        staffRecords,
       ),
     [
       scopedOrdersByView.designer,

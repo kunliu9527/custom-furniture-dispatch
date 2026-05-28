@@ -5,6 +5,8 @@ import type { StaffHomeStoreOverrides } from "@/lib/staff-home-store-storage";
 import type { StaffPasswordOverrides } from "@/lib/staff-password-storage";
 import type { CustomPositionDefinition } from "@/lib/staff-config-storage";
 import type { StaffRecord } from "@/lib/staff-roster";
+import type { SiteBranding } from "@/lib/site-branding";
+import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 
 export interface StaffConfigSnapshot {
   customStaff: StaffRecord[];
@@ -14,6 +16,7 @@ export interface StaffConfigSnapshot {
   extraStoreOverrides: StaffExtraStoresOverrides;
   customPositions: CustomPositionDefinition[];
   customStores: string[];
+  siteBranding: SiteBranding;
 }
 
 export interface AppSnapshot extends AppPersistedData {
@@ -30,4 +33,5 @@ export const EMPTY_STAFF_CONFIG: StaffConfigSnapshot = {
   extraStoreOverrides: {},
   customPositions: [],
   customStores: [],
+  siteBranding: { ...DEFAULT_SITE_BRANDING },
 };

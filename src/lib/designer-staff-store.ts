@@ -1,10 +1,15 @@
 import { DESIGNER_ROSTER } from "./designers";
+import {
+  buildEffectiveDesignerRoster,
+  filterRosterByStores,
+  isDesignerStaff,
+} from "./personnel-roster";
 import type { StaffRecord } from "./staff-roster";
-import type { DesignerName, Order, StoreName } from "./types";
+import type { Order, StoreName } from "./types";
 
 export type DesignerHomeStoreIndex = Map<string, StoreName>;
 
-/** 人员管理名册覆盖静态设计师门店 */
+/** 人员管理名册覆盖静态设计师门店，并包含新增设计师 */
 export function buildDesignerHomeStoreIndex(
   staffRecords: StaffRecord[],
 ): DesignerHomeStoreIndex {
@@ -13,7 +18,7 @@ export function buildDesignerHomeStoreIndex(
     index.set(d.name, d.homeStore);
   }
   for (const row of staffRecords) {
-    if (row.role === "designer") {
+    if (isDesignerStaff(row)) {
       index.set(row.name, row.homeStore);
     }
   }
@@ -31,20 +36,21 @@ export function getEffectiveDesignerHomeStore(
   );
 }
 
-export function getEffectiveDesignerRoster(index: DesignerHomeStoreIndex) {
-  return DESIGNER_ROSTER.map((d) => ({
-    name: d.name,
-    homeStore: getEffectiveDesignerHomeStore(d.name, index),
-  }));
+export function getEffectiveDesignerRoster(
+  index: DesignerHomeStoreIndex,
+  staffRecords: StaffRecord[] = [],
+) {
+  return buildEffectiveDesignerRoster(staffRecords, index);
 }
 
 export function getEffectiveDesignersInStores(
   stores: StoreName[],
   index: DesignerHomeStoreIndex,
+  staffRecords: StaffRecord[] = [],
 ) {
-  const allowed = new Set(stores);
-  return getEffectiveDesignerRoster(index).filter((d) =>
-    allowed.has(d.homeStore),
+  return filterRosterByStores(
+    getEffectiveDesignerRoster(index, staffRecords),
+    stores,
   );
 }
 

@@ -1,9 +1,17 @@
 "use client";
 
 import { LoginPanel } from "@/components/auth/login-panel";
+import { useAuth } from "@/context/auth-context";
+import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 import Link from "next/link";
 
 export function HomeHeader() {
+  const { siteBranding } = useAuth();
+  const headline =
+    siteBranding.headlineTitle || DEFAULT_SITE_BRANDING.headlineTitle;
+  const shortTitle =
+    headline.length > 4 ? `${headline.slice(0, 4)}…` : headline;
+
   return (
     <header className="relative z-10 border-b border-slate-200/70 bg-white/75 backdrop-blur-md">
       <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
@@ -15,10 +23,10 @@ export function HomeHeader() {
             派
           </span>
           <span className="hidden rounded-lg bg-indigo-100 px-2.5 py-1 text-indigo-900 ring-1 ring-indigo-200/80 sm:inline">
-            设计师超级定单系统
+            {headline}
           </span>
           <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-indigo-900 ring-1 ring-indigo-200/80 sm:hidden">
-            超级定单
+            {shortTitle}
           </span>
         </Link>
         <LoginPanel variant="home" />
