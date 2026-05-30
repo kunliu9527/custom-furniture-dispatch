@@ -1,4 +1,14 @@
+import {
+  EvaluationTableScroll,
+  TABLE_HEAD_STICKY_CLASS,
+} from "@/components/evaluation/evaluation-table-scroll";
+import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import type { DispatcherEvaluationRow } from "@/lib/evaluation-stats";
+import {
+  DESIGNER_EXTENDED_RANK_RULES,
+  EVALUATION_AMOUNT_RULES,
+  EVALUATION_RANKING_RULES,
+} from "@/lib/performance-algorithm-copy";
 import {
   buildRankingPresentation,
   rankBadgeForPlace,
@@ -108,7 +118,7 @@ export function DispatcherEvaluationRankingTable({
   rows,
   rankAgainstRows,
   emptyMessage = "暂无数据",
-  footnote = "数量为左、金额为右，横向显示（如 3/3）· 第1名红旗 · 第2名紫旗 · 无旗保留空白对齐 · 退单仅填充标示",
+  footnote = EVALUATION_RANKING_RULES,
   designerExtendedMetrics = false,
 }: DispatcherEvaluationRankingTableProps) {
   const { rankNumbers, extendedRanks, sortedRows } = buildRankingPresentation(
@@ -128,11 +138,21 @@ export function DispatcherEvaluationRankingTable({
   const minWidth = designerExtendedMetrics ? "min-w-[960px]" : "min-w-[720px]";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className={`w-full ${minWidth} border-collapse text-left`}>
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
+    <EvaluationTableScroll
+      footer={
+        <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
+          共 {sortedRows.length} 条 · {EVALUATION_AMOUNT_RULES} · {footnote}
+          {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
+        </p>
+      }
+    >
+      <table className={`w-full ${minWidth} border-collapse text-left`}>
+        <thead>
+          <TableAlgorithmCaption>
+            {EVALUATION_AMOUNT_RULES} · {footnote}
+            {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
+          </TableAlgorithmCaption>
+          <tr className={`border-b border-slate-100 ${TABLE_HEAD_STICKY_CLASS}`}>
               <th
                 className={`${thClass} min-w-[120px] sticky left-0 bg-slate-50/95 text-left`}
               >
@@ -192,13 +212,6 @@ export function DispatcherEvaluationRankingTable({
             })}
           </tbody>
         </table>
-      </div>
-      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-        共 {sortedRows.length} 条 · {footnote}
-        {designerExtendedMetrics
-          ? " · 扩展指标按数值从高到低排名"
-          : ""}
-      </p>
-    </div>
+    </EvaluationTableScroll>
   );
 }

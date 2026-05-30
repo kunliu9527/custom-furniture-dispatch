@@ -17,6 +17,7 @@ export function resolveLiveSessionUser(
     displayName: auth.displayName,
     role: auth.role,
     accessLevel: auth.accessLevel,
+    position: staff.position,
     homeStore: auth.homeStore,
     assignedStores: auth.assignedStores,
   };
@@ -36,7 +37,7 @@ export function getSessionScopeKey(user: SessionUser | null): string {
 /** 仅账号/权限/角色变化时重置看板（不受云端名册门店覆盖影响） */
 export function getSessionResetKey(user: SessionUser | null): string {
   if (!user) return "";
-  return `${user.username}|${user.accessLevel}|${user.role}`;
+  return `${user.username}|${user.accessLevel}|${user.role}|${user.position ?? ""}`;
 }
 
 export function sessionUsersEqual(
@@ -48,6 +49,7 @@ export function sessionUsersEqual(
     a.username === b.username &&
     a.role === b.role &&
     a.accessLevel === b.accessLevel &&
+    a.position === b.position &&
     a.homeStore === b.homeStore &&
     JSON.stringify(a.assignedStores ?? []) ===
       JSON.stringify(b.assignedStores ?? [])

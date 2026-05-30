@@ -8,6 +8,7 @@ interface AppShellProps {
   badge?: string;
   children: ReactNode;
   actions?: ReactNode;
+  mainClassName?: string;
 }
 
 export function AppShell({
@@ -16,29 +17,30 @@ export function AppShell({
   badge,
   children,
   actions,
+  mainClassName = "mx-auto max-w-6xl px-4 py-8 sm:px-6",
 }: AppShellProps) {
   return (
-    <div className="min-h-full bg-slate-50">
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-4">
+    <div className="vi-app-bg min-h-full">
+      <header className="vi-glass-header sticky top-0 z-50">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3.5">
             <Link
               href="/"
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white shadow-sm"
+              className="vi-logo-mark h-9 w-9 shrink-0 rounded-xl text-sm transition-transform hover:scale-[1.03]"
             >
               派
             </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
-                {badge ? (
-                  <span className="rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
-                    {badge}
-                  </span>
-                ) : null}
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="vi-heading-section truncate text-base sm:text-lg">
+                  {title}
+                </h1>
+                {badge ? <span className="vi-badge shrink-0">{badge}</span> : null}
               </div>
               {description ? (
-                <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+                <p className="mt-0.5 truncate text-xs text-zinc-500 sm:text-sm">
+                  {description}
+                </p>
               ) : null}
             </div>
           </div>
@@ -48,7 +50,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+      <main className={mainClassName}>{children}</main>
     </div>
   );
 }

@@ -11,7 +11,8 @@ export function DesignerBreakdown({
 }: DesignerBreakdownProps) {
   const map = new Map<string, number>();
   for (const order of orders) {
-    map.set(order.designer, (map.get(order.designer) ?? 0) + 1);
+    const key = order.designer ?? "未指派";
+    map.set(key, (map.get(key) ?? 0) + 1);
   }
 
   if (orders.length === 0) {

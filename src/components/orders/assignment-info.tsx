@@ -15,7 +15,7 @@ export function AssignmentInfo({ order, compact = false }: AssignmentInfoProps) 
   const transferred = hasBeenTransferred(order);
   const transferCount = getTransferCount(order);
 
-  if (!transferred && !compact) {
+  if (!transferred && !compact && order.originalDesigner) {
     return (
       <p className="text-xs text-slate-500">
         原指派：<span className="font-medium text-slate-700">{order.originalDesigner}</span>

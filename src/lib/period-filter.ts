@@ -1,6 +1,13 @@
+import { getWeekBounds, orderActiveInWeek } from "./week-filter";
 import type { Order, SupplementOrder } from "./types";
 
-export type PeriodPreset = "all" | "thisMonth" | "lastMonth" | "custom";
+export type PeriodPreset =
+  | "all"
+  | "thisWeek"
+  | "lastWeek"
+  | "thisMonth"
+  | "lastMonth"
+  | "custom";
 
 export interface PeriodSelection {
   preset: PeriodPreset;
@@ -34,12 +41,42 @@ export function parseYearMonth(ym: string): { year: number; month: number } | nu
   return { year, month };
 }
 
-export function getPeriodBounds(selection: PeriodSelection): PeriodBounds | null {
+export function isWeekPeriod(selection: PeriodSelection): boolean {
+  return selection.preset === "thisWeek" || selection.preset === "lastWeek";
+}
+
+function weekBoundsForPreset(
+  preset: "thisWeek" | "lastWeek",
+  ref = new Date(),
+): PeriodBounds {
+  const weekRef =
+    preset === "lastWeek"
+      ? (() => {
+          const d = new Date(ref);
+          d.setDate(d.getDate() - 7);
+          return d;
+        })()
+      : ref;
+  const { start, end } = getWeekBounds(weekRef);
+  return { start, end };
+}
+
+export function getPeriodBounds(
+  selection: PeriodSelection,
+  ref = new Date(),
+): PeriodBounds | null {
+  if (selection.preset === "all") return null;
+
+  if (selection.preset === "thisWeek") {
+    return weekBoundsForPreset("thisWeek", ref);
+  }
+  if (selection.preset === "lastWeek") {
+    return weekBoundsForPreset("lastWeek", ref);
+  }
+
   const now = new Date();
   let year = now.getFullYear();
   let month = now.getMonth() + 1;
-
-  if (selection.preset === "all") return null;
 
   if (selection.preset === "lastMonth") {
     month -= 1;
@@ -69,9 +106,18 @@ function isIsoInBounds(iso: string, bounds: PeriodBounds): boolean {
 export function orderMatchesPeriod(
   order: Order,
   selection: PeriodSelection,
+  ref = new Date(),
 ): boolean {
-  const bounds = getPeriodBounds(selection);
+  const bounds = getPeriodBounds(selection, ref);
   if (!bounds) return true;
+
+  if (isWeekPeriod(selection)) {
+    return orderActiveInWeek(order, {
+      start: bounds.start,
+      end: bounds.end,
+      label: "",
+    });
+  }
 
   if (isIsoInBounds(order.createdAt, bounds)) return true;
 
@@ -88,8 +134,9 @@ export function orderMatchesPeriod(
 export function supplementMatchesPeriod(
   supplement: SupplementOrder,
   selection: PeriodSelection,
+  ref = new Date(),
 ): boolean {
-  const bounds = getPeriodBounds(selection);
+  const bounds = getPeriodBounds(selection, ref);
   if (!bounds) return true;
   return isIsoInBounds(supplement.createdAt, bounds);
 }
@@ -97,17 +144,19 @@ export function supplementMatchesPeriod(
 export function filterOrdersByPeriod(
   orders: Order[],
   selection: PeriodSelection,
+  ref = new Date(),
 ): Order[] {
   if (selection.preset === "all") return orders;
-  return orders.filter((o) => orderMatchesPeriod(o, selection));
+  return orders.filter((o) => orderMatchesPeriod(o, selection, ref));
 }
 
 export function filterSupplementsByPeriod(
   supplements: SupplementOrder[],
   selection: PeriodSelection,
+  ref = new Date(),
 ): SupplementOrder[] {
   if (selection.preset === "all") return supplements;
-  return supplements.filter((s) => supplementMatchesPeriod(s, selection));
+  return supplements.filter((s) => supplementMatchesPeriod(s, selection, ref));
 }
 
 const MONTH_NAMES = [
@@ -125,18 +174,42 @@ const MONTH_NAMES = [
   "12月",
 ];
 
-export function formatPeriodLabel(selection: PeriodSelection): string {
+export function formatPeriodLabel(
+  selection: PeriodSelection,
+  ref = new Date(),
+): string {
   if (selection.preset === "all") return "全部时间";
-  const bounds = getPeriodBounds(selection);
+  if (selection.preset === "thisWeek") {
+    return getWeekBounds(ref).label;
+  }
+  if (selection.preset === "lastWeek") {
+    const prevRef = new Date(ref);
+    prevRef.setDate(prevRef.getDate() - 7);
+    return getWeekBounds(prevRef).label;
+  }
+  const bounds = getPeriodBounds(selection, ref);
   if (!bounds) return "全部时间";
   const y = bounds.start.getFullYear();
   const m = bounds.start.getMonth();
   return `${y}年${MONTH_NAMES[m]}`;
 }
 
-export function periodFilenameSuffix(selection: PeriodSelection): string {
+export function periodFilenameSuffix(
+  selection: PeriodSelection,
+  ref = new Date(),
+): string {
   if (selection.preset === "all") return "全部";
-  const bounds = getPeriodBounds(selection);
+  if (selection.preset === "thisWeek") {
+    const { start } = getWeekBounds(ref);
+    return `week-${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`;
+  }
+  if (selection.preset === "lastWeek") {
+    const prevRef = new Date(ref);
+    prevRef.setDate(prevRef.getDate() - 7);
+    const { start } = getWeekBounds(prevRef);
+    return `week-${start.getFullYear()}-${pad2(start.getMonth() + 1)}-${pad2(start.getDate())}`;
+  }
+  const bounds = getPeriodBounds(selection, ref);
   if (!bounds) return "全部";
   return toYearMonth(bounds.start);
 }
@@ -144,3 +217,74 @@ export function periodFilenameSuffix(selection: PeriodSelection): string {
 export const DEFAULT_PERIOD: PeriodSelection = {
   preset: "thisMonth",
 };
+
+export function shiftYearMonth(ym: string, deltaMonths: number): string | null {
+  const parsed = parseYearMonth(ym);
+  if (!parsed) return null;
+  let { year, month } = parsed;
+  month += deltaMonths;
+  while (month > 12) {
+    month -= 12;
+    year += 1;
+  }
+  while (month < 1) {
+    month += 12;
+    year -= 1;
+  }
+  return `${year}-${pad2(month)}`;
+}
+
+export function selectionToYearMonth(
+  selection: PeriodSelection,
+): string | null {
+  if (selection.preset === "all") return null;
+  if (isWeekPeriod(selection)) return null;
+  const bounds = getPeriodBounds(selection);
+  if (!bounds) return null;
+  return toYearMonth(bounds.start);
+}
+
+export function yearMonthToPeriod(ym: string): PeriodSelection {
+  return { preset: "custom", yearMonth: ym };
+}
+
+export function getPreviousPeriod(
+  selection: PeriodSelection,
+): PeriodSelection | null {
+  if (selection.preset === "thisWeek") {
+    return { preset: "lastWeek" };
+  }
+  if (selection.preset === "lastWeek") {
+    return null;
+  }
+
+  const ym = selectionToYearMonth(selection);
+  if (!ym) return null;
+  const prev = shiftYearMonth(ym, -1);
+  if (!prev) return null;
+  return yearMonthToPeriod(prev);
+}
+
+/** 含当前月在内的最近 N 个自然月（YYYY-MM，从旧到新） */
+export function listRecentYearMonths(count: number, ref = new Date()): string[] {
+  const current = toYearMonth(ref);
+  const result: string[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const ym = shiftYearMonth(current, -i);
+    if (ym) result.push(ym);
+  }
+  return result;
+}
+
+export function isValidPeriodPreset(
+  preset: unknown,
+): preset is PeriodPreset {
+  return (
+    preset === "all" ||
+    preset === "thisWeek" ||
+    preset === "lastWeek" ||
+    preset === "thisMonth" ||
+    preset === "lastMonth" ||
+    preset === "custom"
+  );
+}

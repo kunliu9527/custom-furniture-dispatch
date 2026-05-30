@@ -1,14 +1,15 @@
 import { rawIntervalDays } from "./stage-intervals";
 import type { FlowOrderStatus, Order } from "./types";
 
-export const DESIGNER_MAX_IN_PROGRESS = 10;
-export const DESIGNER_WARN_IN_PROGRESS = 8;
+export const DESIGNER_MAX_IN_PROGRESS = 18;
+export const DESIGNER_WARN_IN_PROGRESS = 16;
 export const DESIGNER_ACCEPTANCE_HOURS = 24;
 
 const IN_PROGRESS: FlowOrderStatus[] = [
   "待量尺",
   "已量尺",
   "已出图",
+  "待签约",
   "已签约",
 ];
 

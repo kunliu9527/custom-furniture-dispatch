@@ -13,6 +13,7 @@ export const STAFF_CONFIG_STORAGE_KEYS = [
   "custom-furniture-dispatch-staff-access-v1",
   "custom-furniture-dispatch-staff-home-store-v1",
   "custom-furniture-dispatch-staff-extra-stores-v1",
+  "custom-furniture-dispatch-staff-phone-v1",
   "custom-furniture-dispatch-staff-password-v1",
   "custom-furniture-dispatch-staff-removed-v1",
   CUSTOM_POSITIONS_STORAGE_KEY,
@@ -35,6 +36,7 @@ export function loadStaffConfigFromStorage(): Omit<
     passwordOverrides: snap.passwordOverrides,
     homeStoreOverrides: snap.homeStoreOverrides,
     extraStoreOverrides: snap.extraStoreOverrides,
+    phoneOverrides: snap.phoneOverrides,
     removedStaffIds: snap.removedStaffIds,
     siteBranding: snap.siteBranding,
   };

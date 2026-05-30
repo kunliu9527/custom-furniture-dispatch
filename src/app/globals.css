@@ -1,26 +1,489 @@
 @import "tailwindcss";
 
+/* ── VI 设计令牌 ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --vi-brand: #6366f1;
+  --vi-brand-deep: #4f46e5;
+  --vi-brand-soft: #eef2ff;
+  --vi-accent: #8b5cf6;
+  --vi-accent-soft: #f5f3ff;
+
+  --vi-surface: #f8f8fa;
+  --vi-surface-elevated: #ffffff;
+  --vi-ink: #18181b;
+  --vi-ink-secondary: #52525b;
+  --vi-ink-muted: #a1a1aa;
+  --vi-border: rgba(24, 24, 27, 0.07);
+  --vi-border-strong: rgba(24, 24, 27, 0.11);
+
+  --vi-radius-md: 0.75rem;
+  --vi-radius-lg: 1rem;
+  --vi-radius-xl: 1.25rem;
+  --vi-radius-2xl: 1.5rem;
+
+  --vi-shadow-xs: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --vi-shadow-sm:
+    0 1px 2px rgba(24, 24, 27, 0.04), 0 4px 12px rgba(99, 102, 241, 0.05);
+  --vi-shadow-md:
+    0 4px 16px rgba(24, 24, 27, 0.06), 0 12px 32px rgba(99, 102, 241, 0.07);
+  --vi-shadow-lg:
+    0 8px 24px rgba(24, 24, 27, 0.08), 0 20px 48px rgba(99, 102, 241, 0.09);
+
+  --background: var(--vi-surface);
+  --foreground: var(--vi-ink);
+
+  /* 综合看板布局 */
+  --eval-site-nav-h: 5rem;
+  --eval-workbench-nav-h: 4.75rem;
+  --eval-workbench-nav-gap: 1rem;
+  --eval-scroll-bottom-pad: 1rem;
+  --eval-sidebar-w: calc(14rem * 0.6);
+  --eval-sidebar-w-xl: calc(15rem * 0.6);
+  --eval-workbench-col-gap: 1.5rem;
+  --eval-workbench-nav-pad-x: 0.25rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--vi-brand);
+  --color-brand-deep: var(--vi-brand-deep);
+  --color-ink: var(--vi-ink);
+  --color-ink-secondary: var(--vi-ink-secondary);
+  --color-ink-muted: var(--vi-ink-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --radius-vi-md: var(--vi-radius-md);
+  --radius-vi-lg: var(--vi-radius-lg);
+  --radius-vi-xl: var(--vi-radius-xl);
+  --shadow-vi-sm: var(--vi-shadow-sm);
+  --shadow-vi-md: var(--vi-shadow-md);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── 全局 VI 工具类 ── */
+
+.vi-mesh-bg {
+  background-color: var(--vi-surface);
+  background-image:
+    radial-gradient(
+      ellipse 90% 60% at 50% -15%,
+      rgba(99, 102, 241, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 45% at 100% 0%,
+      rgba(139, 92, 246, 0.08),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 0% 100%,
+      rgba(16, 185, 129, 0.06),
+      transparent 45%
+    ),
+    linear-gradient(to bottom, #f5f5f7 0%, var(--vi-surface) 40%, #ffffff 100%);
+}
+
+.vi-app-bg {
+  background-color: var(--vi-surface);
+  background-image:
+    radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(99, 102, 241, 0.07),
+      transparent 55%
+    ),
+    linear-gradient(to bottom, #f4f4f6, var(--vi-surface));
+}
+
+.vi-grid-overlay {
+  background-image:
+    linear-gradient(rgba(24, 24, 27, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 24, 27, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.vi-glass-header {
+  border-bottom: 1px solid var(--vi-border);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+.vi-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--vi-brand) 0%, var(--vi-accent) 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--vi-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.vi-logo-mark-soft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.12) 0%,
+    rgba(139, 92, 246, 0.1) 100%
+  );
+  color: var(--vi-brand-deep);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.15);
+}
+
+.vi-card {
+  border: 1px solid var(--vi-border);
+  border-radius: var(--vi-radius-xl);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--vi-shadow-sm);
+  backdrop-filter: blur(8px);
+}
+
+.vi-card-hover {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease;
+}
+
+.vi-card-hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(99, 102, 241, 0.22);
+  box-shadow: var(--vi-shadow-md);
+}
+
+.vi-workbench-card {
+  border: 1px solid var(--vi-border);
+  border-radius: var(--vi-radius-xl);
+  background: var(--vi-surface-elevated);
+  box-shadow: var(--vi-shadow-xs);
+}
+
+.vi-label-caps {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vi-ink-muted);
+}
+
+.vi-heading-display {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--vi-ink);
+}
+
+.vi-heading-section {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--vi-ink);
+}
+
+.vi-body {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--vi-ink-secondary);
+}
+
+.vi-field {
+  width: 100%;
+  border-radius: var(--vi-radius-md);
+  border: 1px solid var(--vi-border-strong);
+  background: var(--vi-surface-elevated);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--vi-ink);
+  box-shadow: var(--vi-shadow-xs);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vi-field::placeholder {
+  color: var(--vi-ink-muted);
+}
+
+.vi-field:focus {
+  border-color: var(--vi-brand);
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.14),
+    var(--vi-shadow-xs);
+}
+
+.vi-field-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--vi-ink-secondary);
+}
+
+.vi-nav-pill {
+  border-radius: var(--vi-radius-md);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vi-nav-pill-active {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.12) 0%,
+    rgba(139, 92, 246, 0.1) 100%
+  );
+  color: var(--vi-brand-deep);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.18);
+}
+
+.vi-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  color: var(--vi-brand-deep);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.12);
+}
+
+.vi-popover {
+  border: 1px solid var(--vi-border);
+  border-radius: var(--vi-radius-xl);
+  background: var(--vi-surface-elevated);
+  box-shadow: var(--vi-shadow-lg);
+}
+
+/* ── 侧栏筛选 ── */
+.vi-sidebar-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-radius: var(--vi-radius-md);
+  border: 1px solid transparent;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vi-sidebar-item:hover:not(.vi-sidebar-item-active) {
+  border-color: var(--vi-border);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.vi-sidebar-item-active {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.11) 0%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(99, 102, 241, 0.1),
+    var(--vi-shadow-xs);
+}
+
+.vi-sidebar-item-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--vi-ink);
+}
+
+.vi-sidebar-item-active .vi-sidebar-item-title {
+  color: var(--vi-brand-deep);
+}
+
+.vi-sidebar-item-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--vi-ink-muted);
+}
+
+.vi-sidebar-item-active .vi-sidebar-item-count {
+  font-weight: 600;
+  color: var(--vi-brand);
+}
+
+.vi-sidebar-item-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+
+.vi-sidebar-item-hint {
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--vi-ink-muted);
+}
+
+.vi-sidebar-item-active .vi-sidebar-item-hint {
+  color: rgba(67, 56, 202, 0.72);
+}
+
+.vi-view-tab {
+  border-radius: var(--vi-radius-lg);
+  border: 1px solid var(--vi-border);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vi-view-tab:hover:not(.vi-view-tab-active) {
+  border-color: rgba(24, 24, 27, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.vi-view-tab-active {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.11) 0%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow:
+    inset 0 0 0 1px rgba(99, 102, 241, 0.1),
+    var(--vi-shadow-xs);
+}
+
+.vi-list-picker-item {
+  display: block;
+  width: 100%;
+  border-radius: var(--vi-radius-md);
+  border: 1px solid transparent;
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.vi-list-picker-item:hover:not(.vi-list-picker-item-active) {
+  border-color: var(--vi-border);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.vi-list-picker-item-active {
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.11) 0%,
+    rgba(139, 92, 246, 0.08) 100%
+  );
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+/* ── 订单卡片 ── */
+.vi-order-card {
+  border: 1px solid var(--vi-border);
+  border-radius: var(--vi-radius-xl);
+  background: var(--vi-surface-elevated);
+  padding: 1.25rem;
+  box-shadow: var(--vi-shadow-sm);
+  transition:
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease;
+}
+
+.vi-order-card:hover {
+  border-color: rgba(99, 102, 241, 0.14);
+  box-shadow: var(--vi-shadow-md);
+}
+
+.vi-order-card-focused {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.12),
+    var(--vi-shadow-md);
+}
+
+.vi-order-card-success {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: linear-gradient(
+    165deg,
+    rgba(236, 253, 245, 0.92) 0%,
+    rgba(255, 255, 255, 0.96) 48%
+  );
+  box-shadow:
+    0 0 0 2px rgba(16, 185, 129, 0.1),
+    var(--vi-shadow-sm);
+}
+
+.vi-order-success-banner {
+  margin-bottom: 0.75rem;
+  border-radius: var(--vi-radius-md);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  background: rgba(209, 250, 229, 0.65);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #065f46;
+}
+
+.vi-dl-term {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vi-ink-muted);
+}
+
+.vi-dl-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--vi-ink);
+}
+
+.vi-empty-state {
+  border-radius: var(--vi-radius-xl);
+  border: 1px dashed rgba(24, 24, 27, 0.1);
+  background: rgba(255, 255, 255, 0.55);
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--vi-ink-muted);
+}
+
+.vi-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 1;
 }

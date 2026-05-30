@@ -8,6 +8,7 @@ import {
   hasGlobalDispatcherLookup,
   hasStoreDispatcherLookup,
   hasStoreLevelLookupScope,
+  isInstallerSession,
   isPersonalDispatcherLookup,
   resolveAssignedStoresForUser,
   resolveManagedStoreForLookup,
@@ -17,11 +18,40 @@ import { getDesignerHomeStore } from "./designers";
 import type { DesignerName } from "./types";
 
 /** 登录后默认进入的板块 */
+export function getDefaultPathForSession(user: SessionUser): string {
+  if (user.accessLevel === "acceptance_manager") {
+    return "/delivery";
+  }
+  if (user.accessLevel === "personal" && isInstallerSession(user)) {
+    return "/delivery";
+  }
+  if (
+    user.accessLevel === "admin" ||
+    user.accessLevel === "design_manager" ||
+    user.accessLevel === "general_manager"
+  ) {
+    return "/manager";
+  }
+  switch (user.role) {
+    case "admin":
+    case "design_manager":
+      return "/manager";
+    case "dispatcher":
+      return "/admin";
+    case "designer":
+      return "/designer";
+    default:
+      return "/";
+  }
+}
+
+/** @deprecated 使用 getDefaultPathForSession */
 export function getDefaultPathForRole(
-  role: UserRole,
+  role: SessionUser["role"],
   accessLevel?: SessionUser["accessLevel"],
 ): string {
-  if (accessLevel === "admin" || accessLevel === "design_manager") {
+  if (accessLevel === "acceptance_manager") return "/delivery";
+  if (accessLevel === "admin" || accessLevel === "design_manager" || accessLevel === "general_manager") {
     return "/manager";
   }
   switch (role) {

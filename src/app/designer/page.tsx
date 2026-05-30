@@ -1,314 +1,891 @@
 "use client";
 
+
+
 import { AppShell } from "@/components/layout/app-shell";
+
 import { RouteGuard } from "@/components/auth/route-guard";
-import { DesignerSwitcher } from "@/components/orders/designer-switcher";
+
+import { DesignerOrderHintLine } from "@/components/designer/designer-order-hint-line";
+import { DesignerWorkbenchSidebar } from "@/components/designer/designer-workbench-sidebar";
+import { DesignerPeriodSearchBar } from "@/components/designer/designer-period-search-bar";
+import { DesignerSupplementPanel } from "@/components/designer/designer-supplement-panel";
 import { OrderList } from "@/components/orders/order-list";
-import { SupplementForm } from "@/components/orders/supplement-form";
-import { StatusSummaryBar } from "@/components/manager/status-summary-bar";
+
+import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
+
+import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
+
 import { LookupSectionHeading } from "@/components/shared/lookup-section-heading";
+
 import { useAuth } from "@/context/auth-context";
+
 import { useOrders } from "@/context/orders-context";
+
 import {
+
   getEffectiveDesignerHomeStore,
+
   getEffectiveDesignersInStores,
+
   isCrossStoreOrderForDesigner,
+
 } from "@/lib/designer-staff-store";
+
+import { isDesignerSupplementView } from "@/lib/designer-sidebar-filter";
+
 import { countOrdersByStatus, filterOrdersByStatus } from "@/lib/manager-stats";
+
 import { needsDesignerAcceptance } from "@/lib/designer-load";
+
 import {
+
   isSupplementEligibleOrder,
+
+  sortOrdersByFlowStatus,
+
   sortOrdersNewestFirst,
+
 } from "@/lib/order-utils";
+import { searchOrders } from "@/lib/order-search";
+import { resolveOrderDisplayName } from "@/lib/order-remark";
+import { resolveStrongPinOrder } from "@/lib/strong-pin-order";
+
 import {
   canEditOrderOnDesignerPage,
+
   canEditWorkflowRemarkOnOrder,
+
   canPersonalModifyOrderContent,
+
   canUseDesignerSwitcher,
+
   canUserRevertOrderStatus,
+
+  isDesignManagerAccess,
+
   isPageReadOnly,
+
   lockedDesignerName,
+
   resolveDesignerLookupStores,
+
   scopeOrdersForUser,
+
 } from "@/lib/permissions";
-import {
-  canAccessDesignerPage,
-  canViewOtherDesignersOrders,
-} from "@/lib/nav-access";
+
+import { canAccessDesignerPage } from "@/lib/nav-access";
+
 import { getDesignerDefaultName } from "@/lib/role-routes";
+
 import { getSessionResetKey } from "@/lib/session-user";
-import type { DesignerName, OrderStatus } from "@/lib/types";
+
+import {
+
+  DEFAULT_PERIOD,
+
+  filterOrdersByPeriod,
+
+  filterSupplementsByPeriod,
+
+  type PeriodSelection,
+
+} from "@/lib/period-filter";
+
+import {
+
+  loadDesignerUi,
+
+  saveDesignerUi,
+
+} from "@/lib/designer-ui-persistence";
+
+import {
+
+  loadWorkbenchPeriod,
+
+  saveWorkbenchPeriod,
+
+} from "@/lib/workbench-period-persistence";
+
+import type { DesignerSidebarFilter } from "@/lib/designer-sidebar-filter";
+
+import type { DesignerName, Order } from "@/lib/types";
+
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+
+
 
 export default function DesignerPage() {
+
+  const deepLinkApplied = useRef(false);
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();
+
   const {
+
     orders,
+
     supplements,
+
     advanceOrderStatus,
+
     addWorkflowRemark,
+
     revertOrderStatus,
+
     markPendingRefund,
+
     confirmRefund,
+
     confirmDesignerAccept,
+
     addSupplementOrder,
+
+    initiateContract,
+
+    offlineSignContract,
+
+    skipElectronicSign,
+
+    confirmContractOffline,
+
+    updateOrderDeposit,
+
+    initiateAcceptance,
+
+    skipElectronicAcceptance,
+
     isHydrated,
+
   } = useOrders();
 
+
+
   const lockedName = lockedDesignerName(user);
+
   const [currentDesigner, setCurrentDesigner] = useState<DesignerName>("汤雷");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "全部">("全部");
+
+  const [statusFilter, setStatusFilter] =
+
+    useState<DesignerSidebarFilter>("全部");
+
+  const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
+  const [orderQuery, setOrderQuery] = useState("");
+  const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
+  const [uiHydrated, setUiHydrated] = useState(false);
+
+
 
   const effectiveDesigner = (lockedName ?? currentDesigner) as DesignerName;
+
   const pageReadOnly = isPageReadOnly(user, "designer");
+
   const showSwitcher = canUseDesignerSwitcher(user);
+
   const designerLookupStores = resolveDesignerLookupStores(user);
+
   const sessionResetKey = getSessionResetKey(user);
 
+  const supplementView = isDesignerSupplementView(statusFilter);
+
+
+
   useEffect(() => {
+
     const name = getDesignerDefaultName(user);
+
     if (name) {
+
       setCurrentDesigner(name);
+
     } else if (lockedName) {
+
       setCurrentDesigner(lockedName as DesignerName);
+
     } else if (designerLookupStores?.length) {
+
       const roster = getEffectiveDesignersInStores(
+
         designerLookupStores,
+
         designerHomeStoreIndex,
+
         staffRecords,
+
       );
+
       if (roster.length > 0) {
+
         setCurrentDesigner(roster[0].name as DesignerName);
+
       }
+
     }
-    setStatusFilter("全部");
-  }, [sessionResetKey, lockedName, designerLookupStores, designerHomeStoreIndex]);
+
+    if (user?.username) {
+
+      const saved = loadDesignerUi(user.username);
+
+      const savedPeriod = loadWorkbenchPeriod(user.username);
+
+      if (saved) {
+
+        setStatusFilter(saved.statusFilter);
+
+      } else {
+
+        setStatusFilter("全部");
+
+      }
+
+      if (savedPeriod) {
+
+        setPeriod(savedPeriod);
+
+      }
+
+    } else {
+
+      setStatusFilter("全部");
+
+    }
+
+    setUiHydrated(true);
+
+  }, [sessionResetKey, lockedName, designerLookupStores, designerHomeStoreIndex, user, staffRecords]);
+
+
+
+  useEffect(() => {
+
+    if (!user?.username || !uiHydrated) return;
+
+    saveDesignerUi(user.username, { statusFilter });
+
+    saveWorkbenchPeriod(user.username, period);
+
+  }, [user?.username, statusFilter, period, uiHydrated]);
+
+
 
   const homeStore =
+
     user?.role === "designer" && user.homeStore
+
       ? user.homeStore
+
       : getEffectiveDesignerHomeStore(
+
           effectiveDesigner,
+
           designerHomeStoreIndex,
+
         );
 
+
+
   const scopedOrders = useMemo(
+
     () => scopeOrdersForUser(orders, user),
+
     [orders, user],
+
   );
+
+
+
+  useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get("orderId");
+    if (orderId) setFocusOrderId(orderId);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || !uiHydrated || !focusOrderId) return;
+    const order = scopedOrders.find((o) => o.id === focusOrderId);
+    if (!order) return;
+    if (
+      order.designer &&
+      order.designer !== effectiveDesigner &&
+      !lockedName
+    ) {
+      setCurrentDesigner(order.designer as DesignerName);
+      return;
+    }
+    if (deepLinkApplied.current) return;
+    deepLinkApplied.current = true;
+    setPeriod({ preset: "all" });
+    if (needsDesignerAcceptance(order)) {
+      setStatusFilter("待量尺");
+    } else {
+      setStatusFilter("全部");
+    }
+    setOrderQuery(resolveOrderDisplayName(order));
+  }, [
+    isHydrated,
+    uiHydrated,
+    focusOrderId,
+    scopedOrders,
+    effectiveDesigner,
+    lockedName,
+  ]);
+
+
 
   const myOrders = useMemo(
+
     () =>
-      sortOrdersNewestFirst(
-        scopedOrders.filter((o) => o.designer === effectiveDesigner),
+
+      sortOrdersByFlowStatus(
+
+        filterOrdersByPeriod(
+
+          scopedOrders.filter((o) => o.designer === effectiveDesigner),
+
+          period,
+
+        ),
+
       ),
-    [scopedOrders, effectiveDesigner],
+
+    [scopedOrders, effectiveDesigner, period],
+
   );
 
-  const otherOrders = useMemo(
-    () =>
-      sortOrdersNewestFirst(
-        scopedOrders.filter((o) => o.designer !== effectiveDesigner),
-      ),
-    [scopedOrders, effectiveDesigner],
-  );
+
 
   const mySupplements = useMemo(
+
     () =>
+
       sortOrdersNewestFirst(
+
         supplements.filter((s) => s.designer === effectiveDesigner),
+
       ),
+
     [supplements, effectiveDesigner],
+
   );
+
+
+
+  const periodSupplements = useMemo(
+
+    () => filterSupplementsByPeriod(mySupplements, period),
+
+    [mySupplements, period],
+
+  );
+
+
 
   const statusCounts = useMemo(() => countOrdersByStatus(myOrders), [myOrders]);
 
-  const filteredOrders = useMemo(
-    () => filterOrdersByStatus(myOrders, statusFilter),
-    [myOrders, statusFilter],
+  const strongPin = useMemo(
+    () => resolveStrongPinOrder(myOrders, orderQuery),
+    [myOrders, orderQuery],
   );
 
+  const isStrongPinActive = strongPin.kind === "pin";
+
+  const handleStatusFilterChange = useCallback(
+    (next: DesignerSidebarFilter) => {
+      setOrderQuery("");
+      setStatusFilter(next);
+    },
+    [],
+  );
+
+  const handlePeriodChange = useCallback((next: PeriodSelection) => {
+    setOrderQuery("");
+    setPeriod(next);
+  }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (isDesignerSupplementView(statusFilter)) return [];
+
+    if (strongPin.kind === "pin") {
+      return [strongPin.order];
+    }
+
+    const q = orderQuery.trim();
+    if (q) {
+      const globalMatches = searchOrders(myOrders, orderQuery);
+      if (globalMatches.length === 0) return [];
+      if (globalMatches.length > 1) return globalMatches;
+    }
+
+    const byStatus = filterOrdersByStatus(myOrders, statusFilter);
+    let list = searchOrders(byStatus, orderQuery);
+    if (focusOrderId && !q) {
+      const focused = myOrders.find((o) => o.id === focusOrderId);
+      if (focused && !list.some((o) => o.id === focusOrderId)) {
+        list = [focused, ...list];
+      }
+    }
+    return list;
+  }, [myOrders, statusFilter, orderQuery, focusOrderId, strongPin]);
+
   useEffect(() => {
+    if (strongPin.kind !== "pin") return;
+    const nextStatus = strongPin.order.status as DesignerSidebarFilter;
+    if (statusFilter === nextStatus) return;
+    setStatusFilter(nextStatus);
+  }, [strongPin, statusFilter]);
+
+  const orderSearchHint = useMemo(() => {
+    if (supplementView) return "仅筛选可关联增补单订单";
+    if (strongPin.kind === "pin") {
+      return `强定位 · 侧栏已同步「${strongPin.order.status}」· 更新后将跟随状态`;
+    }
+    if (orderQuery.trim() && strongPin.kind === "none") {
+      return "未找到唯一订单，请核对查询或切换统计周期为「全部」";
+    }
+    if (orderQuery.trim() && strongPin.kind === "ambiguous") {
+      return `匹配 ${strongPin.count} 笔，请缩小查询范围以强定位`;
+    }
+    return "仅筛选本人订单列表";
+  }, [supplementView, strongPin, orderQuery]);
+
+  const orderListHeading = useMemo(() => {
+    if (strongPin.kind === "pin") {
+      return `强定位 · ${resolveOrderDisplayName(strongPin.order)}`;
+    }
+    if (statusFilter === "全部") return "我的派单";
+    return `我的「${statusFilter}」派单`;
+  }, [strongPin, statusFilter]);
+
+  const orderListEmptyMessage = useMemo(() => {
+    if (orderQuery.trim() && strongPin.kind === "none") {
+      return "当前周期内未找到唯一订单，请核对查询或切换统计周期为「全部」";
+    }
+    if (orderQuery.trim() && strongPin.kind === "ambiguous") {
+      return "匹配多笔订单，请缩小查询范围";
+    }
+    if (orderQuery.trim()) {
+      return "未找到匹配订单";
+    }
+    if (statusFilter === "全部") {
+      return `${effectiveDesigner} 暂无派单，请等待店长指派`;
+    }
+    return `暂无「${statusFilter}」状态的订单`;
+  }, [orderQuery, strongPin, statusFilter, effectiveDesigner]);
+
+  useEffect(() => {
+    if (focusOrderId) return;
     setStatusFilter("全部");
-  }, [effectiveDesigner]);
+    setOrderQuery("");
+  }, [effectiveDesigner, focusOrderId]);
+
+
 
   const pendingCount = myOrders.filter((o) => o.status === "待量尺").length;
+
   const acceptPendingCount = myOrders.filter(needsDesignerAcceptance).length;
-  const crossStoreCount = myOrders.filter((o) =>
-    isCrossStoreOrderForDesigner(
-      o.dispatchStore,
-      o.designer,
-      designerHomeStoreIndex,
-    ),
+
+  const crossStoreCount = myOrders.filter(
+
+    (o) =>
+
+      o.designer != null &&
+
+      isCrossStoreOrderForDesigner(
+
+        o.dispatchStore,
+
+        o.designer,
+
+        designerHomeStoreIndex,
+
+      ),
+
   ).length;
+
+
 
   const supplementEligibleOrders = useMemo(
     () => myOrders.filter(isSupplementEligibleOrder),
     [myOrders],
   );
 
+  const supplementSearchCount = useMemo(
+    () => searchOrders(supplementEligibleOrders, orderQuery).length,
+    [supplementEligibleOrders, orderQuery],
+  );
+
+
+
   const canEditOwn = !pageReadOnly;
 
-  const canViewOthers = canViewOtherDesignersOrders(user);
+
+
+  const renderOrderDetail = useCallback(
+    (order: Order, supplementPane: ReactNode) => (
+      <OrderList
+        layout="stack"
+        headingMode="address"
+        orders={[order]}
+        emptyMessage=""
+        showDesigner={false}
+        highlightCrossStore
+        supplementPane={supplementPane}
+
+        isOrderReadOnly={(o) =>
+
+          !canEditOrderOnDesignerPage(user, o) ||
+
+          !canPersonalModifyOrderContent(user, o)
+
+        }
+
+        canRevertOrder={(o) =>
+
+          canUserRevertOrderStatus(user, o) &&
+
+          canPersonalModifyOrderContent(user, o)
+
+        }
+
+        canEditRemark={(o) =>
+
+          canEditOrderOnDesignerPage(user, o) &&
+
+          canEditWorkflowRemarkOnOrder(user, o)
+
+        }
+
+        onAdvanceStatus={canEditOwn ? advanceOrderStatus : undefined}
+
+        onAddWorkflowRemark={canEditOwn ? addWorkflowRemark : undefined}
+
+        onRevertStatus={canEditOwn ? revertOrderStatus : undefined}
+
+        onMarkPendingRefund={canEditOwn ? markPendingRefund : undefined}
+
+        onConfirmRefund={canEditOwn ? confirmRefund : undefined}
+
+        onConfirmDesignerAccept={
+
+          canEditOwn ? confirmDesignerAccept : undefined
+
+        }
+
+        showAcceptAction={canEditOwn}
+
+        showAfterSales
+
+        showCustomerFlow={canEditOwn}
+
+        onInitiateContract={canEditOwn ? initiateContract : undefined}
+
+        onUpdateDeposit={canEditOwn ? updateOrderDeposit : undefined}
+
+        onOfflineSign={
+
+          isDesignManagerAccess(user) ? offlineSignContract : undefined
+
+        }
+
+        onSkipElectronicSign={
+          isDesignManagerAccess(user) ? skipElectronicSign : undefined
+        }
+
+        onConfirmContractOffline={
+
+          isDesignManagerAccess(user) ? confirmContractOffline : undefined
+
+        }
+
+        canConfirmContractOffline={isDesignManagerAccess(user)}
+
+        onInitiateAcceptance={canEditOwn ? initiateAcceptance : undefined}
+
+        onSkipElectronicAccept={
+
+          canEditOwn ? skipElectronicAcceptance : undefined
+
+        }
+
+      />
+
+    ),
+
+    [
+
+      user,
+
+      canEditOwn,
+
+      advanceOrderStatus,
+
+      addWorkflowRemark,
+
+      revertOrderStatus,
+
+      markPendingRefund,
+
+      confirmRefund,
+
+      confirmDesignerAccept,
+
+      initiateContract,
+
+      updateOrderDeposit,
+
+      offlineSignContract,
+
+      confirmContractOffline,
+
+      initiateAcceptance,
+
+      skipElectronicAcceptance,
+
+    ],
+
+  );
+
+
 
   return (
+
     <RouteGuard canAccess={canAccessDesignerPage(user)}>
-    <AppShell title="设计师工作台" badge={effectiveDesigner}>
-      <div className="mb-6 flex flex-col gap-4 rounded-xl border border-indigo-100 bg-indigo-50/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-indigo-600/80">
-            {showSwitcher ? "当前查看设计师" : "当前登录设计师"}
-          </p>
-          {showSwitcher ? (
-            <DesignerSwitcher
-              value={effectiveDesigner}
-              onChange={setCurrentDesigner}
-              stores={designerLookupStores}
-            />
-          ) : (
-            <p className="mt-2 text-lg font-semibold text-indigo-900">
-              {effectiveDesigner}
-            </p>
-          )}
-          <p className="mt-2 text-sm text-indigo-800">
-            所在门店：<span className="font-semibold">{homeStore}</span>
-          </p>
-        </div>
-        <div className="text-sm text-indigo-900 sm:text-right">
-          <p>
-            我的订单 <span className="font-semibold">{myOrders.length}</span> 笔
-            · 增补单 <span className="font-semibold">{mySupplements.length}</span>{" "}
-            笔
-          </p>
-          {pendingCount > 0 ? (
-            <p className="mt-1 text-indigo-700">{pendingCount} 笔待量尺</p>
-          ) : (
-            <p className="mt-1 text-indigo-600">暂无待量尺订单</p>
-          )}
-          {acceptPendingCount > 0 ? (
-            <p className="mt-1 font-medium text-amber-700">
-              {acceptPendingCount} 笔待确认接单
-            </p>
-          ) : null}
-          {crossStoreCount > 0 ? (
-            <p className="mt-1 text-red-600">
-              {crossStoreCount} 笔跨店派单（地址标红）
-            </p>
-          ) : null}
-          {user?.role === "designer" ? (
-            <Link
-              href="/admin"
-              className="mt-3 inline-block text-sm font-medium text-indigo-700 underline-offset-2 hover:underline"
-            >
-              前往门店派单录入派单（固定指派给自己）
-            </Link>
-          ) : null}
-        </div>
-      </div>
 
-      <section className="space-y-8">
+      <AppShell
+
+        title="设计师工作台"
+
+        badge={effectiveDesigner}
+
+        mainClassName={EVAL_PAGE_MAIN_CLASS}
+
+      >
+
         {!isHydrated ? (
+
           <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-400">
+
             加载订单数据…
+
           </div>
+
         ) : (
-          <>
-            <SupplementForm
-              orders={supplementEligibleOrders}
-              supplements={mySupplements}
-              readOnly={!canEditOwn}
-              onSubmit={(parentOrderId, amount) =>
-                addSupplementOrder(parentOrderId, amount, effectiveDesigner)
-              }
-            />
 
-            <div className="space-y-3">
-              <LookupSectionHeading title="我的订单状态" />
-              <StatusSummaryBar
+          <ModuleWorkbenchLayout
+            periodBar={
+              <DesignerPeriodSearchBar
+                headingLabel="查询订单"
+                period={period}
+                onPeriodChange={handlePeriodChange}
+                query={orderQuery}
+                onQueryChange={setOrderQuery}
+                statusFilter={statusFilter}
+                onStatusFilterChange={handleStatusFilterChange}
+                supplementCount={periodSupplements.length}
+                hint={orderSearchHint}
+                placeholder={
+                  supplementView
+                    ? "查询可关联订单：客户、电话、地址、状态…"
+                    : "查询订单：客户、电话、地址、状态…"
+                }
+                resultCount={
+                  supplementView ? supplementSearchCount : filteredOrders.length
+                }
+              />
+            }
+            sidebar={
+              <DesignerWorkbenchSidebar
+                showSwitcher={showSwitcher}
+                effectiveDesigner={effectiveDesigner}
+                onDesignerChange={setCurrentDesigner}
+                designerLookupStores={designerLookupStores}
+                homeStore={homeStore}
+                myOrderCount={myOrders.length}
+                statusFilter={statusFilter}
+                onStatusFilterChange={handleStatusFilterChange}
                 counts={statusCounts}
-                total={myOrders.length}
-                selected={statusFilter}
-                onSelect={setStatusFilter}
               />
-            </div>
+            }
+          >
 
-            <div className="space-y-4">
-              <LookupSectionHeading
-                title={
-                  statusFilter === "全部"
-                    ? "我的派单"
-                    : `我的「${statusFilter}」派单`
-                }
-                suffix={
-                  <span className="ml-2 text-xs font-normal text-slate-500">
-                    {filteredOrders.length} 笔
-                  </span>
-                }
-              />
-              <OrderList
-                orders={filteredOrders}
-                emptyMessage={
-                  statusFilter === "全部"
-                    ? `${effectiveDesigner} 暂无派单，请等待店长指派`
-                    : `暂无「${statusFilter}」状态的订单`
-                }
-                showDesigner={false}
-                highlightCrossStore
-                isOrderReadOnly={(order) =>
-                  !canEditOrderOnDesignerPage(user, order) ||
-                  !canPersonalModifyOrderContent(user, order)
-                }
-                canRevertOrder={(order) =>
-                  canUserRevertOrderStatus(user, order) &&
-                  canPersonalModifyOrderContent(user, order)
-                }
-                canEditRemark={(order) =>
-                  canEditOrderOnDesignerPage(user, order) &&
-                  canEditWorkflowRemarkOnOrder(user, order)
-                }
-                onAdvanceStatus={
-                  canEditOwn ? advanceOrderStatus : undefined
-                }
-                onAddWorkflowRemark={
-                  canEditOwn ? addWorkflowRemark : undefined
-                }
-                onRevertStatus={canEditOwn ? revertOrderStatus : undefined}
-                onMarkPendingRefund={
-                  canEditOwn ? markPendingRefund : undefined
-                }
-                onConfirmRefund={canEditOwn ? confirmRefund : undefined}
-                onConfirmDesignerAccept={
-                  canEditOwn ? confirmDesignerAccept : undefined
-                }
-                showAcceptAction={canEditOwn}
-                showAfterSales
-              />
-            </div>
+              {supplementView ? (
 
-            {canViewOthers && otherOrders.length > 0 ? (
-              <div className="space-y-4">
-                <LookupSectionHeading
-                  title="其他设计师订单（仅查看）"
-                  suffix={
-                    <span className="ml-2 text-xs font-normal text-slate-500">
-                      {otherOrders.length} 笔
-                    </span>
+                <DesignerSupplementPanel
+                  eligibleOrders={supplementEligibleOrders}
+                  supplements={mySupplements}
+                  period={period}
+                  query={orderQuery}
+                  readOnly={!canEditOwn}
+
+                  onSubmit={(parentOrderId, amount) =>
+
+                    addSupplementOrder(parentOrderId, amount, effectiveDesigner)
+
                   }
+
+                  detailPane={renderOrderDetail}
+
                 />
-                <OrderList
-                  orders={otherOrders}
-                  emptyMessage="暂无其他设计师订单"
-                  showDesigner
-                  isOrderReadOnly={() => true}
-                  showAfterSales
-                />
-              </div>
-            ) : null}
-          </>
+
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <LookupSectionHeading
+                        title={orderListHeading}
+                        suffix={
+                          <span className="ml-2 text-xs font-normal text-zinc-500">
+                            {filteredOrders.length} 笔
+                            {isStrongPinActive ? (
+                              <span className="ml-1.5 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200/60">
+                                强定位
+                              </span>
+                            ) : null}
+                          </span>
+                        }
+                      />
+                      {statusFilter === "全部" && user?.role === "designer" ? (
+                        <Link
+                          href="/admin"
+                          className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200/60 transition hover:bg-indigo-100"
+                        >
+                          前往新客户开发录入（固定指派给自己）
+                        </Link>
+                      ) : null}
+                    </div>
+                    {statusFilter === "全部" ? (
+                      <DesignerOrderHintLine
+                        pendingCount={pendingCount}
+                        acceptPendingCount={acceptPendingCount}
+                        crossStoreCount={crossStoreCount}
+                        supplementCount={periodSupplements.length}
+                      />
+                    ) : null}
+                  </div>
+                  <OrderList
+
+                    orders={filteredOrders}
+
+                    focusOrderId={focusOrderId}
+
+                    emptyMessage={orderListEmptyMessage}
+
+                    showDesigner={false}
+
+                    highlightCrossStore
+
+                    isOrderReadOnly={(order) =>
+
+                      !canEditOrderOnDesignerPage(user, order) ||
+
+                      !canPersonalModifyOrderContent(user, order)
+
+                    }
+
+                    canRevertOrder={(order) =>
+
+                      canUserRevertOrderStatus(user, order) &&
+
+                      canPersonalModifyOrderContent(user, order)
+
+                    }
+
+                    canEditRemark={(order) =>
+
+                      canEditOrderOnDesignerPage(user, order) &&
+
+                      canEditWorkflowRemarkOnOrder(user, order)
+
+                    }
+
+                    onAdvanceStatus={
+
+                      canEditOwn ? advanceOrderStatus : undefined
+
+                    }
+
+                    onAddWorkflowRemark={
+
+                      canEditOwn ? addWorkflowRemark : undefined
+
+                    }
+
+                    onRevertStatus={canEditOwn ? revertOrderStatus : undefined}
+
+                    onMarkPendingRefund={
+
+                      canEditOwn ? markPendingRefund : undefined
+
+                    }
+
+                    onConfirmRefund={canEditOwn ? confirmRefund : undefined}
+
+                    onConfirmDesignerAccept={
+
+                      canEditOwn ? confirmDesignerAccept : undefined
+
+                    }
+
+                    showAcceptAction={canEditOwn}
+
+                    showAfterSales
+
+                    showCustomerFlow={canEditOwn}
+
+                    onInitiateContract={
+
+                      canEditOwn ? initiateContract : undefined
+
+                    }
+
+                    onUpdateDeposit={canEditOwn ? updateOrderDeposit : undefined}
+
+                    onOfflineSign={
+
+                      isDesignManagerAccess(user) ? offlineSignContract : undefined
+
+                    }
+
+                    onSkipElectronicSign={
+                      isDesignManagerAccess(user) ? skipElectronicSign : undefined
+                    }
+
+                    onConfirmContractOffline={
+
+                      isDesignManagerAccess(user) ? confirmContractOffline : undefined
+
+                    }
+
+                    canConfirmContractOffline={isDesignManagerAccess(user)}
+
+                    onInitiateAcceptance={
+
+                      canEditOwn ? initiateAcceptance : undefined
+
+                    }
+
+                    onSkipElectronicAccept={
+
+                      canEditOwn ? skipElectronicAcceptance : undefined
+
+                    }
+
+                  />
+
+                </div>
+
+              )}
+
+            </ModuleWorkbenchLayout>
+
         )}
-      </section>
-    </AppShell>
+
+      </AppShell>
+
     </RouteGuard>
+
   );
+
 }
+

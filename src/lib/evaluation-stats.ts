@@ -15,7 +15,7 @@ import { sumSupplementAmount } from "./supplement-utils";
 import { STORES } from "./designers";
 import type { Order, OrderStatus, StoreName, SupplementOrder } from "./types";
 
-export type EvaluationViewMode = "dispatcher" | "designer" | "store";
+export type EvaluationViewMode = "dispatcher" | "designer" | "store" | "acceptance";
 
 export interface EvaluationMetricCell {
   count: number;
@@ -25,6 +25,9 @@ export interface EvaluationMetricCell {
 export interface EvaluationTabSummary {
   count: number;
   amount: number;
+  /** 覆盖默认「数量/金额」展示（如客户验收） */
+  displayText?: string;
+  metricHint?: string;
 }
 
 /** 派单人：未下单 / 已下单 / 已退单 三类金额 */
@@ -271,6 +274,55 @@ export function getDispatcherEvaluationRows(
   return [...sorted, buildDispatcherWorkflowRow(orders, supplements)];
 }
 
+/** 派单人：按订单 dispatcherName 字段归集各流程状态 */
+export function getDispatcherWorkflowRows(
+  orders: Order[],
+  supplements: SupplementOrder[],
+  nameFilter: string[] | null = null,
+  staffRecords: StaffRecord[] = [],
+): WorkflowEvaluationRow[] {
+  const allowedNames = nameFilter ? new Set(nameFilter) : null;
+  const roster = getEffectiveDispatcherRoster(staffRecords);
+  const rosterNames = new Set(roster.map((d) => d.name));
+  const targetNames = new Set<string>();
+
+  if (nameFilter?.length) {
+    for (const name of nameFilter) targetNames.add(name);
+  } else {
+    for (const d of roster) targetNames.add(d.name);
+    for (const order of orders) {
+      const name = normalizeDispatcherName(order.dispatcherName);
+      if (!name || rosterNames.has(name)) continue;
+      targetNames.add(name);
+    }
+  }
+
+  const dataRows: WorkflowEvaluationRow[] = [];
+  for (const name of targetNames) {
+    if (allowedNames && !allowedNames.has(name)) continue;
+    const personOrders = orders.filter(
+      (o) => normalizeDispatcherName(o.dispatcherName) === name,
+    );
+    const rosterProfile = roster.find((d) => d.name === name);
+    dataRows.push(
+      buildWorkflowRow(
+        name,
+        name,
+        personOrders,
+        supplements,
+        rosterProfile?.homeStore ??
+          (rosterNames.has(name) ? undefined : "其他"),
+      ),
+    );
+  }
+
+  const sorted = dataRows.sort(
+    (a, b) => b.total - a.total || a.label.localeCompare(b.label, "zh-CN"),
+  );
+
+  return appendWorkflowSummary(sorted, orders, supplements);
+}
+
 /** 设计师：按订单 designer 字段归集未下单 / 已下单 / 已退单（口径同派单人归总） */
 export function getDesignerAmountRows(
   orders: Order[],
@@ -303,7 +355,8 @@ export function getDesignerAmountRows(
 
   const extraNames = new Set<string>();
   for (const order of orders) {
-    if (!seen.has(order.designer)) extraNames.add(order.designer);
+    if (!order.designer || seen.has(order.designer)) continue;
+    extraNames.add(order.designer);
   }
 
   for (const name of extraNames) {
@@ -443,9 +496,8 @@ export function getDesignerEvaluationRows(
   } else {
     for (const d of roster) targetNames.add(d.name);
     for (const order of orders) {
-      if (!rosterNames.has(order.designer)) {
-        targetNames.add(order.designer);
-      }
+      if (!order.designer || rosterNames.has(order.designer)) continue;
+      targetNames.add(order.designer);
     }
   }
 

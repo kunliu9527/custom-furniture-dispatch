@@ -9,6 +9,10 @@ import {
   type PerformanceRankKind,
 } from "@/lib/designer-performance";
 import { formatDispatchMoney } from "@/lib/dispatch-totals";
+import {
+  DESIGNER_CONTRIBUTION_FORMULA,
+  DESIGNER_PERFORMANCE_RANK_TABS,
+} from "@/lib/performance-algorithm-copy";
 import { useMemo, useState } from "react";
 
 const rankTabs: { id: PerformanceRankKind; label: string }[] = [
@@ -80,6 +84,14 @@ export function DesignerPerformanceTable({
         <table className="min-w-full text-left text-xs">
           <thead className="border-b border-slate-100 bg-slate-50 text-slate-600">
             <tr>
+              <th
+                colSpan={13}
+                className="px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-slate-500"
+              >
+                {DESIGNER_PERFORMANCE_RANK_TABS} · {DESIGNER_CONTRIBUTION_FORMULA}
+              </th>
+            </tr>
+            <tr>
               <th className="px-3 py-2.5 font-semibold">#</th>
               <th className="px-3 py-2.5 font-semibold">设计师</th>
               <th className="px-3 py-2.5 font-semibold tabular-nums">在途</th>
@@ -92,7 +104,12 @@ export function DesignerPerformanceTable({
               <th className="px-3 py-2.5 font-semibold tabular-nums">转派出/入</th>
               <th className="px-3 py-2.5 font-semibold tabular-nums">月操作</th>
               <th className="px-3 py-2.5 font-semibold tabular-nums">月推进</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">贡献分</th>
+              <th
+                className="px-3 py-2.5 font-semibold tabular-nums"
+                title={DESIGNER_CONTRIBUTION_FORMULA}
+              >
+                贡献分
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-slate-800">
@@ -149,7 +166,6 @@ export function DesignerPerformanceTable({
         </table>
       </div>
       <p className="text-[11px] leading-relaxed text-slate-400">
-        贡献分 = 下单额 + 增补×0.8 − 售后×1.2 − 退单额×0.5 − 超时×3000。
         月操作/月推进来自操作日志（自本功能上线后累计）。
         在途为当前进行中主流程单；超时为当前环节已超 SLA 的在途单。
         均出图/均总周期仅统计本周期内已有记录的订单。

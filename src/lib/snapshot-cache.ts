@@ -211,6 +211,35 @@ async function pullRemoteIfNewer() {
   }
 }
 
+/** 手动从云端拉取最新快照（覆盖本机缓存，含未上传的本地改动） */
+export async function refreshRemoteSnapshot(): Promise<AppSnapshot> {
+  if (!isRemoteSyncEnabled()) {
+    throw new Error("未开启云端同步");
+  }
+  if (pushing) {
+    throw new Error("正在保存到云端，请稍后再刷新");
+  }
+
+  notifyStatus("connecting", "正在拉取云端数据…");
+  try {
+    const remote = await fetchRemoteSnapshot();
+    cache = remote;
+    dirty = false;
+    if (pushTimer) {
+      clearTimeout(pushTimer);
+      pushTimer = null;
+    }
+    notifySnapshot(remote);
+    notifyStatus("connected", "已刷新云端数据");
+    if (!pollTimer) startPolling();
+    return remote;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "拉取失败";
+    notifyStatus("error", message);
+    throw err;
+  }
+}
+
 export function patchSnapshotCache(
   partial: Partial<Pick<AppSnapshot, "orders" | "supplements" | "staffConfig">>,
 ): void {

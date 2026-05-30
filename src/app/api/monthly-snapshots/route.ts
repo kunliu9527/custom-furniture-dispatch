@@ -17,8 +17,9 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month")?.trim();
+    const scope = searchParams.get("scope")?.trim() || null;
     if (month) {
-      const snapshot = await readMonthlySnapshot(month);
+      const snapshot = await readMonthlySnapshot(month, scope);
       if (!snapshot) {
         return NextResponse.json({ error: "not_found" }, { status: 404 });
       }
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
       ...body,
       savedAt: new Date().toISOString(),
     };
-    await writeMonthlySnapshot(snapshot);
+    await writeMonthlySnapshot(snapshot, snapshot.scopeLabel ?? null);
     return NextResponse.json(snapshot);
   } catch (err) {
     console.error("[api/monthly-snapshots] POST failed", err);

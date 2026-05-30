@@ -19,6 +19,8 @@ interface ResultDrillPanelProps {
   drill: ResultDrillFilters;
   onDrillChange: (drill: ResultDrillFilters) => void;
   flow: DrillFlow;
+  /** 顶部查找栏已选状态（按状态查找时，结果区不再重复状态维度） */
+  lookupStatusFilter?: OrderStatus | "全部";
 }
 
 function mapToItems(map: Map<string, number>) {
@@ -32,10 +34,17 @@ export function ResultDrillPanel({
   drill,
   onDrillChange,
   flow,
+  lookupStatusFilter,
 }: ResultDrillPanelProps) {
   const showStatus = flow.includes("status");
   const showDesigner = flow.includes("designer");
   const showDispatcher = flow.includes("dispatcher");
+  const contextStatus =
+    lookupStatusFilter && lookupStatusFilter !== "全部"
+      ? lookupStatusFilter
+      : drill.status !== "全部"
+        ? drill.status
+        : null;
 
   const statusSource = drillSourceForDimension(baseOrders, drill, "status");
   const statusCounts = countOrdersByStatus(statusSource);
@@ -128,8 +137,8 @@ export function ResultDrillPanel({
         designerStepReady ? (
           <InteractiveBreakdown
             title={
-              drill.status !== "全部"
-                ? `「${drill.status}」的设计师分布`
+              contextStatus
+                ? `「${contextStatus}」的设计师分布`
                 : "结果内设计师分布"
             }
             items={designerItems}
@@ -157,7 +166,9 @@ export function ResultDrillPanel({
             title={
               drill.designer !== "全部"
                 ? `「${drill.designer}」的派单人分布`
-                : `「${drill.status}」的派单人分布`
+                : contextStatus
+                  ? `「${contextStatus}」的派单人分布`
+                  : "结果内派单人分布"
             }
             items={dispatcherItems}
             total={dispatcherSource.length}

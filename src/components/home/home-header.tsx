@@ -1,6 +1,8 @@
 "use client";
 
 import { LoginPanel } from "@/components/auth/login-panel";
+import { SyncRefreshButton } from "@/components/sync/sync-refresh-button";
+import { SyncStatusBadge } from "@/components/sync/sync-status-badge";
 import { useAuth } from "@/context/auth-context";
 import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 import Link from "next/link";
@@ -29,7 +31,11 @@ export function HomeHeader() {
             {shortTitle}
           </span>
         </Link>
-        <LoginPanel variant="home" />
+        <div className="flex items-center gap-2">
+          <SyncStatusBadge />
+          <SyncRefreshButton />
+          <LoginPanel variant="home" />
+        </div>
       </div>
     </header>
   );

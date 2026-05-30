@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { formatManagedStoresLabel } from "@/lib/assigned-stores";
 import { ACCESS_LEVEL_LABELS } from "@/lib/staff-access";
-import { getDefaultPathForRole } from "@/lib/role-routes";
+import { getDefaultPathForSession } from "@/lib/role-routes";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -49,7 +49,15 @@ export function LoginPanel({
     setPassword("");
 
     if (redirectOnLogin) {
-      router.push(getDefaultPathForRole(result.role, result.accessLevel));
+      router.push(
+        getDefaultPathForSession({
+          username: username.trim(),
+          displayName: username.trim(),
+          role: result.role,
+          accessLevel: result.accessLevel,
+          position: result.position,
+        }),
+      );
     }
   }
 
@@ -120,11 +128,11 @@ export function LoginPanel({
         {passwordOpen ? (
           <form
             onSubmit={handleChangePassword}
-            className={`absolute z-50 mt-2 rounded-xl border border-slate-200 bg-white p-4 shadow-lg ${
+            className={`vi-popover absolute z-50 mt-2 p-4 ${
               variant === "home" ? "right-0 top-full w-72" : "right-0 top-full w-64"
             }`}
           >
-            <p className="text-sm font-semibold text-slate-900">修改密码</p>
+            <p className="vi-heading-section">修改密码</p>
             <div className="mt-3 space-y-3">
               <Input
                 label="当前密码"
@@ -189,12 +197,12 @@ export function LoginPanel({
       {open ? (
         <form
           onSubmit={handleSubmit}
-          className={`absolute z-50 mt-2 rounded-xl border border-slate-200 bg-white p-4 shadow-lg ${
+          className={`vi-popover absolute z-50 mt-2 p-4 ${
             variant === "home" ? "right-0 w-72" : "right-0 w-64"
           }`}
         >
-          <p className="text-sm font-semibold text-slate-900">账号登录</p>
-          <p className="mt-1 text-xs text-slate-500">请输入账号与密码</p>
+          <p className="vi-heading-section">账号登录</p>
+          <p className="mt-1 text-xs text-zinc-500">请输入账号与密码</p>
           <div className="mt-3 space-y-3">
             <Input
               label="账号"

@@ -14,7 +14,8 @@ import {
 } from "./store-manager-scope";
 import { resolveAssignedStoresForUser } from "./assigned-stores";
 import { isHeadquartersStore } from "./stores";
-import type { Order } from "./types";
+import { ADMIN_ONLY_REVERT_STATUSES } from "./constants";
+import type { FlowOrderStatus, Order } from "./types";
 
 import type { StoreName } from "./types";
 
@@ -41,9 +42,25 @@ export interface SessionUser {
   displayName: string;
   role: UserRole;
   accessLevel: StaffAccessLevel;
+  /** 人员岗位（派单人 / 设计师 / 安装师等） */
+  position?: string;
   homeStore?: StoreName;
   /** 设计经理所属实体门店（最多 3 个） */
   assignedStores?: StoreName[];
+}
+
+export function isInstallerSession(user: SessionUser | null): boolean {
+  return user?.position === "安装师";
+}
+
+/** 本人·派单人/设计师：项目节点含本周简报与订单查询 */
+export function isPersonalManagerLookupOnly(
+  user: SessionUser | null,
+): boolean {
+  if (!user || !isPersonalAccess(user) || isInstallerSession(user)) {
+    return false;
+  }
+  return user.role === "dispatcher" || user.role === "designer";
 }
 
 export function isAdminAccess(user: SessionUser | null): boolean {
@@ -55,7 +72,8 @@ export function isStoreScopedDesignManager(
   user: SessionUser | null,
 ): boolean {
   return (
-    user?.accessLevel === "design_manager" &&
+    (user?.accessLevel === "design_manager" ||
+      user?.accessLevel === "general_manager") &&
     resolveAssignedStoresForUser(user).length > 0
   );
 }
@@ -64,7 +82,12 @@ export function isStoreScopedDesignManager(
 export function isHeadquartersDesignManager(
   user: SessionUser | null,
 ): boolean {
-  if (user?.accessLevel !== "design_manager") return false;
+  if (
+    user?.accessLevel !== "design_manager" &&
+    user?.accessLevel !== "general_manager"
+  ) {
+    return false;
+  }
   return !user.homeStore || isHeadquartersStore(user.homeStore);
 }
 
@@ -73,9 +96,26 @@ export function hasStoreLevelLookupScope(user: SessionUser | null): boolean {
   return isStoreManagerAccess(user) || isStoreScopedDesignManager(user);
 }
 
+/** 设计经理 / 总经理 / 管理员 */
 export function isDesignManagerAccess(user: SessionUser | null): boolean {
   return (
-    user?.accessLevel === "design_manager" || user?.accessLevel === "admin"
+    user?.accessLevel === "design_manager" ||
+    user?.accessLevel === "general_manager" ||
+    user?.accessLevel === "admin"
+  );
+}
+
+export function isAcceptanceManagerAccess(user: SessionUser | null): boolean {
+  return user?.accessLevel === "acceptance_manager";
+}
+
+/** 可强制忽略地址重复（经理/店长确认） */
+export function canForceDuplicateAddress(user: SessionUser | null): boolean {
+  if (!user) return false;
+  return (
+    isDesignManagerAccess(user) ||
+    isStoreManagerAccess(user) ||
+    isAdminAccess(user)
   );
 }
 
@@ -145,12 +185,53 @@ export function canCreateDispatch(user: SessionUser | null): boolean {
   return user.role === "dispatcher" || user.role === "designer";
 }
 
-export function canAccessAdminPage(user: SessionUser | null): boolean {
+/** 销售/店长/经理可「仅录信息」；设计师个人账号只能直接派单给自己 */
+export function canChooseEntryOnlyMode(user: SessionUser | null): boolean {
   if (!user) return false;
+  if (isDesignManagerAccess(user) || isStoreManagerAccess(user)) return true;
+  return user.role === "dispatcher";
+}
+
+/** 未派单订单：指派设计师 */
+export function canAssignDesigner(
+  user: SessionUser | null,
+  order: Order,
+): boolean {
+  if (!user || order.status !== "未派单") return false;
+  if (!canModifyOrderInUserScope(user, order)) return false;
+  if (isDesignManagerAccess(user) || isStoreManagerAccess(user)) return true;
+  if (user.role === "dispatcher") {
+    return canDispatcherModifyOrder(user, order);
+  }
+  return false;
+}
+
+export function canAccessAdminPage(user: SessionUser | null): boolean {
+  if (!user || isAcceptanceManagerAccess(user) || isInstallerSession(user)) {
+    return false;
+  }
   if (isDesignManagerAccess(user) || user.accessLevel === "store_manager") {
     return true;
   }
   return user.role === "dispatcher" || user.role === "designer";
+}
+
+export function canAccessDeliveryPage(user: SessionUser | null): boolean {
+  if (!user) return false;
+  if (isAcceptanceManagerAccess(user)) return true;
+  if (isPersonalAccess(user) && isInstallerSession(user)) return true;
+  if (isDesignManagerAccess(user)) return true;
+  if (user.accessLevel === "store_manager") return true;
+  if (isAdminAccess(user)) return true;
+  return false;
+}
+
+/** 验收与交付写操作：验收经理、设计经理、总经理、管理员 */
+export function canEditDeliveryPage(user: SessionUser | null): boolean {
+  if (!user) return false;
+  if (isAcceptanceManagerAccess(user)) return true;
+  if (isDesignManagerAccess(user)) return true;
+  return false;
 }
 
 export function canEditManagerPage(user: SessionUser | null): boolean {
@@ -235,8 +316,14 @@ export function hasStoreDispatcherLookup(user: SessionUser | null): boolean {
 
 /** 按门店汇总是否显示「全部门店」（全公司或多门店所属汇总） */
 export function showStoreSummaryAllOption(user: SessionUser | null): boolean {
+  if (!user) return false;
   if (hasFullOrderScope(user)) return true;
-  return resolveAssignedStoresForUser(user).length > 1;
+  if (isPersonalManagerLookupOnly(user)) return false;
+  const assigned = resolveAssignedStoresForUser(user);
+  if (assigned.length > 1) return true;
+  if (assigned.length === 1) return false;
+  if (resolveManagedStoreForLookup(user)) return false;
+  return false;
 }
 
 /** 按派单人/设计师查找是否显示「全部」选项 */
@@ -275,6 +362,9 @@ export function scopeOrdersForAdminBoard(
   if (managedStore) {
     return filterOrdersByDispatcherAffiliatedStore(orders, managedStore);
   }
+  if (user.homeStore && !isHeadquartersStore(user.homeStore)) {
+    return filterOrdersByDispatcherAffiliatedStore(orders, user.homeStore);
+  }
   return scopeOrdersForUser(orders, user);
 }
 
@@ -297,6 +387,9 @@ export function scopeOrdersForUser(
   }
   if (user.role === "designer") {
     return orders.filter((o) => o.designer === user.displayName);
+  }
+  if (isAcceptanceManagerAccess(user)) {
+    return orders;
   }
   return orders;
 }
@@ -339,14 +432,47 @@ export function isPersonalAccess(user: SessionUser | null): boolean {
   return user?.accessLevel === "personal";
 }
 
-/** 撤回更新：管理员/设计经理不限；其余每环节仅可撤回一次 */
+/** 确认已退单：设计经理/管理员在权限范围内可操作 */
+export function canUserConfirmRefund(
+  user: SessionUser | null,
+  order: Order,
+): boolean {
+  if (!user || order.status !== "待退单") return false;
+  if (!canModifyOrderInUserScope(user, order)) return false;
+  if (!canPersonalModifyOrderContent(user, order)) return false;
+  return isAdminAccess(user) || isDesignManagerAccess(user);
+}
+
+/** 撤回更新：已验收流程完结不可撤；管理员可撤其余；已签约锁定后非管理员不可撤；已下单起仅管理员 */
 export function canUserRevertOrderStatus(
   user: SessionUser | null,
   order: Order,
 ): boolean {
   if (!user) return false;
+  if (!canModifyOrderInUserScope(user, order)) return false;
+  if (order.status === "已验收") return false;
+  if (isAdminAccess(user)) return true;
+
+  if (order.contract?.signLocked) {
+    const locked: FlowOrderStatus[] = [
+      "已签约",
+      "已下单",
+      "已安装",
+      "已验收",
+    ];
+    if (locked.includes(order.status as FlowOrderStatus)) {
+      return false;
+    }
+  }
+
+  if (
+    ADMIN_ONLY_REVERT_STATUSES.includes(order.status as FlowOrderStatus)
+  ) {
+    return false;
+  }
+
   if (isDesignManagerAccess(user)) {
-    return canModifyOrderInUserScope(user, order);
+    return true;
   }
   return !(order.revertedFromStatuses ?? []).includes(order.status);
 }

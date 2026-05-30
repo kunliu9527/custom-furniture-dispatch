@@ -4,6 +4,7 @@ import {
   rawIntervalDays,
   type StageTimeoutAlert,
 } from "./stage-intervals";
+import { resolveOrderDisplayName } from "./order-remark";
 import type { FlowOrderStatus, Order } from "./types";
 
 export interface ManagerAlertItem {
@@ -36,8 +37,8 @@ export function getManagerAlerts(
     if (!alert) continue;
     items.push({
       orderId: order.id,
-      customerName: order.customerName,
-      designer: order.designer,
+      customerName: resolveOrderDisplayName(order),
+      designer: order.designer ?? "未指派",
       status: order.status,
       dispatchStore: order.dispatchStore,
       budget: order.budget,

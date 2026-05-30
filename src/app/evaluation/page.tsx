@@ -1,16 +1,30 @@
 "use client";
 
 import { RouteGuard } from "@/components/auth/route-guard";
+import { AcceptanceEvaluationSection } from "@/components/evaluation/acceptance-evaluation-section";
+import { DispatcherPerformanceTable } from "@/components/evaluation/dispatcher-performance-table";
+import { DispatcherWeeklyPanel } from "@/components/evaluation/dispatcher-weekly-panel";
 import { DispatcherEvaluationRankingTable } from "@/components/evaluation/dispatcher-evaluation-ranking-table";
 import { DispatcherEvaluationTable } from "@/components/evaluation/dispatcher-evaluation-table";
 import { DesignerPerformanceTable } from "@/components/evaluation/designer-performance-table";
-import { EvaluationSectionToggle } from "@/components/evaluation/evaluation-section-toggle";
+import { EvaluationCockpit } from "@/components/evaluation/evaluation-cockpit";
+import { EvaluationOperationsChartHub } from "@/components/evaluation/evaluation-operations-chart-hub";
+import {
+  EvaluationMobileNav,
+  EvaluationSidebar,
+  type EvaluationMainSection,
+} from "@/components/evaluation/evaluation-sidebar";
+import { ReportHub } from "@/components/shared/report-hub";
+import { EvaluationWorkbenchLayout } from "@/components/evaluation/evaluation-workbench-layout";
 import { EvaluationStatsTable } from "@/components/evaluation/evaluation-stats-table";
-import { EvaluationViewTabs } from "@/components/evaluation/evaluation-view-tabs";
+import { ManagerOrderTable } from "@/components/manager/manager-order-table";
+import { OrderAnomalySummaryLine } from "@/components/orders/order-anomaly-badges";
 import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
 import { MonthlySnapshotPanel } from "@/components/evaluation/monthly-snapshot-panel";
+import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
 import { AppShell } from "@/components/layout/app-shell";
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
+import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import {
@@ -18,6 +32,7 @@ import {
   getDesignerAmountRows,
   getDesignerEvaluationRows,
   getDispatcherEvaluationRows,
+  getDispatcherWorkflowRows,
   getDispatcherTabSummary,
   getStoreEvaluationRows,
   getStoreDispatcherAmountRows,
@@ -27,10 +42,14 @@ import {
 import {
   getDefaultEvaluationViewMode,
   getDesignerSubtitleForEvaluation,
+  getEvaluationBoardTitle,
   getVisibleEvaluationViewModes,
+  isEvaluationStoreScoped,
   resolveEvaluationRowScope,
   resolveEvaluationScopeLabel,
+  scopeOrdersForEvaluationBoard,
   scopeOrdersForEvaluationView,
+  shouldShowStoreRankingSubView,
 } from "@/lib/evaluation-scope";
 import { filterRankingDisplayRows } from "@/lib/evaluation-ranking";
 import {
@@ -44,18 +63,86 @@ import {
 import {
   loadEvaluationUi,
   saveEvaluationUi,
+  type EvaluationOperationsSubView,
   type EvaluationSubView,
 } from "@/lib/evaluation-ui-persistence";
+import { getManagerAlerts } from "@/lib/manager-alerts";
+import type { ReportTab } from "@/lib/report-hub-config";
+import {
+  resolvePeriodForReportTab,
+  periodFilterVariantForReportTab,
+  reportPeriodBarHint,
+} from "@/lib/report-period-sync";
+import {
+  loadWorkbenchPeriod,
+  saveWorkbenchPeriod,
+} from "@/lib/workbench-period-persistence";
+import { getAcceptanceEvaluationSummary, getAcceptancePersonRanking, getAcceptanceRatingRecords, getAcceptanceStoreRows, formatAcceptanceTabMetric } from "@/lib/acceptance-evaluation-stats";
+import { getDispatcherPerformanceRows } from "@/lib/dispatcher-performance";
+import {
+  getActiveSubView,
+  getEvaluationSideNavGroups,
+  getSubViewTitle,
+  setActiveSubView,
+} from "@/lib/evaluation-side-nav";
 import { aggregateIssueTags } from "@/lib/issue-tag-stats";
+import { buildConversionFunnel, buildFunnelCompare } from "@/lib/conversion-funnel";
+import {
+  buildOverviewMonthlySnapshot,
+  ensureOverviewMonthlySnapshot,
+  fetchMonthlySnapshotClient,
+  fetchMonthlySnapshotIndexClient,
+  type AutoSnapshotResult,
+} from "@/lib/evaluation-auto-snapshot";
+import {
+  applyDemoIssueTagFallback,
+  applyDemoTrendFallback,
+  shouldUseEvaluationDemo,
+} from "@/lib/evaluation-trend-demo";
+import { seedDemoMonthlySnapshots } from "@/lib/demo-monthly-snapshots";
+import { apiFetch } from "@/lib/client-api";
+import { buildIssueTagTrendSeries } from "@/lib/issue-tag-trend";
+import {
+  buildAcceptanceMiniSeries,
+  buildDesignerMiniSeries,
+  buildDispatcherMiniSeries,
+  buildStoreBarItems,
+  getDispatcherTop5,
+} from "@/lib/tab-trend-series";
+import {
+  buildOperationsBrief,
+  enrichBriefWithSecondaryCompare,
+  enrichBriefWithYoY,
+} from "@/lib/operations-brief";
+import {
+  buildMonthlyTrendSeries,
+  enrichTrendSeriesWithArchives,
+  type TrendMonthPoint,
+  type TrendMonthSpan,
+} from "@/lib/trend-series";
 import { exportMonthlyDesignerReport } from "@/lib/monthly-report-export";
 import {
   DEFAULT_PERIOD,
   filterOrdersByPeriod,
   filterSupplementsByPeriod,
   formatPeriodLabel,
+  selectionToYearMonth,
+  shiftYearMonth,
+  yearMonthToPeriod,
   type PeriodSelection,
 } from "@/lib/period-filter";
+import type { MonthlyCockpitSnapshot } from "@/lib/monthly-snapshot-types";
 import { getSessionResetKey } from "@/lib/session-user";
+import { searchOrders } from "@/lib/order-search";
+import {
+  formatStrongPinEmptyMessage,
+  formatStrongPinHeading,
+  formatStrongPinSearchHint,
+  resolveStrongPinOrder,
+  resolveStrongPinOrSearchMatches,
+} from "@/lib/strong-pin-order";
+import { sortOrdersNewestFirst } from "@/lib/order-utils";
+import { filterSupplementsByOrders } from "@/lib/supplement-filter";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const viewConfig: Record<
@@ -77,38 +164,90 @@ const viewConfig: Record<
     nameColumnLabel: "门店名称",
     emptyMessage: "当前权限范围内暂无门店订单",
   },
+  acceptance: {
+    title: "客户验收评价",
+    nameColumnLabel: "门店名称",
+    emptyMessage: "当前权限范围内暂无验收评价",
+  },
 };
 
 export default function EvaluationPage() {
-  const { user, staffRecords } = useAuth();
+  const { user, staffRecords, designerHomeStoreIndex } = useAuth();
   const { orders, supplements, isHydrated } = useOrders();
   const allowedModes = useMemo(
     () => getVisibleEvaluationViewModes(user),
     [user],
   );
   const allowedModesKey = allowedModes.join(",");
+  const [mainSection, setMainSection] =
+    useState<EvaluationMainSection>("operations");
+  const [operationsSubView, setOperationsSubView] =
+    useState<EvaluationOperationsSubView>("cockpit");
+  const [reportTab, setReportTab] = useState<ReportTab>("weekly");
   const [viewMode, setViewMode] = useState<EvaluationViewMode>("dispatcher");
   const [dispatcherSubView, setDispatcherSubView] =
     useState<EvaluationSubView>("aggregate");
   const [storeSubView, setStoreSubView] = useState<EvaluationSubView>("aggregate");
   const [designerSubView, setDesignerSubView] =
     useState<EvaluationSubView>("aggregate");
+  const [acceptanceSubView, setAcceptanceSubView] =
+    useState<EvaluationSubView>("aggregate");
   const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
+  const [orderQuery, setOrderQuery] = useState("");
+  const [periodUiHydrated, setPeriodUiHydrated] = useState(false);
+  const [snapshotStatus, setSnapshotStatus] =
+    useState<AutoSnapshotResult | null>(null);
+  const [archiveMonths, setArchiveMonths] = useState<string[]>([]);
+  const [yoyCockpit, setYoyCockpit] = useState<MonthlyCockpitSnapshot | null>(
+    null,
+  );
+  const [yoyLabel, setYoyLabel] = useState<string | null>(null);
+  const [monthSpan, setMonthSpan] = useState<TrendMonthSpan>(6);
   const sessionResetKey = getSessionResetKey(user);
   const periodLabel = formatPeriodLabel(period);
   const scopeLabel = resolveEvaluationScopeLabel(user);
+  const storeScoped = isEvaluationStoreScoped(user);
+
+  const handleViewModeChange = useCallback((mode: EvaluationViewMode) => {
+    setOrderQuery("");
+    setViewMode(mode);
+  }, []);
+
+  const handleMainSectionChange = useCallback((section: EvaluationMainSection) => {
+    setOrderQuery("");
+    setMainSection(section);
+  }, []);
+
+  const handlePeriodChange = useCallback((next: PeriodSelection) => {
+    setOrderQuery("");
+    setPeriod(next);
+  }, []);
+
+  const boardOrders = useMemo(
+    () => scopeOrdersForEvaluationBoard(orders, user),
+    [orders, user],
+  );
 
   useEffect(() => {
     if (!user?.username) return;
+    const savedWorkbenchPeriod = loadWorkbenchPeriod(user.username);
     const saved = loadEvaluationUi(user.username);
     if (saved && allowedModes.includes(saved.viewMode)) {
+      setMainSection(saved.mainSection ?? "operations");
+      setOperationsSubView(saved.operationsSubView ?? "cockpit");
+      setReportTab(saved.reportTab ?? "weekly");
       setViewMode(saved.viewMode);
       setDispatcherSubView(saved.dispatcherSubView);
       setStoreSubView(saved.storeSubView);
       setDesignerSubView(saved.designerSubView);
-      setPeriod(saved.period);
+      setAcceptanceSubView(saved.acceptanceSubView ?? "aggregate");
+      setPeriod(savedWorkbenchPeriod ?? saved.period);
+      setPeriodUiHydrated(true);
       return;
     }
+    setMainSection("operations");
+    setOperationsSubView("cockpit");
+    setReportTab("weekly");
     const defaults = getDefaultEvaluationViewMode(user);
     setViewMode(
       allowedModes.includes(defaults) ? defaults : (allowedModes[0] ?? "dispatcher"),
@@ -116,32 +255,54 @@ export default function EvaluationPage() {
     setDispatcherSubView("aggregate");
     setStoreSubView("aggregate");
     setDesignerSubView("aggregate");
-    setPeriod(DEFAULT_PERIOD);
+    setAcceptanceSubView("aggregate");
+    setPeriod(savedWorkbenchPeriod ?? DEFAULT_PERIOD);
+    setPeriodUiHydrated(true);
   }, [sessionResetKey, allowedModesKey, user]);
+
+  useEffect(() => {
+    if (!user?.username || !periodUiHydrated) return;
+    saveWorkbenchPeriod(user.username, period);
+  }, [user?.username, period, periodUiHydrated]);
 
   useEffect(() => {
     if (!user?.username) return;
     saveEvaluationUi(user.username, {
+      mainSection,
+      operationsSubView,
+      reportTab,
       viewMode,
       dispatcherSubView,
       storeSubView,
       designerSubView,
+      acceptanceSubView,
       period,
     });
   }, [
     user?.username,
+    mainSection,
+    operationsSubView,
+    reportTab,
     viewMode,
     dispatcherSubView,
     storeSubView,
     designerSubView,
+    acceptanceSubView,
     period,
   ]);
 
   useEffect(() => {
     if (!allowedModes.includes(viewMode)) {
-      setViewMode(allowedModes[0] ?? "dispatcher");
+      handleViewModeChange(allowedModes[0] ?? "dispatcher");
     }
-  }, [allowedModesKey, viewMode]);
+  }, [allowedModesKey, viewMode, allowedModes, handleViewModeChange]);
+
+  useEffect(() => {
+    if (mainSection !== "operations" || operationsSubView !== "reports") return;
+    const next = resolvePeriodForReportTab(reportTab, period);
+    if (next) setPeriod(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进入报告区或切换 Tab 时对齐周期
+  }, [mainSection, operationsSubView, reportTab]);
 
   const scopedOrdersByView = useMemo(
     () => ({
@@ -158,6 +319,12 @@ export default function EvaluationPage() {
         staffRecords,
       ),
       store: scopeOrdersForEvaluationView("store", orders, user, staffRecords),
+      acceptance: scopeOrdersForEvaluationView(
+        "acceptance",
+        orders,
+        user,
+        staffRecords,
+      ),
     }),
     [orders, user, staffRecords],
   );
@@ -170,13 +337,60 @@ export default function EvaluationPage() {
       ),
       designer: filterOrdersByPeriod(scopedOrdersByView.designer, period),
       store: filterOrdersByPeriod(scopedOrdersByView.store, period),
+      acceptance: filterOrdersByPeriod(scopedOrdersByView.acceptance, period),
     }),
     [scopedOrdersByView, period],
   );
 
-  const periodScopedSupplements = useMemo(
-    () => filterSupplementsByPeriod(supplements, period),
-    [supplements, period],
+  const evaluationSearchBaseOrders = useMemo(
+    () => periodScopedOrdersByView[viewMode],
+    [periodScopedOrdersByView, viewMode],
+  );
+
+  const strongPin = useMemo(
+    () => resolveStrongPinOrder(evaluationSearchBaseOrders, orderQuery),
+    [evaluationSearchBaseOrders, orderQuery],
+  );
+
+  const orderSearchResults = useMemo(() => {
+    const q = orderQuery.trim();
+    if (!q) return [];
+    return sortOrdersNewestFirst(
+      resolveStrongPinOrSearchMatches(
+        evaluationSearchBaseOrders,
+        orderQuery,
+        strongPin,
+      ),
+    );
+  }, [evaluationSearchBaseOrders, orderQuery, strongPin]);
+
+  const isOrderSearching = orderQuery.trim().length > 0;
+
+  const lookupSearchHint = formatStrongPinSearchHint(
+    strongPin,
+    orderQuery,
+    "数据汇总与订单查询按此周期",
+  );
+
+  const lookupEmptyMessage = useMemo(
+    () =>
+      formatStrongPinEmptyMessage(strongPin, orderQuery, "未找到匹配的订单"),
+    [strongPin, orderQuery],
+  );
+
+  const orderSearchHeading = useMemo(() => {
+    if (isOrderSearching && strongPin.kind === "pin") {
+      return formatStrongPinHeading(strongPin, "关键词查找结果");
+    }
+    if (isOrderSearching) {
+      return `关键词查找结果（${orderSearchResults.length}）`;
+    }
+    return "";
+  }, [isOrderSearching, strongPin, orderSearchResults.length]);
+
+  const orderSearchSupplements = useMemo(
+    () => filterSupplementsByOrders(supplements, orderSearchResults),
+    [supplements, orderSearchResults],
   );
 
   const rowScope = useMemo(
@@ -189,9 +403,40 @@ export default function EvaluationPage() {
     [user, staffRecords, scopedOrdersByView.dispatcher],
   );
 
+  const showStoreRanking = shouldShowStoreRankingSubView(
+    rowScope.storeNames,
+    storeScoped,
+  );
+
+  const boardSupplements = useMemo(
+    () => filterSupplementsByOrders(supplements, boardOrders),
+    [supplements, boardOrders],
+  );
+
+  const periodScopedSupplements = useMemo(
+    () => filterSupplementsByPeriod(boardSupplements, period),
+    [boardSupplements, period],
+  );
+
   const dispatcherRows = useMemo(
     () =>
       getDispatcherEvaluationRows(
+        periodScopedOrdersByView.dispatcher,
+        periodScopedSupplements,
+        rowScope.dispatcherNames,
+        staffRecords,
+      ),
+    [
+      periodScopedOrdersByView.dispatcher,
+      periodScopedSupplements,
+      rowScope.dispatcherNames,
+      staffRecords,
+    ],
+  );
+
+  const dispatcherWorkflowRows = useMemo(
+    () =>
+      getDispatcherWorkflowRows(
         periodScopedOrdersByView.dispatcher,
         periodScopedSupplements,
         rowScope.dispatcherNames,
@@ -268,15 +513,16 @@ export default function EvaluationPage() {
   );
 
   const companyPeriodOrders = useMemo(
-    () => filterOrdersByPeriod(orders, period),
-    [orders, period],
+    () =>
+      filterOrdersByPeriod(storeScoped ? boardOrders : orders, period),
+    [storeScoped, boardOrders, orders, period],
   );
 
   const storeRankingData = useMemo(() => {
     const rankSource = getStoreDispatcherAmountRows(
       companyPeriodOrders,
       periodScopedSupplements,
-      null,
+      storeScoped ? rowScope.storeNames : null,
     );
     return {
       rankSource,
@@ -313,6 +559,48 @@ export default function EvaluationPage() {
     [scopedOrdersByView.designer, supplements, period],
   );
 
+  const dispatcherPerformanceRows = useMemo(
+    () =>
+      getDispatcherPerformanceRows(
+        scopedOrdersByView.dispatcher,
+        supplements,
+        rowScope.dispatcherNames,
+        staffRecords,
+        period,
+      ),
+    [
+      scopedOrdersByView.dispatcher,
+      supplements,
+      rowScope.dispatcherNames,
+      staffRecords,
+      period,
+    ],
+  );
+
+  const acceptanceSummary = useMemo(
+    () => getAcceptanceEvaluationSummary(periodScopedOrdersByView.acceptance),
+    [periodScopedOrdersByView.acceptance],
+  );
+
+  const acceptanceStoreRows = useMemo(
+    () =>
+      getAcceptanceStoreRows(
+        periodScopedOrdersByView.acceptance,
+        rowScope.storeNames,
+      ),
+    [periodScopedOrdersByView.acceptance, rowScope.storeNames],
+  );
+
+  const acceptancePersonRanking = useMemo(
+    () => getAcceptancePersonRanking(periodScopedOrdersByView.acceptance),
+    [periodScopedOrdersByView.acceptance],
+  );
+
+  const acceptanceRatingRecords = useMemo(
+    () => getAcceptanceRatingRecords(periodScopedOrdersByView.acceptance),
+    [periodScopedOrdersByView.acceptance],
+  );
+
   const issueTagStats = useMemo(
     () => aggregateIssueTags(scopedOrdersByView.designer, period),
     [scopedOrdersByView.designer, period],
@@ -327,18 +615,6 @@ export default function EvaluationPage() {
     );
   }, [monthlyOverview, designerPerformanceRows, period, scopedOrdersByView.designer]);
 
-  useEffect(() => {
-    if (viewMode === "dispatcher") {
-      setDispatcherSubView("aggregate");
-    }
-    if (viewMode === "store") {
-      setStoreSubView("aggregate");
-    }
-    if (viewMode === "designer") {
-      setDesignerSubView("aggregate");
-    }
-  }, [viewMode]);
-
   const storeAggregateSummary = useMemo(
     () => getDispatcherTabSummary(storeDispatcherAmountRows),
     [storeDispatcherAmountRows],
@@ -349,113 +625,601 @@ export default function EvaluationPage() {
     [designerAmountRows],
   );
 
+  const dispatcherWorkflowSummary = useMemo(
+    () => getWorkflowTabSummary(dispatcherWorkflowRows),
+    [dispatcherWorkflowRows],
+  );
+
   const tabSummaries = useMemo(
     () => ({
       dispatcher: getDispatcherTabSummary(dispatcherRows),
-      designer: getWorkflowTabSummary(designerRows),
-      store: getWorkflowTabSummary(storeRows),
+      designer: getDispatcherTabSummary(designerAmountRows),
+      store: getDispatcherTabSummary(storeDispatcherAmountRows),
+      acceptance: {
+        count: acceptanceSummary.ratedCount,
+        amount: 0,
+        displayText: formatAcceptanceTabMetric(acceptanceSummary),
+        metricHint: "已评价 / 综合均分",
+      },
     }),
-    [dispatcherRows, designerRows, storeRows],
+    [
+      dispatcherRows,
+      designerAmountRows,
+      storeDispatcherAmountRows,
+      acceptanceSummary,
+    ],
   );
 
   const activeConfig = viewConfig[viewMode];
 
+  const overviewOrders = boardOrders;
+
+  const globalReportSupplements = useMemo(
+    () => filterSupplementsByOrders(supplements, overviewOrders),
+    [supplements, overviewOrders],
+  );
+
+  const globalAlerts = useMemo(
+    () => getManagerAlerts(overviewOrders),
+    [overviewOrders],
+  );
+
+  const operationsBrief = useMemo(
+    () => buildOperationsBrief(overviewOrders, globalReportSupplements, period),
+    [overviewOrders, globalReportSupplements, period],
+  );
+
+  const briefWithSecondary = useMemo(
+    () =>
+      enrichBriefWithSecondaryCompare(
+        operationsBrief,
+        period,
+        overviewOrders,
+        supplements,
+      ),
+    [operationsBrief, period, overviewOrders, supplements],
+  );
+
+  const displayBrief = useMemo(
+    () => enrichBriefWithYoY(briefWithSecondary, yoyLabel, yoyCockpit),
+    [briefWithSecondary, yoyLabel, yoyCockpit],
+  );
+
+  const trendPoints = useMemo(
+    () => buildMonthlyTrendSeries(overviewOrders, globalReportSupplements, monthSpan),
+    [overviewOrders, globalReportSupplements, monthSpan],
+  );
+
+  const issueTagPointsRaw = useMemo(
+    () => buildIssueTagTrendSeries(overviewOrders, monthSpan),
+    [overviewOrders, monthSpan],
+  );
+
+  const [displayTrendPoints, setDisplayTrendPoints] =
+    useState<TrendMonthPoint[]>(trendPoints);
+  const [displayIssueTagPoints, setDisplayIssueTagPoints] = useState(
+    issueTagPointsRaw,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void enrichTrendSeriesWithArchives(
+      trendPoints,
+      (ym) => fetchMonthlySnapshotClient(ym, scopeLabel),
+      { scopeLabel },
+    ).then((points) => {
+      if (cancelled) return;
+      const withDemo =
+        storeScoped || !shouldUseEvaluationDemo()
+          ? points
+          : applyDemoTrendFallback(points, monthSpan);
+      setDisplayTrendPoints(withDemo);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [trendPoints, monthSpan, scopeLabel, storeScoped]);
+
+  useEffect(() => {
+    setDisplayIssueTagPoints(
+      storeScoped
+        ? issueTagPointsRaw
+        : applyDemoIssueTagFallback(issueTagPointsRaw, monthSpan),
+    );
+  }, [issueTagPointsRaw, monthSpan, storeScoped]);
+
+  const isDemoTrend = displayTrendPoints.some((p) => p.isDemo);
+
+  const chartDataByMode = useMemo(
+    () => ({
+      dispatcher: {
+        dispatcherSeries: buildDispatcherMiniSeries(
+          scopedOrdersByView.dispatcher,
+          supplements,
+          monthSpan,
+        ),
+        dispatcherTop5: getDispatcherTop5(
+          scopedOrdersByView.dispatcher,
+          supplements,
+          rowScope.dispatcherNames,
+          staffRecords,
+          period,
+        ),
+        designerSeries: [],
+        storeBars: [],
+        acceptanceSeries: [],
+      },
+      designer: {
+        dispatcherSeries: [],
+        dispatcherTop5: [],
+        designerSeries: buildDesignerMiniSeries(
+          scopedOrdersByView.designer,
+          supplements,
+          monthSpan,
+        ),
+        storeBars: [],
+        acceptanceSeries: [],
+      },
+      store: {
+        dispatcherSeries: [],
+        dispatcherTop5: [],
+        designerSeries: [],
+        storeBars: buildStoreBarItems(
+          scopedOrdersByView.store,
+          supplements,
+          period,
+          rowScope.storeNames,
+        ),
+        acceptanceSeries: [],
+      },
+      acceptance: {
+        dispatcherSeries: [],
+        dispatcherTop5: [],
+        designerSeries: [],
+        storeBars: [],
+        acceptanceSeries: buildAcceptanceMiniSeries(
+          periodScopedOrdersByView.acceptance,
+          monthSpan,
+        ),
+      },
+    }),
+    [
+      scopedOrdersByView,
+      supplements,
+      monthSpan,
+      period,
+      rowScope.dispatcherNames,
+      rowScope.storeNames,
+      staffRecords,
+      periodScopedOrdersByView.acceptance,
+    ],
+  );
+
+  const funnelCompare = useMemo(
+    () => buildFunnelCompare(overviewOrders, period),
+    [overviewOrders, period],
+  );
+
+  const handlePeriodMonthSelect = useCallback((yearMonth: string) => {
+    setPeriod(yearMonthToPeriod(yearMonth));
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated || period.preset === "all" || period.preset === "thisWeek" || period.preset === "lastWeek") return;
+    let cancelled = false;
+
+    const funnel = buildConversionFunnel(overviewOrders, period);
+    const snapshot = buildOverviewMonthlySnapshot(
+      overviewOrders,
+      globalReportSupplements,
+      period,
+      operationsBrief,
+      funnel,
+      {
+        scopeLabel: scopeLabel ?? undefined,
+        staffRecords,
+        savedBy: user?.displayName ?? "综合看板",
+      },
+    );
+
+    void ensureOverviewMonthlySnapshot(snapshot).then((result) => {
+      if (!cancelled) setSnapshotStatus(result);
+    });
+
+    if (period.preset !== "lastMonth") {
+      const lastPeriod = { preset: "lastMonth" as const };
+      const lastBrief = buildOperationsBrief(
+        overviewOrders,
+        globalReportSupplements,
+        lastPeriod,
+      );
+      const lastFunnel = buildConversionFunnel(overviewOrders, lastPeriod);
+      const lastSnapshot = buildOverviewMonthlySnapshot(
+        overviewOrders,
+        globalReportSupplements,
+        lastPeriod,
+        lastBrief,
+        lastFunnel,
+        { scopeLabel: scopeLabel ?? undefined, staffRecords },
+      );
+      void ensureOverviewMonthlySnapshot(lastSnapshot);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isHydrated,
+    overviewOrders,
+    globalReportSupplements,
+    period,
+    operationsBrief,
+    scopeLabel,
+    staffRecords,
+    user?.displayName,
+  ]);
+
+  useEffect(() => {
+    void fetchMonthlySnapshotIndexClient(scopeLabel).then(setArchiveMonths);
+  }, [scopeLabel]);
+
+  useEffect(() => {
+    if (!isHydrated || storeScoped || !shouldUseEvaluationDemo()) return;
+    void seedDemoMonthlySnapshots(async (snap) => {
+      try {
+        const existing = await apiFetch(
+          `/api/monthly-snapshots?month=${encodeURIComponent(snap.yearMonth)}`,
+        );
+        if (existing.ok) return false;
+        const post = await apiFetch("/api/monthly-snapshots", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(snap),
+        });
+        return post.ok;
+      } catch {
+        return false;
+      }
+    }).then((saved) => {
+      if (saved > 0) {
+        void fetchMonthlySnapshotIndexClient(scopeLabel).then(setArchiveMonths);
+      }
+    });
+  }, [isHydrated]);
+
+  useEffect(() => {
+    const ym = selectionToYearMonth(period);
+    if (!ym) {
+      setYoyCockpit(null);
+      setYoyLabel(null);
+      return;
+    }
+    const prevYearYm = shiftYearMonth(ym, -12);
+    if (!prevYearYm) {
+      setYoyCockpit(null);
+      setYoyLabel(null);
+      return;
+    }
+    setYoyLabel(formatPeriodLabel(yearMonthToPeriod(prevYearYm)));
+    void fetchMonthlySnapshotClient(prevYearYm, scopeLabel).then((snap) => {
+      setYoyCockpit(snap?.cockpit ?? null);
+    });
+  }, [period, scopeLabel]);
+
+  const activeSubView = getActiveSubView(viewMode, {
+    dispatcher: dispatcherSubView,
+    designer: designerSubView,
+    store: storeSubView,
+    acceptance: acceptanceSubView,
+  });
+
+  const sideNavGroups = useMemo(() => {
+    const groups = getEvaluationSideNavGroups(viewMode, {
+      hideStoreRanking: viewMode === "store" && !showStoreRanking,
+    });
+    return groups.map((group) => ({
+      ...group,
+      items: group.items.map((item) => {
+        let suffix: string | undefined;
+        if (viewMode === "dispatcher") {
+          if (item.id === "aggregate") {
+            suffix = formatEvaluationMetric(
+              tabSummaries.dispatcher.count,
+              tabSummaries.dispatcher.amount,
+            );
+          } else if (item.id === "workflow") {
+            suffix = formatEvaluationMetric(
+              dispatcherWorkflowSummary.count,
+              dispatcherWorkflowSummary.amount,
+            );
+          }
+        } else if (viewMode === "designer") {
+          if (item.id === "aggregate") {
+            suffix = formatEvaluationMetric(
+              designerAggregateSummary.count,
+              designerAggregateSummary.amount,
+            );
+          } else if (item.id === "workflow") {
+            suffix = formatEvaluationMetric(
+              tabSummaries.designer.count,
+              tabSummaries.designer.amount,
+            );
+          } else if (item.id === "performance") {
+            suffix = "贡献分 · 周期 · 超时";
+          }
+        } else if (viewMode === "store") {
+          if (item.id === "aggregate") {
+            suffix = formatEvaluationMetric(
+              storeAggregateSummary.count,
+              storeAggregateSummary.amount,
+            );
+          } else if (item.id === "workflow") {
+            suffix = formatEvaluationMetric(
+              tabSummaries.store.count,
+              tabSummaries.store.amount,
+            );
+          }
+        } else if (viewMode === "acceptance") {
+          if (item.id === "aggregate") {
+            suffix = `已评价 ${acceptanceSummary.ratedCount} 单 · 均分 ${acceptanceSummary.avgOverall.toFixed(1)} 星`;
+          }
+        }
+        return { ...item, suffix };
+      }),
+    }));
+  }, [
+    viewMode,
+    showStoreRanking,
+    tabSummaries,
+    dispatcherWorkflowSummary,
+    designerAggregateSummary,
+    storeAggregateSummary,
+    acceptanceSummary,
+  ]);
+
+  useEffect(() => {
+    if (viewMode === "store" && storeSubView === "ranking" && !showStoreRanking) {
+      setStoreSubView("aggregate");
+    }
+  }, [viewMode, storeSubView, showStoreRanking]);
+
+  const handleSubViewSelect = useCallback(
+    (id: EvaluationSubView) => {
+      setOrderQuery("");
+      setActiveSubView(viewMode, id, {
+        setDispatcherSubView,
+        setDesignerSubView,
+        setStoreSubView,
+        setAcceptanceSubView,
+      });
+    },
+    [viewMode],
+  );
+
   const exportData = useMemo(
     () => ({
       dispatcherRows,
+      dispatcherWorkflowRows,
       designerAmountRows,
       designerWorkflowRows: designerRows,
       storeDispatcherAmountRows,
       storeWorkflowRows: storeRows,
       storeRankingDisplayRows: storeRankingData.displayRows,
       storeRankingRankSource: storeRankingData.rankSource,
+      acceptanceSummary,
+      acceptanceStoreRows,
+      acceptancePersonRanking,
+      acceptanceRatingRecords,
+      dispatcherPerformanceRows,
     }),
     [
       dispatcherRows,
+      dispatcherWorkflowRows,
       designerAmountRows,
       designerRows,
       storeDispatcherAmountRows,
       storeRows,
       storeRankingData,
+      acceptanceSummary,
+      acceptanceStoreRows,
+      acceptancePersonRanking,
+      acceptanceRatingRecords,
+      dispatcherPerformanceRows,
     ],
   );
 
   return (
     <RouteGuard canAccess={canAccessEvaluationPage(user)}>
-      <AppShell title="评价看板" badge={getSessionBadgeLabel(user) ?? "统计"}>
-        <div className="space-y-6">
+      <AppShell
+        title={getEvaluationBoardTitle(scopeLabel)}
+        badge={getSessionBadgeLabel(user) ?? "统计"}
+        mainClassName={EVAL_PAGE_MAIN_CLASS}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
           {!isHydrated ? (
             <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-400">
               加载订单数据…
             </div>
           ) : (
-            <>
-              <PeriodFilterBar value={period} onChange={setPeriod} />
-
-              <EvaluationViewTabs
-                value={viewMode}
-                onChange={setViewMode}
-                summaries={tabSummaries}
-                allowedModes={allowedModes}
-                exportData={exportData}
-                periodLabel={periodLabel}
-              />
-
-              <section className="space-y-4">
-                {viewMode === "store" ? (
+            <EvaluationWorkbenchLayout
+              periodBar={
+                mainSection === "data" ? (
+                  <WorkbenchPeriodSearchBar
+                    period={period}
+                    onPeriodChange={handlePeriodChange}
+                    query={orderQuery}
+                    onQueryChange={setOrderQuery}
+                    hint={lookupSearchHint}
+                    placeholder={
+                      storeScoped && scopeLabel
+                        ? `查询 ${scopeLabel} 订单：客户、电话、地址、设计师、派单人…`
+                        : "查询订单：客户、电话、地址、设计师、派单人、门店…"
+                    }
+                    resultCount={orderSearchResults.length}
+                  />
+                ) : (
+                  <PeriodFilterBar
+                    value={period}
+                    onChange={setPeriod}
+                    embedded
+                    variant={
+                      mainSection === "operations" &&
+                      operationsSubView === "reports"
+                        ? periodFilterVariantForReportTab(reportTab)
+                        : "default"
+                    }
+                    hint={
+                      mainSection === "operations" &&
+                      operationsSubView === "reports"
+                        ? reportPeriodBarHint(reportTab, scopeLabel)
+                        : storeScoped && scopeLabel
+                          ? `${scopeLabel} · 数据汇总与订单查询按此周期`
+                          : undefined
+                    }
+                  />
+                )
+              }
+              mobileTabs={
+                <EvaluationMobileNav
+                  mainSection={mainSection}
+                  onMainSectionChange={handleMainSectionChange}
+                  operationsSubView={operationsSubView}
+                  onOperationsSubViewChange={setOperationsSubView}
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                  summaries={tabSummaries}
+                  allowedModes={allowedModes}
+                  exportData={exportData}
+                  periodLabel={periodLabel}
+                  reportScopeLabel={scopeLabel}
+                />
+              }
+              sidebar={
+                <EvaluationSidebar
+                  mainSection={mainSection}
+                  onMainSectionChange={handleMainSectionChange}
+                  operationsSubView={operationsSubView}
+                  onOperationsSubViewChange={setOperationsSubView}
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                  summaries={tabSummaries}
+                  allowedModes={allowedModes}
+                  exportData={exportData}
+                  periodLabel={periodLabel}
+                  sideNavGroups={sideNavGroups}
+                  activeSubView={activeSubView}
+                  onSubViewSelect={handleSubViewSelect}
+                  reportScopeLabel={scopeLabel}
+                />
+              }
+            >
+              {mainSection === "operations" ? (
+                operationsSubView === "reports" ? (
+                  <ReportHub
+                    scope="global"
+                    orders={overviewOrders}
+                    supplements={globalReportSupplements}
+                    period={period}
+                    activeTab={reportTab}
+                    onTabChange={setReportTab}
+                    onPeriodChange={setPeriod}
+                    storeScopeLabel={scopeLabel}
+                  />
+                ) : (
+                <>
+                  <EvaluationCockpit
+                    brief={displayBrief}
+                    scopeLabel={scopeLabel}
+                    snapshotStatus={snapshotStatus}
+                    isDemoTrend={isDemoTrend}
+                  />
+                  <EvaluationOperationsChartHub
+                    allowedModes={allowedModes}
+                    hideStoreChartTab={storeScoped && !showStoreRanking}
+                    trendPoints={displayTrendPoints}
+                    issueTagPoints={displayIssueTagPoints}
+                    funnelCompare={funnelCompare}
+                    period={period}
+                    periodLabel={periodLabel}
+                    monthSpan={monthSpan}
+                    onMonthSpanChange={setMonthSpan}
+                    onPeriodMonthSelect={handlePeriodMonthSelect}
+                    archiveMonths={archiveMonths}
+                    dataByMode={chartDataByMode}
+                    selectedYearMonth={selectionToYearMonth(period)}
+                  />
+                </>
+                )
+              ) : (
+                <div className="space-y-4">
+                  {isOrderSearching ? (
+                    <section className="space-y-3">
+                      <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+                        <h2 className="text-sm font-semibold text-slate-900">
+                          {orderSearchHeading}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {periodLabel}
+                          {scopeLabel ? ` · ${scopeLabel}` : ""}
+                          {` · ${viewConfig[viewMode].title}`}
+                          {lookupSearchHint && strongPin.kind === "pin"
+                            ? ` · ${lookupSearchHint}`
+                            : null}
+                        </p>
+                        <OrderAnomalySummaryLine
+                          orders={orderSearchResults}
+                          className="mt-1 text-xs font-medium text-rose-600"
+                          highlightCrossStore
+                          designerHomeStoreIndex={designerHomeStoreIndex}
+                        />
+                      </div>
+                      <ManagerOrderTable
+                        orders={orderSearchResults}
+                        supplements={orderSearchSupplements}
+                        showDesigner
+                        readOnly
+                        emptyMessage={lookupEmptyMessage}
+                      />
+                    </section>
+                  ) : (
+                    <>
+                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+                    <h2 className="text-sm font-semibold text-slate-900">
+                      {getSubViewTitle(viewMode, activeSubView)}
+                    </h2>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {periodLabel}
+                      {scopeLabel ? ` · ${scopeLabel}` : ""}
+                    </p>
+                  </div>
+                {viewMode === "acceptance" ? (
+                  <AcceptanceEvaluationSection
+                    orders={periodScopedOrdersByView.acceptance}
+                    storeNames={rowScope.storeNames}
+                    scopeLabel={scopeLabel}
+                    subView={acceptanceSubView}
+                    onSubViewChange={setAcceptanceSubView}
+                    hideNav
+                  />
+                ) : viewMode === "store" ? (
                   <>
-                    <div className="flex flex-wrap items-start gap-3">
-                      <EvaluationSectionToggle
-                        title="门店归总"
-                        active={storeSubView === "aggregate"}
-                        onSelect={() => setStoreSubView("aggregate")}
-                        suffix={
-                          <>
-                            {scopeLabel ? `所属：${scopeLabel} · ` : null}
-                            当前{" "}
-                            {formatEvaluationMetric(
-                              storeAggregateSummary.count,
-                              storeAggregateSummary.amount,
-                            )}
-                          </>
-                        }
-                      />
-                      <EvaluationSectionToggle
-                        title="门店数据"
-                        active={storeSubView === "workflow"}
-                        onSelect={() => setStoreSubView("workflow")}
-                        suffix={
-                          <>
-                            {scopeLabel ? `所属：${scopeLabel} · ` : null}
-                            当前{" "}
-                            {formatEvaluationMetric(
-                              tabSummaries.store.count,
-                              tabSummaries.store.amount,
-                            )}
-                          </>
-                        }
-                      />
-                      <EvaluationSectionToggle
-                        title="门店排名（数量/金额）"
-                        active={storeSubView === "ranking"}
-                        onSelect={() => setStoreSubView("ranking")}
-                      />
-                    </div>
                     {storeSubView === "workflow" ? (
                       <EvaluationStatsTable
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={storeRows}
                         emptyMessage={activeConfig.emptyMessage}
                       />
-                    ) : storeSubView === "ranking" ? (
+                    ) : storeSubView === "ranking" && showStoreRanking ? (
                       <DispatcherEvaluationRankingTable
                         nameColumnLabel="门店名称"
                         rows={storeRankingData.displayRows}
                         rankAgainstRows={storeRankingData.rankSource}
                         emptyMessage="当前权限范围内暂无门店排名数据"
                         footnote={
-                          rowScope.storeNames
-                            ? "名次按全部门店计算 · 仅显示所属门店 · 按派单人名册所属门店归集"
+                          rowScope.storeNames && storeScoped
+                            ? rowScope.storeNames.length > 1
+                              ? "名次在分管门店内计算 · 按派单人名册所属门店归集"
+                              : "本店数据 · 按派单人名册所属门店归集"
                             : "按派单人名册所属门店归集 · 单元格为 数量 / 金额"
                         }
                       />
@@ -470,49 +1234,6 @@ export default function EvaluationPage() {
                   </>
                 ) : viewMode === "designer" ? (
                   <>
-                    <div className="flex flex-wrap items-start gap-3">
-                      <EvaluationSectionToggle
-                        title="设计师归总"
-                        active={designerSubView === "aggregate"}
-                        onSelect={() => setDesignerSubView("aggregate")}
-                        suffix={
-                          <>
-                            {scopeLabel ? `所属：${scopeLabel} · ` : null}
-                            当前{" "}
-                            {formatEvaluationMetric(
-                              designerAggregateSummary.count,
-                              designerAggregateSummary.amount,
-                            )}
-                          </>
-                        }
-                      />
-                      <EvaluationSectionToggle
-                        title="设计师个人数据"
-                        active={designerSubView === "workflow"}
-                        onSelect={() => setDesignerSubView("workflow")}
-                        suffix={
-                          <>
-                            {scopeLabel ? `所属：${scopeLabel} · ` : null}
-                            当前{" "}
-                            {formatEvaluationMetric(
-                              tabSummaries.designer.count,
-                              tabSummaries.designer.amount,
-                            )}
-                          </>
-                        }
-                      />
-                      <EvaluationSectionToggle
-                        title="设计师排名（数量/金额）"
-                        active={designerSubView === "ranking"}
-                        onSelect={() => setDesignerSubView("ranking")}
-                      />
-                      <EvaluationSectionToggle
-                        title="设计师绩效月报"
-                        active={designerSubView === "performance"}
-                        onSelect={() => setDesignerSubView("performance")}
-                        suffix="贡献分 · 周期 · 超时"
-                      />
-                    </div>
                     {designerSubView === "performance" ? (
                       <div className="space-y-4">
                         <MonthlySnapshotPanel
@@ -561,33 +1282,28 @@ export default function EvaluationPage() {
                   </>
                 ) : (
                   <>
-                    <div className="flex flex-wrap items-start gap-3">
-                      <EvaluationSectionToggle
-                        title="派单人归总"
-                        active={dispatcherSubView === "aggregate"}
-                        onSelect={() => setDispatcherSubView("aggregate")}
-                        suffix={
-                          <>
-                            {scopeLabel ? `所属：${scopeLabel} · ` : null}
-                            当前{" "}
-                            {formatEvaluationMetric(
-                              tabSummaries.dispatcher.count,
-                              tabSummaries.dispatcher.amount,
-                            )}
-                          </>
-                        }
-                      />
-                      <EvaluationSectionToggle
-                        title="派单人排名（数量/金额）"
-                        active={dispatcherSubView === "ranking"}
-                        onSelect={() => setDispatcherSubView("ranking")}
-                      />
-                    </div>
-                    {dispatcherSubView === "ranking" ? (
+                    {dispatcherSubView === "weekly" ? (
+                      <div className="space-y-4">
+                        <DispatcherWeeklyPanel
+                          weekLabel={periodLabel}
+                          rows={dispatcherPerformanceRows}
+                        />
+                        <DispatcherPerformanceTable
+                          rows={dispatcherPerformanceRows}
+                          emptyMessage="当前周期与权限范围内暂无派单人贡献数据"
+                        />
+                      </div>
+                    ) : dispatcherSubView === "ranking" ? (
                       <DispatcherEvaluationRankingTable
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={dispatcherRows}
                         emptyMessage="当前权限范围内暂无派单人排名数据"
+                      />
+                    ) : dispatcherSubView === "workflow" ? (
+                      <EvaluationStatsTable
+                        nameColumnLabel={activeConfig.nameColumnLabel}
+                        rows={dispatcherWorkflowRows}
+                        emptyMessage="当前权限范围内暂无派单人个人数据"
                       />
                     ) : (
                       <DispatcherEvaluationTable
@@ -598,8 +1314,11 @@ export default function EvaluationPage() {
                     )}
                   </>
                 )}
-              </section>
-            </>
+                </>
+                  )}
+                </div>
+              )}
+            </EvaluationWorkbenchLayout>
           )}
         </div>
       </AppShell>

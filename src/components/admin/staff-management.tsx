@@ -48,12 +48,14 @@ export function StaffManagement() {
     updateStaffAccessLevel,
     updateStaffHomeStore,
     updateStaffExtraStores,
+    updateStaffPhone,
     resetStaffPassword,
     deleteStaffMember,
   } = useAuth();
   const [panel, setPanel] = useState<StaffPanel>("roster");
   const [configRevision, setConfigRevision] = useState(0);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [position, setPosition] = useState<StaffPosition>("派单人");
   const [homeStore, setHomeStore] = useState<StoreName>("东岸天冠");
   const [extraStores, setExtraStores] = useState<StoreName[]>([]);
@@ -87,6 +89,7 @@ export function StaffManagement() {
     return staffRecords.filter(
       (row) =>
         row.name.toLowerCase().includes(q) ||
+        (row.phone ?? "").includes(q) ||
         row.position.toLowerCase().includes(q) ||
         row.homeStore.toLowerCase().includes(q) ||
         (row.extraStores ?? []).some((s) => s.toLowerCase().includes(q)) ||
@@ -156,6 +159,16 @@ export function StaffManagement() {
     );
   }
 
+  function handlePhoneChange(staffId: string, nextPhone: string) {
+    const result = updateStaffPhone(staffId, nextPhone);
+    if (!result.ok) {
+      setAccessMessage(result.error ?? "电话更新失败");
+      return;
+    }
+    setAccessMessage("电话已更新");
+    window.setTimeout(() => setAccessMessage(""), 2500);
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -163,6 +176,7 @@ export function StaffManagement() {
     try {
       const result = addStaffMember({
         name,
+        phone,
         position,
         homeStore,
         extraStores:
@@ -179,6 +193,7 @@ export function StaffManagement() {
         `已添加「${addedName}」，账号 ${addedName}，权限 ${ACCESS_LEVEL_LABELS[accessLevel]}。请在下方「人员名册」中查看。`,
       );
       setName("");
+      setPhone("");
       setPassword("1");
       setAccessLevel(defaultAccessLevelForPosition(position));
       setSearchQuery("");
@@ -304,6 +319,14 @@ export function StaffManagement() {
                   setError("");
                 }}
               />
+              <Input
+                label="联系电话"
+                name="staffPhone"
+                type="tel"
+                placeholder="11 位手机号"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
               <Select
                 label="岗位"
                 name="position"
@@ -397,7 +420,7 @@ export function StaffManagement() {
                   <Input
                     label="搜索"
                     name="staffSearch"
-                    placeholder="姓名、岗位、门店设置、权限…"
+                    placeholder="姓名、电话、岗位、门店设置、权限…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -424,10 +447,11 @@ export function StaffManagement() {
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1080px] text-left text-sm">
+                <table className="w-full min-w-[1180px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500">
                       <th className="px-4 py-3">姓名</th>
+                      <th className="px-4 py-3">电话</th>
                       <th className="px-4 py-3">岗位</th>
                       <th className="px-4 py-3">门店设置</th>
                       <th className="px-4 py-3">权限设置</th>
@@ -444,6 +468,20 @@ export function StaffManagement() {
                         <tr key={row.id} className="hover:bg-slate-50/50">
                           <td className="px-4 py-3 font-medium text-slate-900">
                             {row.name}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="tel"
+                              defaultValue={row.phone ?? ""}
+                              key={`${row.id}-${row.phone ?? ""}`}
+                              placeholder="未填写"
+                              onBlur={(e) => {
+                                const next = e.target.value.trim();
+                                if (next === (row.phone ?? "")) return;
+                                handlePhoneChange(row.id, e.target.value);
+                              }}
+                              className="w-full min-w-[8.5rem] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                            />
                           </td>
                           <td className="px-4 py-3 text-slate-700">
                             {row.position}

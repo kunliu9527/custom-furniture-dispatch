@@ -62,7 +62,8 @@ export function drillSourceForDimension(
 export function countByDesigner(orders: Order[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const order of orders) {
-    map.set(order.designer, (map.get(order.designer) ?? 0) + 1);
+    const key = order.designer ?? "未指派";
+    map.set(key, (map.get(key) ?? 0) + 1);
   }
   return map;
 }

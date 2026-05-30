@@ -3,7 +3,9 @@
 import { AfterSalesCell } from "@/components/manager/after-sales-cell";
 import { AssignmentInfo } from "@/components/orders/assignment-info";
 import { DeleteOrderButton } from "@/components/orders/delete-order-button";
+import { OrderAnomalyBadges, OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { StatusBadge } from "@/components/orders/status-badge";
+import { useAuth } from "@/context/auth-context";
 import { DESIGNER_ROSTER } from "@/lib/designers";
 import {
   displayCustomerAddressColumn,
@@ -69,6 +71,11 @@ export function ManagerOrderTable({
   onDeleteOrder,
   designerRoster = DESIGNER_ROSTER,
 }: ManagerOrderTableProps) {
+  const { designerHomeStoreIndex } = useAuth();
+  const anomalyOptions = {
+    highlightCrossStore: true,
+    designerHomeStoreIndex,
+  };
   const canReassign = !readOnly && Boolean(onReassign);
   const canEditAfterSales = !readOnly && Boolean(onSetAfterSalesAmount);
   const canEditIssueTags = !readOnly && Boolean(onSetIssueTags);
@@ -148,16 +155,20 @@ export function ManagerOrderTable({
               return (
                 <tr key={order.id} className="hover:bg-slate-50/50">
                   <td className={tdClass}>
-                    <p
-                      className="max-w-[200px] text-sm leading-snug font-medium text-slate-900"
+                    <OrderAnomalyName
+                      order={order}
+                      as="p"
+                      className="max-w-[200px] text-sm leading-snug"
+                      defaultClassName="text-sm font-medium text-slate-900"
                       title={displayCustomerAddressColumn(order)}
+                      {...anomalyOptions}
                     >
                       {displayCustomerAddressColumn(order) || "—"}
-                    </p>
+                    </OrderAnomalyName>
                   </td>
                   {showDesigner ? (
                     <td className={tdClass}>
-                      {rowCanReassign && onReassign ? (
+                      {rowCanReassign && onReassign && order.designer ? (
                         <div className="space-y-1.5">
                           <select
                             value={order.designer}
@@ -180,7 +191,7 @@ export function ManagerOrderTable({
                       ) : (
                         <div className="space-y-1">
                           <span className="font-medium text-slate-800">
-                            {order.designer}
+                            {order.designer ?? "未指派"}
                           </span>
                           <AssignmentInfo order={order} compact />
                         </div>
@@ -189,7 +200,14 @@ export function ManagerOrderTable({
                   ) : null}
                   <td className={`${tdClass} text-xs`}>{order.dispatchStore}</td>
                   <td className={tdClass}>
-                    <StatusBadge status={order.status} />
+                    <div className="space-y-1">
+                      <StatusBadge status={order.status} />
+                      <OrderAnomalyBadges
+                        order={order}
+                        compact
+                        {...anomalyOptions}
+                      />
+                    </div>
                   </td>
                   <td className={`${tdClass} text-xs`}>
                     {order.dispatcherName || "—"}
@@ -267,8 +285,14 @@ export function ManagerOrderTable({
                   </td>
                   {detailMode ? (
                     <>
-                      <td className={`${tdClass} text-xs text-slate-800`}>
-                        {customerName || "—"}
+                      <td className={tdClass}>
+                        <OrderAnomalyName
+                          order={order}
+                          defaultClassName="text-xs text-slate-800"
+                          {...anomalyOptions}
+                        >
+                          {customerName || "—"}
+                        </OrderAnomalyName>
                       </td>
                       <td className={`${tdClass} text-xs text-slate-800`}>
                         {customerPhone || "—"}

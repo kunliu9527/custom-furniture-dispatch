@@ -4,9 +4,11 @@ import type { Order, OrderStatus, WorkflowRemarkEntry } from "./types";
 /** 备注流程顺序（派单录入 → 主流程 → 退单） */
 export const WORKFLOW_REMARK_STAGE_ORDER: WorkflowRemarkEntry["stage"][] = [
   "派单录入",
+  "未派单",
   "待量尺",
   "已量尺",
   "已出图",
+  "待签约",
   "已签约",
   "已下单",
   "已安装",
@@ -82,11 +84,11 @@ export function orderRemarksContainText(order: Order, keyword: string): boolean 
   return getOrderWorkflowRemarks(order).some((e) => e.text.includes(keyword));
 }
 
-/** 备注含「前置」时定金为 0 */
+/** 备注含「前置」时初始定金为 0；若已补交定金则不再强制清零 */
 export function applyDepositRuleForQianzhiRemark(order: Order): Order {
   if (!orderRemarksContainText(order, "前置")) return order;
-  if (order.deposit === 0) return order;
-  return { ...order, deposit: 0 };
+  if (order.deposit > 0 || order.preMeasureDeposit) return order;
+  return order;
 }
 
 export function reconcileOrderBusinessRules(order: Order): Order {

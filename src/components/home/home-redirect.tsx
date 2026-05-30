@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { getDefaultPathForRole } from "@/lib/role-routes";
+import { getDefaultPathForSession } from "@/lib/role-routes";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -12,7 +12,7 @@ export function HomeRedirect() {
 
   useEffect(() => {
     if (!isHydrated || !user) return;
-    router.replace(getDefaultPathForRole(user.role, user.accessLevel));
+    router.replace(getDefaultPathForSession(user));
   }, [isHydrated, user, router]);
 
   return null;

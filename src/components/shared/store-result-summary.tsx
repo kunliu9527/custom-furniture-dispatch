@@ -1,5 +1,6 @@
 import { ResultSummaryShell } from "@/components/shared/result-summary-shell";
 import { getManagerDrillFlow } from "@/lib/drill-flow";
+import type { OrderAnomalyOptions } from "@/lib/order-anomaly";
 import type { ViewMode } from "@/lib/manager-stats";
 import type { ResultDrillFilters } from "@/lib/result-drill";
 import type { DesignerName, Order, OrderStatus, StoreName, SupplementOrder } from "@/lib/types";
@@ -14,6 +15,7 @@ interface StoreResultSummaryProps {
   managerViewMode?: ViewMode;
   statusFilter?: OrderStatus | "全部";
   designerFilter?: DesignerName | "全部";
+  anomalyOptions?: OrderAnomalyOptions;
 }
 
 export function StoreResultSummary({
@@ -26,6 +28,7 @@ export function StoreResultSummary({
   managerViewMode = "store",
   statusFilter = "全部",
   designerFilter = "全部",
+  anomalyOptions,
 }: StoreResultSummaryProps) {
   const flow = getManagerDrillFlow(
     managerViewMode,
@@ -42,6 +45,7 @@ export function StoreResultSummary({
       onDrillChange={onDrillChange}
       flow={flow}
       totalAmountClassName="text-violet-700"
+      anomalyOptions={anomalyOptions}
     />
   );
 }

@@ -29,6 +29,11 @@ import {
   type StaffHomeStoreOverrides,
 } from "@/lib/staff-home-store-storage";
 import {
+  loadStaffPhoneOverrides,
+  saveStaffPhoneOverrides,
+  type StaffPhoneOverrides,
+} from "@/lib/staff-phone-storage";
+import {
   loadStaffPasswordOverrides,
   saveStaffPasswordOverrides,
   type StaffPasswordOverrides,
@@ -46,6 +51,7 @@ import {
   patchRemoteStaffConfigIfSynced,
   persistStaffConfigToLocalStorage,
 } from "@/lib/auth-staff-config";
+import { fetchLocalDevSnapshot } from "@/lib/local-snapshot-bootstrap";
 import {
   filterStaffRecordsForViewer,
   validateNewStaffAccessLevel,
@@ -117,7 +123,12 @@ interface AuthContextValue {
     username: string,
     password: string,
   ) =>
-    | { ok: true; role: SessionUser["role"]; accessLevel: StaffAccessLevel }
+    | {
+        ok: true;
+        role: SessionUser["role"];
+        accessLevel: StaffAccessLevel;
+        position?: string;
+      }
     | { ok: false; error?: string };
   logout: () => void;
   changeOwnPassword: (
@@ -130,8 +141,13 @@ interface AuthContextValue {
     homeStore: StoreName;
     extraStores?: StoreName[];
     password?: string;
+    phone?: string;
     accessLevel?: StaffAccessLevel;
   }) => { ok: boolean; error?: string };
+  updateStaffPhone: (
+    staffId: string,
+    phone: string,
+  ) => { ok: boolean; error?: string };
   updateStaffAccessLevel: (
     staffId: string,
     accessLevel: StaffAccessLevel,
@@ -164,6 +180,7 @@ function toSession(user: AuthUser): SessionUser {
     displayName: user.displayName,
     role: user.role,
     accessLevel: user.accessLevel,
+    position: user.position,
     homeStore: user.homeStore,
     assignedStores: user.assignedStores,
   };
@@ -205,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useState<StaffHomeStoreOverrides>({});
   const [extraStoreOverrides, setExtraStoreOverrides] =
     useState<StaffExtraStoresOverrides>({});
+  const [phoneOverrides, setPhoneOverrides] = useState<StaffPhoneOverrides>({});
   const [removedStaffIds, setRemovedStaffIds] = useState<RemovedStaffIds>([]);
   const [siteBranding, setSiteBranding] = useState<SiteBranding>({
     ...DEFAULT_SITE_BRANDING,
@@ -220,6 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides: StaffPasswordOverrides;
       homeStoreOverrides: StaffHomeStoreOverrides;
       extraStoreOverrides: StaffExtraStoresOverrides;
+      phoneOverrides: StaffPhoneOverrides;
       removedStaffIds: RemovedStaffIds;
       siteBranding: SiteBranding;
     }) => {
@@ -234,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPasswordOverrides(config.passwordOverrides);
     setHomeStoreOverrides(config.homeStoreOverrides);
     setExtraStoreOverrides(config.extraStoreOverrides);
+    setPhoneOverrides(config.phoneOverrides);
     setRemovedStaffIds(config.removedStaffIds);
     setSiteBranding(normalizeSiteBranding(config.siteBranding));
     persistStaffConfigToLocalStorage(config);
@@ -247,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        phoneOverrides,
         removedStaffIds,
       }),
     [
@@ -255,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      phoneOverrides,
       removedStaffIds,
     ],
   );
@@ -321,6 +343,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           config = loadStaffConfigFromBrowser();
         }
+      } else {
+        try {
+          const snap = await fetchLocalDevSnapshot();
+          if (snap?.staffConfig) {
+            config = {
+              ...config,
+              ...snap.staffConfig,
+              siteBranding: snap.staffConfig.siteBranding ?? config.siteBranding,
+            };
+            persistStaffConfigToLocalStorage(config);
+          }
+        } catch {
+          /* 使用浏览器已有人员配置 */
+        }
       }
       if (cancelled) return;
 
@@ -382,6 +418,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      phoneOverrides,
       removedStaffIds,
       siteBranding,
     });
@@ -392,6 +429,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     passwordOverrides,
     homeStoreOverrides,
     extraStoreOverrides,
+    phoneOverrides,
     removedStaffIds,
     siteBranding,
     syncStaffConfigToRemote,
@@ -437,6 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ok: true as const,
         role: session.role,
         accessLevel: session.accessLevel,
+        position: session.position,
       };
     },
     [authUsers],
@@ -489,6 +528,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       homeStore: StoreName;
       extraStores?: StoreName[];
       password?: string;
+      phone?: string;
       accessLevel?: StaffAccessLevel;
     }) => {
       if (!liveUser || !isAdminAccess(liveUser)) {
@@ -504,6 +544,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        phoneOverrides,
         removedStaffIds,
       });
       if (merged.some((s) => s.name === name)) {
@@ -522,12 +563,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             )
           : undefined;
 
+      const phone = data.phone?.trim();
       const record: StaffRecord = {
         id: createShortId("custom-"),
         name,
         position: data.position,
         homeStore: data.homeStore,
         ...(extraStores?.length ? { extraStores } : {}),
+        ...(phone ? { phone } : {}),
         role: roleForPositionAndAccess(data.position, accessLevel),
         password: data.password?.trim() || "1",
         accessLevel,
@@ -543,6 +586,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        phoneOverrides,
         removedStaffIds,
         siteBranding,
       });
@@ -554,6 +598,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      phoneOverrides,
       removedStaffIds,
       siteBranding,
       liveUser,
@@ -743,6 +788,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  const updateStaffPhone = useCallback(
+    (staffId: string, phone: string) => {
+      if (!liveUser || !isAdminAccess(liveUser)) {
+        return { ok: false, error: "仅管理员可修改电话" };
+      }
+      const target = allStaffRecords.find((s) => s.id === staffId);
+      if (!target) {
+        return { ok: false, error: "未找到该人员" };
+      }
+
+      const trimmed = phone.trim();
+      let nextCustom = customStaff;
+      let nextPhones = phoneOverrides;
+
+      if (isCustomStaffId(target.id, customStaff)) {
+        nextCustom = customStaff.map((s) => {
+          if (s.id !== target.id) return s;
+          if (!trimmed) {
+            const { phone: _removed, ...rest } = s;
+            return rest as StaffRecord;
+          }
+          return { ...s, phone: trimmed };
+        });
+        setCustomStaff(nextCustom);
+        saveCustomStaff(nextCustom);
+      } else {
+        nextPhones = { ...phoneOverrides };
+        if (trimmed) {
+          nextPhones[staffId] = trimmed;
+        } else {
+          delete nextPhones[staffId];
+        }
+        setPhoneOverrides(nextPhones);
+        saveStaffPhoneOverrides(nextPhones);
+      }
+
+      syncStaffConfigToRemote({
+        customStaff: nextCustom,
+        accessOverrides,
+        passwordOverrides,
+        homeStoreOverrides,
+        extraStoreOverrides,
+        phoneOverrides: nextPhones,
+        removedStaffIds,
+        siteBranding,
+      });
+
+      return { ok: true };
+    },
+    [
+      allStaffRecords,
+      liveUser,
+      customStaff,
+      phoneOverrides,
+      accessOverrides,
+      passwordOverrides,
+      homeStoreOverrides,
+      extraStoreOverrides,
+      removedStaffIds,
+      siteBranding,
+      syncStaffConfigToRemote,
+    ],
+  );
+
   const resetStaffPassword = useCallback(
     (staffId: string, password?: string) => {
       if (!liveUser || !isAdminAccess(liveUser)) {
@@ -794,6 +903,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        phoneOverrides,
       });
 
       let nextCustom = customStaff;
@@ -817,6 +927,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveStaffHomeStoreOverrides(cleared.homeStoreOverrides);
       setExtraStoreOverrides(cleared.extraStoreOverrides);
       saveStaffExtraStoresOverrides(cleared.extraStoreOverrides);
+      setPhoneOverrides(cleared.phoneOverrides);
+      saveStaffPhoneOverrides(cleared.phoneOverrides);
 
       syncStaffConfigToRemote({
         customStaff: nextCustom,
@@ -824,6 +936,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides: cleared.passwordOverrides,
         homeStoreOverrides: cleared.homeStoreOverrides,
         extraStoreOverrides: cleared.extraStoreOverrides,
+        phoneOverrides: cleared.phoneOverrides,
         removedStaffIds: nextRemoved,
         siteBranding,
       });
@@ -838,6 +951,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      phoneOverrides,
       removedStaffIds,
       siteBranding,
       syncStaffConfigToRemote,
@@ -852,7 +966,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const next = normalizeSiteBranding({ ...siteBranding, ...patch });
       if (
         next.badgeLabel === siteBranding.badgeLabel &&
-        next.headlineTitle === siteBranding.headlineTitle
+        next.headlineTitle === siteBranding.headlineTitle &&
+        next.standardContractText === siteBranding.standardContractText
       ) {
         return { ok: true as const };
       }
@@ -864,6 +979,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        phoneOverrides,
         removedStaffIds,
         siteBranding: next,
       });
@@ -877,6 +993,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      phoneOverrides,
       removedStaffIds,
       syncStaffConfigToRemote,
     ],
@@ -894,6 +1011,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       changeOwnPassword,
       addStaffMember,
+      updateStaffPhone,
       updateStaffAccessLevel,
       updateStaffHomeStore,
       updateStaffExtraStores,
@@ -911,6 +1029,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       changeOwnPassword,
       addStaffMember,
+      updateStaffPhone,
       updateStaffAccessLevel,
       updateStaffHomeStore,
       updateStaffExtraStores,

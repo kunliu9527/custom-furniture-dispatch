@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "全屋定制设计师超级定单系统",
-  description: "门店派单看板与设计师工作台原型",
+  title: "全屋定制超级定单系统",
+  description: "门店录单派单、设计跟单与经理统计",
 };
 
 export default function RootLayout({

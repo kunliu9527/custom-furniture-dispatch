@@ -26,32 +26,36 @@ const tabs: { id: ViewMode; label: string; description: string }[] = [
 interface ViewTabsProps {
   value: ViewMode;
   onChange: (mode: ViewMode) => void;
+  modes?: ViewMode[];
 }
 
-export function ViewTabs({ value, onChange }: ViewTabsProps) {
+export function ViewTabs({ value, onChange, modes }: ViewTabsProps) {
+  const visible = modes ?? tabs.map((t) => t.id);
+  const visibleTabs = tabs.filter((tab) => visible.includes(tab.id));
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      {tabs.map((tab) => (
+    <div
+      className={`grid gap-3 sm:grid-cols-2 ${
+        visibleTabs.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
+      }`}
+    >
+      {visibleTabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onChange(tab.id)}
-          className={`rounded-xl border px-4 py-4 text-left transition ${
-            value === tab.id
-              ? "border-indigo-300 bg-indigo-50 shadow-sm ring-1 ring-indigo-200"
-              : "border-slate-200 bg-white hover:border-slate-300"
-          }`}
+          className={`vi-view-tab ${value === tab.id ? "vi-view-tab-active" : ""}`}
         >
           <p
             className={`text-sm font-semibold ${
-              value === tab.id ? "text-indigo-900" : "text-slate-900"
+              value === tab.id ? "text-[var(--vi-brand-deep)]" : "text-zinc-900"
             }`}
           >
             {tab.label}
           </p>
           <p
             className={`mt-1 text-xs ${
-              value === tab.id ? "text-indigo-700" : "text-slate-500"
+              value === tab.id ? "text-indigo-700/80" : "text-zinc-500"
             }`}
           >
             {tab.description}

@@ -11,7 +11,19 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@/context/auth-context";
-import { STORAGE_KEY } from "@/lib/constants";
+import { findDuplicateAddressOrder } from "@/lib/address-unique";
+import {
+  fetchLocalDevSnapshot,
+  isLocalOrdersCacheEmpty,
+} from "@/lib/local-snapshot-bootstrap";
+import { STORAGE_KEY, LEGACY_STORAGE_KEYS } from "@/lib/constants";
+import {
+  createCustomerToken,
+  normalizeAcceptance,
+  normalizeContract,
+  normalizeInstallation,
+  resolveAcceptCustomerDisplayName,
+} from "@/lib/customer-flow";
 import { normalizeIssueTags } from "@/lib/issue-tags";
 import { INITIAL_DATA } from "@/lib/initial-data";
 import { appendOrderEvent, normalizeOrderEvents } from "@/lib/order-events";
@@ -47,6 +59,7 @@ import {
   patchSnapshotCache,
   subscribeSnapshot,
 } from "@/lib/snapshot-cache";
+import { applyDepositUpdate, normalizeDepositAmount } from "@/lib/deposit-rules";
 import { createShortId } from "@/lib/create-id";
 import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import type {
@@ -54,11 +67,13 @@ import type {
   DispatchFormData,
   FlowOrderStatus,
   Order,
+  OrderContract,
   OrderEventKind,
   OrderIssueTag,
   SupplementOrder,
   WorkflowRemarkStage,
 } from "@/lib/types";
+import type { InitiateContractInput } from "@/components/orders/contract-panel";
 
 export interface AdvanceOrderOptions {
   orderAmount?: number;
@@ -93,6 +108,18 @@ interface OrdersContextValue {
     issueTags?: OrderIssueTag[],
   ) => void;
   reassignOrder: (id: string, designer: DesignerName) => void;
+  assignDesignerToOrder: (
+    id: string,
+    designer: DesignerName,
+    forceOverCapacity?: boolean,
+  ) => void;
+  initiateContract: (id: string, input: InitiateContractInput) => void;
+  updateOrderDeposit: (id: string, deposit: number) => void;
+  skipElectronicSign: (id: string) => void;
+  offlineSignContract: (id: string, depositPaid?: number) => void;
+  confirmContractOffline: (id: string) => void;
+  initiateAcceptance: (id: string) => void;
+  skipElectronicAcceptance: (id: string) => void;
   confirmDesignerAccept: (id: string) => void;
   setOrderIssueTags: (id: string, tags: OrderIssueTag[]) => void;
   addSupplementOrder: (
@@ -110,9 +137,16 @@ const OrdersContext = createContext<OrdersContextValue | null>(null);
 function normalizeOrder(raw: Record<string, unknown>): Order {
   const legacySpace =
     typeof raw.space === "string" ? raw.space : undefined;
-  const designer = raw.designer as Order["designer"];
-  const originalDesigner = (raw.originalDesigner ??
-    designer) as Order["originalDesigner"];
+  const rawDesigner = raw.designer;
+  const designer =
+    typeof rawDesigner === "string" && rawDesigner.trim()
+      ? (rawDesigner as Order["designer"])
+      : null;
+  const rawOriginal = raw.originalDesigner;
+  const originalDesigner =
+    typeof rawOriginal === "string" && rawOriginal.trim()
+      ? (rawOriginal as Order["originalDesigner"])
+      : designer;
   const transferRecords = normalizeTransferRecords(raw.transferRecords);
   const status = raw.status as Order["status"];
   let workflowRemarks = normalizeWorkflowRemarkEntries(raw.workflowRemarks);
@@ -133,6 +167,9 @@ function normalizeOrder(raw: Record<string, unknown>): Order {
     budget: normalizeBudget(raw.budget),
     dispatchStore: raw.dispatchStore as Order["dispatchStore"],
     deposit: Number(raw.deposit) || 0,
+    preMeasureDeposit: Boolean(raw.preMeasureDeposit),
+    depositUpdatedAt:
+      typeof raw.depositUpdatedAt === "string" ? raw.depositUpdatedAt : undefined,
     orderAmount:
       raw.orderAmount != null && Number(raw.orderAmount) > 0
         ? Number(raw.orderAmount)
@@ -160,6 +197,9 @@ function normalizeOrder(raw: Record<string, unknown>): Order {
         : null,
     orderEvents: normalizeOrderEvents(raw.orderEvents),
     issueTags: normalizeIssueTags(raw.issueTags),
+    contract: normalizeContract(raw.contract),
+    installation: normalizeInstallation(raw.installation),
+    acceptance: normalizeAcceptance(raw.acceptance),
     createdAt: String(raw.createdAt ?? new Date().toISOString()),
   };
   return reconcileOrderBusinessRules(order);
@@ -183,12 +223,20 @@ function withEvent(
   });
 }
 
+const LEGACY_STORAGE_KEY = LEGACY_STORAGE_KEYS[0];
+
 function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
   if (typeof window === "undefined") {
     return { orders: INITIAL_DATA.orders, supplements: INITIAL_DATA.supplements };
   }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      for (const legacyKey of LEGACY_STORAGE_KEYS) {
+        raw = localStorage.getItem(legacyKey);
+        if (raw) break;
+      }
+    }
     if (!raw) return INITIAL_DATA;
     const parsed = JSON.parse(raw) as {
       orders?: unknown[];
@@ -198,6 +246,9 @@ function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
       ? parsed.orders.map((o) => normalizeOrder(o as Record<string, unknown>))
       : INITIAL_DATA.orders;
     const supplements = normalizeSupplements(parsed.supplements);
+    if (orders.length === 0) {
+      return INITIAL_DATA;
+    }
     return { orders, supplements };
   } catch {
     return INITIAL_DATA;
@@ -205,14 +256,18 @@ function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
 }
 
 function persistData(orders: Order[], supplements: SupplementOrder[]) {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ orders, supplements }),
-  );
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ orders, supplements }),
+    );
+  } catch (err) {
+    console.warn("[orders] localStorage 写入失败", err);
+  }
 }
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, siteBranding } = useAuth();
   const actorRef = useRef("系统");
   const [orders, setOrders] = useState<Order[]>(INITIAL_DATA.orders);
   const [supplements, setSupplements] = useState<SupplementOrder[]>(
@@ -228,11 +283,40 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isRemoteSyncEnabled()) {
-      const data = loadData();
-      setOrders(data.orders);
-      setSupplements(data.supplements);
-      setIsHydrated(true);
-      return;
+      let cancelled = false;
+
+      async function loadLocal() {
+        let data = loadData();
+
+        if (isLocalOrdersCacheEmpty() || data.orders.length === 0) {
+          const snap = await fetchLocalDevSnapshot();
+          if (cancelled) return;
+          if (snap && Array.isArray(snap.orders) && snap.orders.length > 0) {
+            data = {
+              orders: snap.orders.map((o) =>
+                normalizeOrder(o as unknown as Record<string, unknown>),
+              ),
+              supplements: normalizeSupplements(snap.supplements),
+            };
+            persistData(data.orders, data.supplements);
+          } else if (data.orders.length === 0) {
+            data = {
+              orders: INITIAL_DATA.orders,
+              supplements: INITIAL_DATA.supplements,
+            };
+          }
+        }
+
+        if (cancelled) return;
+        setOrders(data.orders);
+        setSupplements(data.supplements);
+        setIsHydrated(true);
+      }
+
+      void loadLocal();
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
@@ -293,8 +377,15 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }, [orders, supplements, isHydrated]);
 
   const addOrder = useCallback((data: DispatchFormData) => {
-    const inProgress = countDesignerInProgress(orders, data.designer);
-    if (isDispatchBlocked(inProgress) && !data.forceOverCapacity) {
+    const isDispatched = data.designer != null;
+    if (isDispatched) {
+      const inProgress = countDesignerInProgress(orders, data.designer!);
+      if (isDispatchBlocked(inProgress) && !data.forceOverCapacity) {
+        return;
+      }
+    }
+    const duplicate = findDuplicateAddressOrder(orders, data.address);
+    if (duplicate && !data.forceDuplicateAddress) {
       return;
     }
     const actor = actorRef.current;
@@ -304,6 +395,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       remarks.push(createWorkflowRemarkEntry("派单录入", dispatchNote));
     }
     const createdAt = new Date().toISOString();
+    const status = isDispatched ? "待量尺" : "未派单";
     let order: Order = {
       id: createShortId("ord-"),
       customerName: data.customerName,
@@ -314,28 +406,261 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       dispatchStore: data.dispatchStore,
       deposit: data.deposit,
       dispatcherName: data.dispatcherName,
-      designer: data.designer,
-      originalDesigner: data.designer,
+      designer: isDispatched ? data.designer : null,
+      originalDesigner: isDispatched ? data.designer : null,
       transferRecords: [],
-      status: "待量尺",
+      status,
       orderAmount: null,
       afterSalesAmount: null,
       workflowRemark: null,
       workflowRemarks: remarks,
-      statusEnteredAt: { 待量尺: createdAt },
+      statusEnteredAt: isDispatched
+        ? { 待量尺: createdAt }
+        : { 未派单: createdAt },
       designerAcceptedAt: null,
       orderEvents: [],
       issueTags: [],
       createdAt,
     };
+    const inProgress = data.designer
+      ? countDesignerInProgress(orders, data.designer)
+      : 0;
     order = withEvent(order, actor, "派单录入", {
-      toStatus: "待量尺",
-      note: data.forceOverCapacity
-        ? `指派 ${data.designer}（超额，在途 ${inProgress}/${DESIGNER_MAX_IN_PROGRESS}）`
-        : `指派 ${data.designer}`,
+      toStatus: status,
+      note: isDispatched
+        ? data.forceOverCapacity
+          ? `指派 ${data.designer}（超额，在途 ${inProgress}/${DESIGNER_MAX_IN_PROGRESS}）`
+          : `指派 ${data.designer}`
+        : "仅录信息，待指派设计师",
     });
     setOrders((prev) => [reconcileOrderBusinessRules(order), ...prev]);
   }, [orders]);
+
+  const assignDesignerToOrder = useCallback(
+    (id: string, designer: DesignerName, forceOverCapacity = false) => {
+      const inProgress = countDesignerInProgress(orders, designer);
+      if (isDispatchBlocked(inProgress) && !forceOverCapacity) {
+        return;
+      }
+      const at = new Date().toISOString();
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== id || order.status !== "未派单") return order;
+          let updated: Order = {
+            ...order,
+            designer,
+            originalDesigner: designer,
+            status: "待量尺",
+            designerAcceptedAt: null,
+            statusEnteredAt: {
+              ...order.statusEnteredAt,
+              待量尺: at,
+            },
+          };
+          updated = withEvent(updated, actorRef.current, "指派设计师", {
+            fromStatus: "未派单",
+            toStatus: "待量尺",
+            note: forceOverCapacity
+              ? `指派 ${designer}（超额，在途 ${inProgress}/${DESIGNER_MAX_IN_PROGRESS}）`
+              : `指派 ${designer}`,
+          });
+          return reconcileOrderBusinessRules(updated);
+        }),
+      );
+    },
+    [orders],
+  );
+
+  const initiateContract = useCallback(
+    (id: string, input: InitiateContractInput) => {
+      const at = new Date().toISOString();
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== id || order.status !== "待签约") return order;
+          const attachments = input.attachmentNames
+            ? input.attachmentNames
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((name) => ({ name }))
+            : undefined;
+          const token =
+            order.contract?.token ?? createCustomerToken("sg");
+          const depositPaid = normalizeDepositAmount(
+            input.depositPaid ?? order.deposit,
+          );
+          const contract: OrderContract = {
+            token,
+            contractAmount: input.contractAmount,
+            depositPaid,
+            deliveryDate: input.deliveryDate,
+            attachments,
+            termsNote: input.termsNote,
+            standardContractText: siteBranding.standardContractText,
+            initiatedAt: at,
+            initiatedBy: actorRef.current,
+            signedAt: order.contract?.signedAt,
+            signatureDataUrl: order.contract?.signatureDataUrl,
+            signedByName: order.contract?.signedByName,
+            offlineConfirmed: order.contract?.offlineConfirmed,
+            planConfirmed: order.contract?.planConfirmed,
+            planConfirmRemark: order.contract?.planConfirmRemark,
+            planConfirmedAt: order.contract?.planConfirmedAt,
+            skippedElectronicSign: order.contract?.skippedElectronicSign,
+            signLocked: order.contract?.signLocked,
+          };
+          let updated: Order = applyDepositUpdate(
+            { ...order, contract },
+            depositPaid,
+          );
+          updated = withEvent(updated, actorRef.current, "发起签约", {
+            toStatus: "待签约",
+            note: `合同 ¥${input.contractAmount.toLocaleString("zh-CN")} · 定金 ¥${depositPaid.toLocaleString("zh-CN")}`,
+          });
+          return reconcileOrderBusinessRules(updated);
+        }),
+      );
+    },
+    [siteBranding.standardContractText],
+  );
+
+  const updateOrderDeposit = useCallback((id: string, deposit: number) => {
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id) return order;
+        const updated = applyDepositUpdate(order, deposit);
+        return reconcileOrderBusinessRules(
+          withEvent(updated, actorRef.current, "流程备注", {
+            note: `更新定金 ¥${normalizeDepositAmount(deposit).toLocaleString("zh-CN")}`,
+          }),
+        );
+      }),
+    );
+  }, []);
+
+  const offlineSignContract = useCallback((id: string, depositPaid = 0) => {
+    const at = new Date().toISOString();
+    const paid = normalizeDepositAmount(depositPaid);
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id || order.status !== "待签约") return order;
+        const token = order.contract?.token ?? createCustomerToken("sg");
+        const contract: OrderContract = {
+          ...(order.contract ?? {
+            token,
+            contractAmount: 0,
+            initiatedAt: at,
+          }),
+          token,
+          contractAmount: 0,
+          depositPaid: paid,
+          initiatedAt: order.contract?.initiatedAt ?? at,
+          initiatedBy: actorRef.current,
+          offlineConfirmed: true,
+          signLocked: true,
+          signedAt: at,
+          skippedElectronicSign: false,
+        };
+        const intervalUpdates = applyStageIntervalOnAdvance(
+          applyDepositUpdate(order, paid),
+          "已签约",
+          at,
+        );
+        let updated: Order = {
+          ...applyDepositUpdate(order, paid),
+          ...intervalUpdates,
+          status: "已签约",
+          contract,
+        };
+        updated = withEvent(updated, actorRef.current, "线下签约", {
+          fromStatus: "待签约",
+          toStatus: "已签约",
+          note: "线下签约，合同金额未填",
+        });
+        return reconcileOrderBusinessRules(updated);
+      }),
+    );
+  }, []);
+
+  /** @deprecated 使用 offlineSignContract */
+  const skipElectronicSign = useCallback(
+    (id: string) => {
+      offlineSignContract(id);
+    },
+    [offlineSignContract],
+  );
+
+  const confirmContractOffline = useCallback(
+    (id: string) => {
+      offlineSignContract(id);
+    },
+    [offlineSignContract],
+  );
+
+  const skipElectronicAcceptance = useCallback((id: string) => {
+    const at = new Date().toISOString();
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id || order.status !== "已安装") return order;
+        const token =
+          order.acceptance?.token ?? createCustomerToken("ac");
+        const intervalUpdates = applyStageIntervalOnAdvance(
+          order,
+          "已验收",
+          at,
+        );
+        let updated: Order = {
+          ...order,
+          ...intervalUpdates,
+          status: "已验收",
+          acceptance: {
+            token,
+            initiatedAt: order.acceptance?.initiatedAt ?? at,
+            acceptedAt: at,
+            skippedElectronicAccept: true,
+          },
+        };
+        updated = withEvent(updated, actorRef.current, "跳过电子验收", {
+          fromStatus: "已安装",
+          toStatus: "已验收",
+          note: "无电子验收直接更新",
+        });
+        return reconcileOrderBusinessRules(updated);
+      }),
+    );
+  }, []);
+
+  const initiateAcceptance = useCallback((id: string) => {
+    const at = new Date().toISOString();
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.id !== id || order.status !== "已安装") return order;
+        const token =
+          order.acceptance?.token ?? createCustomerToken("ac");
+        let updated: Order = {
+          ...order,
+          acceptance: {
+            token,
+            initiatedAt: at,
+            acceptedAt: order.acceptance?.acceptedAt,
+            ratings: order.acceptance?.ratings,
+            comment: order.acceptance?.comment,
+            customerDisplayName: (() => {
+              const name =
+                order.acceptance?.customerDisplayName?.trim() ||
+                resolveAcceptCustomerDisplayName(order);
+              return name || undefined;
+            })(),
+          },
+        };
+        updated = withEvent(updated, actorRef.current, "发起验收", {
+          toStatus: "已安装",
+          note: "已生成客户验收码",
+        });
+        return updated;
+      }),
+    );
+  }, []);
 
   const addWorkflowRemarkToOrder = useCallback(
     (id: string, text: string, stage?: WorkflowRemarkStage) => {
@@ -388,6 +713,22 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
               fromStatus: order.status,
               toStatus: next,
               note: `下单 ¥${amount.toLocaleString("zh-CN")}`,
+            });
+          }
+          if (next === "已安装") {
+            const nextOrder = {
+              ...updated,
+              ...intervalUpdates,
+              status: next,
+              installation: {
+                ...order.installation,
+                installedAt: order.installation?.installedAt ?? atIso,
+              },
+            };
+            return withEvent(nextOrder, actor, "状态推进", {
+              fromStatus: order.status,
+              toStatus: next,
+              note: "推进至已安装",
             });
           }
           const nextOrder = { ...updated, ...intervalUpdates, status: next };
@@ -478,7 +819,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const reassignOrder = useCallback((id: string, designer: DesignerName) => {
     setOrders((prev) =>
       prev.map((order) => {
-        if (order.id !== id || order.designer === designer) return order;
+        if (order.id !== id || order.designer === designer || !order.designer) {
+          return order;
+        }
         const note = `转派：${order.designer}→${designer}`;
         const reassigned = appendWorkflowRemark(
           {
@@ -621,6 +964,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       markPendingRefund,
       confirmRefund,
       reassignOrder,
+      assignDesignerToOrder,
+      initiateContract,
+      updateOrderDeposit,
+      skipElectronicSign,
+      offlineSignContract,
+      confirmContractOffline,
+      initiateAcceptance,
+      skipElectronicAcceptance,
       confirmDesignerAccept,
       setOrderIssueTags,
       addSupplementOrder,
@@ -638,6 +989,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       markPendingRefund,
       confirmRefund,
       reassignOrder,
+      assignDesignerToOrder,
+      initiateContract,
+      updateOrderDeposit,
+      skipElectronicSign,
+      offlineSignContract,
+      confirmContractOffline,
+      initiateAcceptance,
+      skipElectronicAcceptance,
       confirmDesignerAccept,
       setOrderIssueTags,
       addSupplementOrder,

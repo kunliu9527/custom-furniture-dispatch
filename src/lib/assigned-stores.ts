@@ -21,7 +21,9 @@ export function dedupePhysicalStores(stores: StoreName[]): StoreName[] {
 export function resolveStaffAssignedStores(
   staff: Pick<StaffRecord, "accessLevel" | "homeStore" | "extraStores">,
 ): StoreName[] | undefined {
-  if (staff.accessLevel !== "design_manager") return undefined;
+  if (staff.accessLevel !== "design_manager" && staff.accessLevel !== "general_manager") {
+    return undefined;
+  }
   if (!staff.homeStore || isHeadquartersStore(staff.homeStore)) return undefined;
   return dedupePhysicalStores([
     staff.homeStore,
@@ -38,7 +40,8 @@ export function resolveAssignedStoresForUser(
   if (
     user.homeStore &&
     !isHeadquartersStore(user.homeStore) &&
-    user.accessLevel === "design_manager"
+    (user.accessLevel === "design_manager" ||
+      user.accessLevel === "general_manager")
   ) {
     return [user.homeStore];
   }

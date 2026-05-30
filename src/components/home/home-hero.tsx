@@ -4,12 +4,15 @@ import { useAuth } from "@/context/auth-context";
 import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 
 const WORKFLOW_STEPS = [
+  "未派单",
   "待量尺",
   "已量尺",
   "已出图",
+  "待签约",
   "已签约",
   "已下单",
   "已安装",
+  "已验收",
 ] as const;
 
 export function HomeHero() {
@@ -30,7 +33,7 @@ export function HomeHero() {
           </span>
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-slate-600 sm:text-base">
-          数据演示门店派单、设计师跟单与经理统计，各页面数据实时同步（本地存储）。
+          从销售录单、门店派单、设计跟单到安装验收与客户评价——全流程协同工作台，数据实时同步。
         </p>
       </div>
 

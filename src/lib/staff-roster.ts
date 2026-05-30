@@ -26,12 +26,15 @@ export interface StaffRecord {
   accessLevel: StaffAccessLevel;
   /** 权限说明（展示用） */
   permissions: string;
+  /** 联系电话 */
+  phone?: string;
 }
 
 export const POSITION_PERMISSIONS: Record<string, string> = {
   管理员: "全站查看与修改；人员管理；删除订单",
   设计经理: "全站查看与修改；经理看板售后金",
-  总经理: "全站查看与修改；经理看板售后金（同设计经理）",
+  总经理: "全站查看与修改；项目进程管理与验收与交付（同设计经理）",
+  验收经理: "仅验收与交付板块；全公司已签约及之后订单",
   派单人: "店长看板派单（本人）；其他板块只读",
   设计师: "本人订单操作；其他订单只读",
 };

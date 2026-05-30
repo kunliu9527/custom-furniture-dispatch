@@ -3,8 +3,9 @@ import {
   formatDispatchMoney,
   sumDispatchTotals,
 } from "@/lib/dispatch-totals";
+import { formatOrderAnomalySummary, type OrderAnomalyOptions } from "@/lib/order-anomaly";
 import type { DrillFlow, ResultDrillFilters } from "@/lib/result-drill";
-import type { Order, SupplementOrder } from "@/lib/types";
+import type { Order, OrderStatus, SupplementOrder } from "@/lib/types";
 
 interface ResultSummaryShellProps {
   title?: string;
@@ -13,7 +14,10 @@ interface ResultSummaryShellProps {
   drill: ResultDrillFilters;
   onDrillChange: (drill: ResultDrillFilters) => void;
   flow: DrillFlow;
+  /** 顶部查找栏已选状态（按状态查找时传入，用于结果区标题） */
+  lookupStatusFilter?: OrderStatus | "全部";
   totalAmountClassName?: string;
+  anomalyOptions?: OrderAnomalyOptions;
 }
 
 export function ResultSummaryShell({
@@ -23,9 +27,12 @@ export function ResultSummaryShell({
   drill,
   onDrillChange,
   flow,
+  lookupStatusFilter,
   totalAmountClassName = "text-violet-700",
+  anomalyOptions,
 }: ResultSummaryShellProps) {
   const amounts = sumDispatchTotals(baseOrders, supplements);
+  const anomalySummary = formatOrderAnomalySummary(baseOrders, anomalyOptions);
   const afterSalesTotal = baseOrders.reduce(
     (sum, order) => sum + (order.afterSalesAmount ?? 0),
     0,
@@ -65,6 +72,9 @@ export function ResultSummaryShell({
               售后金合计 {formatDispatchMoney(afterSalesTotal)}
             </p>
           ) : null}
+          {anomalySummary ? (
+            <p className="mt-1 text-xs font-medium text-rose-600">{anomalySummary}</p>
+          ) : null}
         </div>
       </div>
 
@@ -74,6 +84,7 @@ export function ResultSummaryShell({
           drill={drill}
           onDrillChange={onDrillChange}
           flow={flow}
+          lookupStatusFilter={lookupStatusFilter}
         />
       </div>
     </div>

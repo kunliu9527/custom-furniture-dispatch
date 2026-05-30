@@ -2,13 +2,24 @@ import { getDesignerPerformanceRows, getMonthlyReportOverview } from "./designer
 import { aggregateIssueTags } from "./issue-tag-stats";
 import { getManagerAlerts } from "./manager-alerts";
 import {
+  buildWeeklyAnomalyItems,
+  formatWeeklyAnomalyText,
+  type WeeklyAnomalyItem,
+} from "./order-anomaly";
+import {
   getPendingAcceptanceOrders,
   isAcceptanceOverdue,
 } from "./designer-load";
 import { formatDispatchMoney } from "./dispatch-totals";
+import {
+  buildDesignerPeriodSummary,
+  formatDesignerSummaryText,
+} from "./report-digest-extensions";
 import type { StaffRecord } from "./staff-roster";
 import type { Order, SupplementOrder } from "./types";
 import { filterOrdersByWeek, getWeekId } from "./week-filter";
+
+export type { WeeklyAnomalyItem } from "./order-anomaly";
 
 export interface WeeklyDigest {
   weekId: string;
@@ -21,6 +32,8 @@ export interface WeeklyDigest {
   activeTimeoutCount: number;
   pendingAcceptCount: number;
   acceptOverdueCount: number;
+  weeklyAnomalies: WeeklyAnomalyItem[];
+  designerSummary: ReturnType<typeof buildDesignerPeriodSummary>;
   topContributors: { name: string; score: number; orderedAmount: number }[];
   attentionDesigners: { name: string; reason: string }[];
   issueTagStats: { tag: string; count: number }[];
@@ -54,13 +67,27 @@ export function buildWeeklyDigest(
   const acceptOverdue = pending.filter((o) => isAcceptanceOverdue(o, ref));
 
   const topContributors = performance
-    .filter((r) => r.contributionScore > 0 || r.orderedAmount > 0)
-    .slice(0, 3)
+    .filter(
+      (r) =>
+        !r.sampleTooSmall && (r.contributionScore > 0 || r.orderedAmount > 0),
+    )
+    .slice(0, 5)
     .map((r) => ({
       name: r.label,
       score: r.contributionScore,
       orderedAmount: r.orderedAmount,
     }));
+
+  const weekSupplements = supplements.filter((s) =>
+    weekOrders.some((o) => o.id === s.parentOrderId),
+  );
+
+  const designerSummary = buildDesignerPeriodSummary(
+    performance,
+    weekOrders,
+    weekSupplements,
+  );
+  const weeklyAnomalies = buildWeeklyAnomalyItems(orders, ref);
 
   const attentionDesigners: WeeklyDigest["attentionDesigners"] = [];
   for (const row of performance) {
@@ -89,7 +116,14 @@ export function buildWeeklyDigest(
   if (acceptOverdue.length > 0) {
     actionLines.push(`${acceptOverdue.length} 笔派单超过 24h 未确认接单`);
   }
-  if (attentionDesigners.length > 0) {
+  if (weeklyAnomalies.length > 0) {
+    actionLines.push(`本周异常 ${weeklyAnomalies.length} 笔需跟进`);
+  }
+  if (designerSummary.needsImprovement.length > 0) {
+    actionLines.push(
+      `关注设计师：${designerSummary.needsImprovement.slice(0, 3).map((a) => a.name).join("、")}`,
+    );
+  } else if (attentionDesigners.length > 0) {
     actionLines.push(
       `关注设计师：${attentionDesigners.slice(0, 3).map((a) => a.name).join("、")}`,
     );
@@ -116,6 +150,8 @@ export function buildWeeklyDigest(
     activeTimeoutCount: alerts.length,
     pendingAcceptCount: pending.length,
     acceptOverdueCount: acceptOverdue.length,
+    weeklyAnomalies,
+    designerSummary,
     topContributors,
     attentionDesigners: attentionDesigners.slice(0, 5),
     issueTagStats,
@@ -132,11 +168,13 @@ export function formatWeeklyDigestText(digest: WeeklyDigest): string {
     `退单：${digest.refundCount} 笔`,
     `当前超时：${digest.activeTimeoutCount} 笔 · 待接单：${digest.pendingAcceptCount}（超时 ${digest.acceptOverdueCount}）`,
     "",
+    ...formatWeeklyAnomalyText(digest.weeklyAnomalies),
+    "",
   ];
 
   if (digest.topContributors.length > 0) {
     lines.push(
-      "贡献前三：",
+      "贡献前5：",
       ...digest.topContributors.map(
         (t, i) =>
           `${i + 1}. ${t.name} · 贡献 ${t.score} · 下单 ${formatDispatchMoney(t.orderedAmount)}`,
@@ -144,6 +182,11 @@ export function formatWeeklyDigestText(digest: WeeklyDigest): string {
       "",
     );
   }
+
+  lines.push(
+    ...formatDesignerSummaryText(digest.designerSummary).slice(1),
+    "",
+  );
 
   if (digest.issueTagStats.length > 0) {
     lines.push(

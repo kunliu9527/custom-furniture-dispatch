@@ -61,9 +61,10 @@ export function filterOrdersByDesignerHomeStores(
 ): Order[] {
   if (!stores?.length) return orders;
   const allowed = new Set(stores);
-  return orders.filter((o) =>
-    allowed.has(getEffectiveDesignerHomeStore(o.designer, index)),
-  );
+  return orders.filter((o) => {
+    if (!o.designer) return true;
+    return allowed.has(getEffectiveDesignerHomeStore(o.designer, index));
+  });
 }
 
 export function isCrossStoreOrderForDesigner(
@@ -78,6 +79,7 @@ export function isOrderCrossStoreForDesigner(
   order: Pick<Order, "dispatchStore" | "designer">,
   index: DesignerHomeStoreIndex,
 ): boolean {
+  if (!order.designer) return false;
   return isCrossStoreOrderForDesigner(
     order.dispatchStore,
     order.designer,

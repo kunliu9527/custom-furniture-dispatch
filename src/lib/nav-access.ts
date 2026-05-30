@@ -2,15 +2,20 @@ import type { AdminViewMode } from "./admin-stats";
 import type { SessionUser } from "./permissions";
 import {
   canAccessAdminPage,
+  canAccessDeliveryPage,
   canManageStaff,
+  isAcceptanceManagerAccess,
+  isInstallerSession,
   isPersonalAccess,
+  isPersonalManagerLookupOnly,
 } from "./permissions";
 
 export const NAV_LINKS = [
-  { href: "/admin", label: "门店派单" },
+  { href: "/admin", label: "新客户开发" },
   { href: "/designer", label: "设计师工作台" },
-  { href: "/manager", label: "设计经理看板" },
-  { href: "/evaluation", label: "评价看板" },
+  { href: "/manager", label: "项目进程管理" },
+  { href: "/delivery", label: "验收与交付" },
+  { href: "/evaluation", label: "综合系统看板" },
 ] as const;
 
 export type NavHref = (typeof NAV_LINKS)[number]["href"];
@@ -19,57 +24,83 @@ export function canAccessStoreDispatchPage(user: SessionUser | null): boolean {
   return canAccessAdminPage(user);
 }
 
+function isExecutiveNavUser(user: SessionUser): boolean {
+  return (
+    user.accessLevel === "design_manager" ||
+    user.accessLevel === "general_manager" ||
+    user.accessLevel === "admin"
+  );
+}
+
 export function canAccessDesignerPage(user: SessionUser | null): boolean {
   if (!user) return true;
-  if (user.accessLevel === "design_manager" || user.accessLevel === "admin") {
-    return true;
-  }
+  if (isAcceptanceManagerAccess(user) || isInstallerSession(user)) return false;
+  if (isExecutiveNavUser(user)) return true;
   return user.role === "designer";
 }
 
-/** 设计经理看板：设计经理/管理员可编辑；店长仅本店数据只读 */
+/** 项目进程管理：经理/店长可编辑或只读；本人派单/设计仅本人单只读查询 */
 export function canAccessManagerPage(user: SessionUser | null): boolean {
-  if (!user) return false;
+  if (!user || isAcceptanceManagerAccess(user) || isInstallerSession(user)) {
+    return false;
+  }
+  if (isPersonalManagerLookupOnly(user)) return true;
   return (
     user.accessLevel === "design_manager" ||
+    user.accessLevel === "general_manager" ||
     user.accessLevel === "admin" ||
     user.accessLevel === "store_manager"
   );
 }
 
-/** 评价看板：本人不可见；店长/设计经理可看（数据按门店过滤）；管理员无限制 */
+/** 综合系统看板：本人不可见；店长/设计经理/总经理可看 */
 export function canAccessEvaluationPage(user: SessionUser | null): boolean {
-  if (!user || isPersonalAccess(user)) return false;
+  if (!user || isPersonalAccess(user) || isAcceptanceManagerAccess(user)) {
+    return false;
+  }
   if (user.accessLevel === "admin") return true;
   if (user.accessLevel === "store_manager") return true;
   if (user.accessLevel === "design_manager") return true;
+  if (user.accessLevel === "general_manager") return true;
   return false;
 }
 
+export { canAccessDeliveryPage };
+
 export function canViewOtherDesignersOrders(user: SessionUser | null): boolean {
   return (
-    user?.accessLevel === "design_manager" || user?.accessLevel === "admin"
+    user?.accessLevel === "design_manager" ||
+    user?.accessLevel === "general_manager" ||
+    user?.accessLevel === "admin"
   );
 }
 
 export function getVisibleNavLinks(user: SessionUser | null) {
   if (!user) return [...NAV_LINKS];
+  if (isAcceptanceManagerAccess(user)) {
+    return NAV_LINKS.filter((item) => item.href === "/delivery");
+  }
+  if (isPersonalAccess(user) && isInstallerSession(user)) {
+    return NAV_LINKS.filter((item) => item.href === "/delivery");
+  }
   return NAV_LINKS.filter((item) => {
     if (item.href === "/admin") return canAccessStoreDispatchPage(user);
     if (item.href === "/designer") return canAccessDesignerPage(user);
     if (item.href === "/manager") return canAccessManagerPage(user);
+    if (item.href === "/delivery") return canAccessDeliveryPage(user);
     if (item.href === "/evaluation") return canAccessEvaluationPage(user);
     return true;
   });
 }
 
-/** 门店派单看板：登录后仅保留派单录入（管理员另含人员管理） */
+/** 新建派单/客户 Tab */
 export function getVisibleAdminViewModes(
   user: SessionUser | null,
 ): AdminViewMode[] {
   if (!user) return ["dispatch"];
-  if (canManageStaff(user)) return ["dispatch", "staff", "branding"];
-  return ["dispatch"];
+  const modes: AdminViewMode[] = ["dispatch", "orderLookup"];
+  if (canManageStaff(user)) modes.push("staff", "branding");
+  return modes;
 }
 
 export function getSessionBadgeLabel(user: SessionUser | null): string | undefined {
@@ -79,9 +110,14 @@ export function getSessionBadgeLabel(user: SessionUser | null): string | undefin
       return "管理员";
     case "design_manager":
       return "设计经理";
+    case "general_manager":
+      return "总经理";
+    case "acceptance_manager":
+      return "验收经理";
     case "store_manager":
       return "店长";
     case "personal":
+      if (isInstallerSession(user)) return "安装师";
       if (user.role === "dispatcher") return "派单人";
       if (user.role === "designer") return "设计师";
       return undefined;

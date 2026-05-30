@@ -20,6 +20,11 @@ import {
   type StaffHomeStoreOverrides,
 } from "./staff-home-store-storage";
 import {
+  loadStaffPhoneOverrides,
+  saveStaffPhoneOverrides,
+  type StaffPhoneOverrides,
+} from "./staff-phone-storage";
+import {
   loadStaffPasswordOverrides,
   saveStaffPasswordOverrides,
   type StaffPasswordOverrides,
@@ -59,6 +64,7 @@ export interface StaffConfigSources {
   passwordOverrides: StaffPasswordOverrides;
   homeStoreOverrides: StaffHomeStoreOverrides;
   extraStoreOverrides: StaffExtraStoresOverrides;
+  phoneOverrides: StaffPhoneOverrides;
   removedStaffIds: RemovedStaffIds;
   siteBranding: SiteBranding;
 }
@@ -71,6 +77,7 @@ export function buildMergedStaffRecords(
     | "passwordOverrides"
     | "homeStoreOverrides"
     | "extraStoreOverrides"
+    | "phoneOverrides"
     | "removedStaffIds"
   >,
 ): StaffRecord[] {
@@ -81,6 +88,7 @@ export function buildMergedStaffRecords(
     sources.passwordOverrides,
     sources.homeStoreOverrides,
     sources.extraStoreOverrides,
+    sources.phoneOverrides,
   );
   if (!sources.removedStaffIds.length) return merged;
   const removed = new Set(sources.removedStaffIds);
@@ -95,6 +103,7 @@ export function clearStaffOverridesForId(
     | "passwordOverrides"
     | "homeStoreOverrides"
     | "extraStoreOverrides"
+    | "phoneOverrides"
   >,
 ): Pick<
   StaffConfigSources,
@@ -102,20 +111,24 @@ export function clearStaffOverridesForId(
   | "passwordOverrides"
   | "homeStoreOverrides"
   | "extraStoreOverrides"
+  | "phoneOverrides"
 > {
   const nextAccess = { ...sources.accessOverrides };
   const nextPasswords = { ...sources.passwordOverrides };
   const nextHomeStores = { ...sources.homeStoreOverrides };
   const nextExtraStores = { ...sources.extraStoreOverrides };
+  const nextPhones = { ...sources.phoneOverrides };
   delete nextAccess[staffId];
   delete nextPasswords[staffId];
   delete nextHomeStores[staffId];
   delete nextExtraStores[staffId];
+  delete nextPhones[staffId];
   return {
     accessOverrides: nextAccess,
     passwordOverrides: nextPasswords,
     homeStoreOverrides: nextHomeStores,
     extraStoreOverrides: nextExtraStores,
+    phoneOverrides: nextPhones,
   };
 }
 
@@ -128,6 +141,7 @@ export function buildStaffConfigSnapshot(
     passwordOverrides: sources.passwordOverrides,
     homeStoreOverrides: sources.homeStoreOverrides,
     extraStoreOverrides: sources.extraStoreOverrides,
+    phoneOverrides: sources.phoneOverrides,
     removedStaffIds: [...new Set(sources.removedStaffIds)],
     customPositions: loadCustomPositionDefinitions(),
     customStores: loadCustomStoreNames(),
@@ -142,6 +156,7 @@ export function loadStaffConfigFromBrowser(): StaffConfigSnapshot {
     passwordOverrides: loadStaffPasswordOverrides(),
     homeStoreOverrides: loadStaffHomeStoreOverrides(),
     extraStoreOverrides: loadStaffExtraStoresOverrides(),
+    phoneOverrides: loadStaffPhoneOverrides(),
     removedStaffIds: loadRemovedStaffIds(),
     siteBranding: loadSiteBranding(),
   });
@@ -155,6 +170,7 @@ export function persistStaffConfigToLocalStorage(
   saveStaffPasswordOverrides(config.passwordOverrides);
   saveStaffHomeStoreOverrides(config.homeStoreOverrides);
   saveStaffExtraStoresOverrides(config.extraStoreOverrides);
+  saveStaffPhoneOverrides(config.phoneOverrides);
   saveRemovedStaffIds(config.removedStaffIds);
   saveCustomPositionDefinitions(config.customPositions);
   saveCustomStoreNames(config.customStores);

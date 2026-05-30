@@ -1,4 +1,13 @@
 import {
+  EvaluationTableScroll,
+  TABLE_HEAD_STICKY_CLASS,
+} from "@/components/evaluation/evaluation-table-scroll";
+import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
+import {
+  DESIGNER_EXTENDED_RANK_RULES,
+  EVALUATION_AMOUNT_RULES,
+} from "@/lib/performance-algorithm-copy";
+import {
   formatAfterSalesTotal,
   formatAverageOrderAmount,
   formatEvaluationMetric,
@@ -35,7 +44,7 @@ export function DispatcherEvaluationTable({
   nameColumnLabel,
   rows,
   emptyMessage = "暂无数据",
-  footnote = "未下单取预算（流程未到已下单）· 已下单取下单金额 · 已退单仅统计「已退单」状态 · 单元格为 数量 / 金额",
+  footnote = EVALUATION_AMOUNT_RULES,
   designerExtendedMetrics = false,
 }: DispatcherEvaluationTableProps) {
   const dataRows = rows.filter((row) => !row.isWorkflowSummary);
@@ -82,14 +91,24 @@ export function DispatcherEvaluationTable({
   const minWidth = designerExtendedMetrics ? "min-w-[1080px]" : "min-w-[720px]";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className={`w-full ${minWidth} border-collapse text-left`}>
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
-              <th
-                className={`${thClass} min-w-[120px] sticky left-0 bg-slate-50/95`}
-              >
+    <EvaluationTableScroll
+      footer={
+        <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
+          共 {dataRows.length} 条 · {footnote}
+          {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
+        </p>
+      }
+    >
+      <table className={`w-full ${minWidth} border-collapse text-left`}>
+        <thead>
+          <TableAlgorithmCaption>
+            {footnote}
+            {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
+          </TableAlgorithmCaption>
+          <tr className={`border-b border-slate-100 ${TABLE_HEAD_STICKY_CLASS}`}>
+            <th
+              className={`${thClass} min-w-[120px] sticky left-0 z-20 bg-slate-50/95`}
+            >
                 {nameColumnLabel}
               </th>
               <th className={`${thClass} text-center`}>合计</th>
@@ -176,13 +195,6 @@ export function DispatcherEvaluationTable({
             ) : null}
           </tbody>
         </table>
-      </div>
-      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-        共 {dataRows.length} 条 · {footnote}
-        {designerExtendedMetrics
-          ? " · 下单转化率=已下单金额÷合计金额 · 平均下单额=已下单金额÷已下单数量 · 售后金额为售后金合计"
-          : ""}
-      </p>
-    </div>
+    </EvaluationTableScroll>
   );
 }

@@ -53,7 +53,7 @@ export function resolveDispatchPreferredStore(
   return null;
 }
 
-/** 店长 / 本店设计经理：运营看板与查找的数据范围门店 */
+/** 店长 / 本店设计经理 / 非总部总经理：运营看板与查找的数据范围门店 */
 export function resolveManagedStoreForLookup(
   user: SessionUser | null,
 ): StoreName | null {
@@ -62,7 +62,8 @@ export function resolveManagedStoreForLookup(
     return resolveUserHomeStore(user);
   }
   if (
-    user.accessLevel === "design_manager" &&
+    (user.accessLevel === "design_manager" ||
+      user.accessLevel === "general_manager") &&
     user.homeStore &&
     !isHeadquartersStore(user.homeStore)
   ) {
@@ -116,7 +117,7 @@ export function getDesignerStatsFromStoreOrders(
   const map = new Map<string, Order[]>();
 
   for (const order of orders) {
-    const key = order.designer;
+    const key = order.designer ?? "未指派";
     const list = map.get(key) ?? [];
     list.push(order);
     map.set(key, list);

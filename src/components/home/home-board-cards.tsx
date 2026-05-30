@@ -9,8 +9,8 @@ const boardMeta: Record<
   { title: string; description: string; accent: string }
 > = {
   "/admin": {
-    title: "门店派单",
-    description: "录入订单、查找在途定单",
+    title: "新客户开发",
+    description: "新建派单、新建客户与未派单指派",
     accent: "from-indigo-500 to-violet-600",
   },
   "/designer": {
@@ -19,12 +19,17 @@ const boardMeta: Record<
     accent: "from-emerald-500 to-teal-600",
   },
   "/manager": {
-    title: "设计经理看板",
-    description: "门店汇总与设计师业绩",
+    title: "项目进程管理",
+    description: "门店汇总、设计师业绩与节点预警",
     accent: "from-amber-500 to-orange-600",
   },
+  "/delivery": {
+    title: "验收与交付",
+    description: "已下单、安装与客户扫码验收评价",
+    accent: "from-cyan-500 to-sky-600",
+  },
   "/evaluation": {
-    title: "评价看板",
+    title: "综合系统看板",
     description: "派单、设计师与门店排名",
     accent: "from-rose-500 to-pink-600",
   },
@@ -36,14 +41,15 @@ export function HomeBoardCards() {
   const links = loggedIn
     ? getVisibleNavLinks(user)
     : [
-        { href: "/admin", label: "门店派单" },
+        { href: "/admin", label: "新客户开发" },
         { href: "/designer", label: "设计师工作台" },
-        { href: "/manager", label: "设计经理看板" },
-        { href: "/evaluation", label: "评价看板" },
+        { href: "/manager", label: "项目进程管理" },
+        { href: "/delivery", label: "验收与交付" },
+        { href: "/evaluation", label: "综合系统看板" },
       ];
 
   return (
-    <div className="mt-11 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="mt-11 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {links.map((item) => {
         const meta = boardMeta[item.href];
         if (!meta) return null;
@@ -66,7 +72,9 @@ export function HomeBoardCards() {
               aria-disabled
             >
               {accentBar}
-              <h2 className="text-lg font-semibold text-slate-800">{meta.title}</h2>
+              <h2 className="text-lg font-semibold text-slate-800">
+                {meta.title}
+              </h2>
               <p className="mt-1.5 text-sm leading-snug text-slate-500">
                 {meta.description}
               </p>
@@ -92,7 +100,10 @@ export function HomeBoardCards() {
             </p>
             <span className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-indigo-600">
               进入
-              <span className="transition group-hover:translate-x-0.5" aria-hidden>
+              <span
+                className="transition group-hover:translate-x-0.5"
+                aria-hidden
+              >
                 →
               </span>
             </span>

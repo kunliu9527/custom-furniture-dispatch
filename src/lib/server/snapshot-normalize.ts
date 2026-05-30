@@ -38,6 +38,10 @@ export function normalizeStaffConfig(
       raw.extraStoreOverrides && typeof raw.extraStoreOverrides === "object"
         ? raw.extraStoreOverrides
         : {},
+    phoneOverrides:
+      raw.phoneOverrides && typeof raw.phoneOverrides === "object"
+        ? raw.phoneOverrides
+        : {},
     removedStaffIds: Array.isArray(raw.removedStaffIds)
       ? raw.removedStaffIds.filter((id): id is string => typeof id === "string")
       : [],

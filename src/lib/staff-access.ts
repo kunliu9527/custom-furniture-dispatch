@@ -6,6 +6,8 @@ export type StaffAccessLevel =
   | "personal"
   | "store_manager"
   | "design_manager"
+  | "general_manager"
+  | "acceptance_manager"
   | "admin";
 
 export const ACCESS_LEVEL_OPTIONS: {
@@ -15,6 +17,8 @@ export const ACCESS_LEVEL_OPTIONS: {
   { value: "personal", label: "本人" },
   { value: "store_manager", label: "店长" },
   { value: "design_manager", label: "设计经理" },
+  { value: "acceptance_manager", label: "验收经理" },
+  { value: "general_manager", label: "总经理" },
   { value: "admin", label: "管理员" },
 ];
 
@@ -22,15 +26,21 @@ export const ACCESS_LEVEL_LABELS: Record<StaffAccessLevel, string> = {
   personal: "本人",
   store_manager: "店长",
   design_manager: "设计经理",
+  general_manager: "总经理",
+  acceptance_manager: "验收经理",
   admin: "管理员",
 };
 
 export const ACCESS_LEVEL_DESCRIPTIONS: Record<StaffAccessLevel, string> = {
-  personal: "仅本人派单/订单；按派单人查找不显示「全部」",
+  personal:
+    "派单人：项目进程管理仅本人单查询，设计师为同店+本人订单关联；设计师：仅本人与关联派单人；均无门店汇总。安装师：仅交付本人单",
   store_manager:
-    "店长看板仅本店派单人/设计师；可按设计师查找；经理看板只读",
+    "店长看板本店；项目进程管理只读 + 验收与交付本店；新客户开发与设计师工作台",
   design_manager:
-    "门店选「总部」：全店查找与修改（同管理员）；选具体门店：可设最多 3 个门店，数据范围与汇总均限于所属门店",
+    "总部：全站；具体门店：所属门店数据 + 验收与交付含本人关联订单门店；可修改所属范围订单",
+  general_manager:
+    "同设计经理：全站或所属门店；项目进程管理可编辑 + 验收与交付全范围（总部）或门店范围",
+  acceptance_manager: "仅验收与交付全门店可操作；其他板块不可见",
   admin: "全站查看与修改；人员管理与权限设置；删除订单",
 };
 
@@ -57,5 +67,15 @@ export function accessLevelOptionsForStaffRow(
 ): typeof ACCESS_LEVEL_OPTIONS {
   return ACCESS_LEVEL_OPTIONS.filter(
     (opt) => opt.value !== "admin" || isSystemAdmin,
+  );
+}
+
+export function isExecutiveAccessLevel(
+  level: StaffAccessLevel | undefined,
+): boolean {
+  return (
+    level === "admin" ||
+    level === "design_manager" ||
+    level === "general_manager"
   );
 }

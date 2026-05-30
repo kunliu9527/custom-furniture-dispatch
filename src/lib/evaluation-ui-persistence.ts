@@ -1,17 +1,26 @@
 import type { EvaluationViewMode } from "./evaluation-stats";
-import { DEFAULT_PERIOD, type PeriodSelection } from "./period-filter";
+import { DEFAULT_PERIOD, isValidPeriodPreset, type PeriodSelection } from "./period-filter";
+import type { ReportTab } from "./report-hub-config";
 
 export type EvaluationSubView =
   | "aggregate"
   | "ranking"
   | "workflow"
-  | "performance";
+  | "performance"
+  | "weekly";
+
+export type EvaluationMainSection = "operations" | "data";
+export type EvaluationOperationsSubView = "cockpit" | "reports";
 
 export interface EvaluationUiState {
+  mainSection: EvaluationMainSection;
+  operationsSubView: EvaluationOperationsSubView;
+  reportTab: ReportTab;
   viewMode: EvaluationViewMode;
   dispatcherSubView: EvaluationSubView;
   storeSubView: EvaluationSubView;
   designerSubView: EvaluationSubView;
+  acceptanceSubView: EvaluationSubView;
   period: PeriodSelection;
 }
 
@@ -30,20 +39,39 @@ export function loadEvaluationUi(
     if (
       parsed.viewMode !== "dispatcher" &&
       parsed.viewMode !== "designer" &&
-      parsed.viewMode !== "store"
+      parsed.viewMode !== "store" &&
+      parsed.viewMode !== "acceptance"
     ) {
       return null;
     }
+    const mainSection: EvaluationMainSection =
+      parsed.mainSection === "data" ? "data" : "operations";
+    const operationsSubView: EvaluationOperationsSubView =
+      parsed.operationsSubView === "reports" ? "reports" : "cockpit";
+    const reportTab: ReportTab =
+      parsed.reportTab === "monthly" ||
+      parsed.reportTab === "history" ||
+      parsed.reportTab === "pending" ||
+      parsed.reportTab === "alerts"
+        ? parsed.reportTab
+        : "weekly";
     const sub = (v: unknown): EvaluationSubView =>
-      v === "ranking" || v === "workflow" || v === "performance"
+      v === "ranking" ||
+      v === "workflow" ||
+      v === "performance" ||
+      v === "weekly"
         ? v
         : "aggregate";
     const period = parsePeriod(parsed.period);
     return {
+      mainSection,
+      operationsSubView,
+      reportTab,
       viewMode: parsed.viewMode,
       dispatcherSubView: sub(parsed.dispatcherSubView),
       storeSubView: sub(parsed.storeSubView),
       designerSubView: sub(parsed.designerSubView),
+      acceptanceSubView: sub(parsed.acceptanceSubView),
       period,
     };
   } catch {
@@ -54,12 +82,7 @@ export function loadEvaluationUi(
 function parsePeriod(raw: unknown): PeriodSelection {
   if (!raw || typeof raw !== "object") return DEFAULT_PERIOD;
   const p = raw as Partial<PeriodSelection>;
-  if (
-    p.preset === "all" ||
-    p.preset === "thisMonth" ||
-    p.preset === "lastMonth" ||
-    p.preset === "custom"
-  ) {
+  if (isValidPeriodPreset(p.preset)) {
     return {
       preset: p.preset,
       yearMonth: typeof p.yearMonth === "string" ? p.yearMonth : undefined,

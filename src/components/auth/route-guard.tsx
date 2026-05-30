@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { getDefaultPathForRole } from "@/lib/role-routes";
+import { getDefaultPathForSession } from "@/lib/role-routes";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
@@ -18,11 +18,7 @@ export function RouteGuard({ canAccess, children }: RouteGuardProps) {
 
   useEffect(() => {
     if (!isHydrated || canAccess) return;
-    router.replace(
-      user
-        ? getDefaultPathForRole(user.role, user.accessLevel)
-        : "/",
-    );
+    router.replace(user ? getDefaultPathForSession(user) : "/");
   }, [isHydrated, canAccess, user, router]);
 
   if (!isHydrated) {

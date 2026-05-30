@@ -2,6 +2,7 @@ import type { AppPersistedData } from "@/lib/types";
 import type { StaffAccessOverrides } from "@/lib/staff-access-storage";
 import type { StaffExtraStoresOverrides } from "@/lib/staff-extra-stores-storage";
 import type { StaffHomeStoreOverrides } from "@/lib/staff-home-store-storage";
+import type { StaffPhoneOverrides } from "@/lib/staff-phone-storage";
 import type { StaffPasswordOverrides } from "@/lib/staff-password-storage";
 import type { CustomPositionDefinition } from "@/lib/staff-config-storage";
 import type { StaffRecord } from "@/lib/staff-roster";
@@ -14,6 +15,7 @@ export interface StaffConfigSnapshot {
   passwordOverrides: StaffPasswordOverrides;
   homeStoreOverrides: StaffHomeStoreOverrides;
   extraStoreOverrides: StaffExtraStoresOverrides;
+  phoneOverrides: StaffPhoneOverrides;
   /** 已删除的内置人员 id（builtin-disp-* / builtin-des-*） */
   removedStaffIds: string[];
   customPositions: CustomPositionDefinition[];
@@ -33,6 +35,7 @@ export const EMPTY_STAFF_CONFIG: StaffConfigSnapshot = {
   passwordOverrides: {},
   homeStoreOverrides: {},
   extraStoreOverrides: {},
+  phoneOverrides: {},
   removedStaffIds: [],
   customPositions: [],
   customStores: [],

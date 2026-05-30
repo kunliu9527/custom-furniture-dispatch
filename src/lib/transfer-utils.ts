@@ -7,6 +7,9 @@ export function getTransferCount(order: Pick<Order, "transferRecords">): number 
 export function hasBeenTransferred(
   order: Pick<Order, "originalDesigner" | "designer" | "transferRecords">,
 ): boolean {
+  if (order.designer == null || order.originalDesigner == null) {
+    return order.transferRecords.length > 0;
+  }
   return (
     order.transferRecords.length > 0 ||
     order.designer !== order.originalDesigner
@@ -24,6 +27,15 @@ export function formatTransferTime(iso: string): string {
 
 export function summarizeTransfer(record: TransferRecord): string {
   return `${record.fromDesigner} → ${record.toDesigner}`;
+}
+
+export function getLatestTransferAt(
+  order: Pick<Order, "transferRecords">,
+): string | null {
+  if (order.transferRecords.length === 0) return null;
+  return order.transferRecords.reduce((latest, record) =>
+    record.transferredAt > latest ? record.transferredAt : latest,
+  order.transferRecords[0]!.transferredAt);
 }
 
 export function normalizeTransferRecords(value: unknown): TransferRecord[] {

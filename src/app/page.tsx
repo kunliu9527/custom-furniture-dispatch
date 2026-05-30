@@ -13,12 +13,10 @@ export default function Home() {
       />
       <HomeHeader />
       <HomeRedirect />
-      <div className="relative mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-14 sm:px-6 sm:py-16">
+      <div className="relative mx-auto flex w-full max-w-4xl flex-col px-4 pt-6 pb-14 sm:px-6 sm:pt-8 sm:pb-16">
         <HomeHero />
-
         <HomeBoardCards />
       </div>
-
       <AuthorCredit />
     </div>
   );

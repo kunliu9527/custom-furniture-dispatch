@@ -2,10 +2,12 @@ import { ORDER_STATUSES } from "@/lib/constants";
 import type { OrderStatus } from "@/lib/types";
 
 interface StatusSummaryBarProps {
-  counts: Record<OrderStatus, number>;
+  counts: Record<string, number>;
   total: number;
   selected: OrderStatus | "全部";
   onSelect: (status: OrderStatus | "全部") => void;
+  /** 限定展示的状态（默认全部 ORDER_STATUSES） */
+  statuses?: OrderStatus[];
 }
 
 export function StatusSummaryBar({
@@ -13,13 +15,15 @@ export function StatusSummaryBar({
   total,
   selected,
   onSelect,
+  statuses,
 }: StatusSummaryBarProps) {
+  const statusList = statuses ?? ORDER_STATUSES;
   const items: { key: OrderStatus | "全部"; label: string; count: number }[] = [
     { key: "全部", label: "全部", count: total },
-    ...ORDER_STATUSES.map((status) => ({
+    ...statusList.map((status) => ({
       key: status,
       label: status,
-      count: counts[status],
+      count: counts[status] ?? 0,
     })),
   ];
 

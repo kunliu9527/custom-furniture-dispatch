@@ -7,8 +7,8 @@ import { createEmptyStatusCounts } from "./manager-stats";
 import type { StaffRecord } from "./staff-roster";
 import type { Order, OrderStatus } from "./types";
 
-/** 门店派单页 Tab（查找统计在设计经理看板 /manager） */
-export type AdminViewMode = "dispatch" | "staff" | "branding";
+/** 门店派单页 Tab */
+export type AdminViewMode = "dispatch" | "orderLookup" | "staff" | "branding";
 
 export function normalizeDispatcherName(name: string): string {
   const trimmed = name.trim();

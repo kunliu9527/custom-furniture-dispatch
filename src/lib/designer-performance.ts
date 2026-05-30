@@ -1,4 +1,4 @@
-import { buildEffectiveDesignerRoster } from "./personnel-roster";
+import { computePreMeasureDepositBonus } from "./deposit-contribution";
 import { buildDesignerHomeStoreIndex } from "./designer-staff-store";
 import {
   classifyDispatcherOrder,
@@ -13,6 +13,7 @@ import {
   type PeriodSelection,
 } from "./period-filter";
 import { isRefundStatus } from "./order-utils";
+import { buildEffectiveDesignerRoster } from "./personnel-roster";
 import type { StaffRecord } from "./staff-roster";
 import { summarizeDesignerActivity } from "./order-events";
 import { getStageTimeoutAlert } from "./stage-intervals";
@@ -22,6 +23,7 @@ const IN_PROGRESS_STATUSES: FlowOrderStatus[] = [
   "待量尺",
   "已量尺",
   "已出图",
+  "待签约",
   "已签约",
 ];
 
@@ -186,13 +188,19 @@ export function buildDesignerPerformanceRow(
     { out: 0, transferIn: 0 },
   );
 
-  const contributionScore = computeContributionScore({
-    orderedAmount,
-    supplementAmount,
-    afterSalesAmount,
-    refundedAmount,
-    timeoutCount,
-  });
+  const preMeasureBonus = personOrders.reduce(
+    (sum, o) => sum + computePreMeasureDepositBonus(o).designer,
+    0,
+  );
+
+  const contributionScore =
+    computeContributionScore({
+      orderedAmount,
+      supplementAmount,
+      afterSalesAmount,
+      refundedAmount,
+      timeoutCount,
+    }) + preMeasureBonus;
 
   const activity = summarizeDesignerActivity(
     allOrdersForLoad ?? periodOrders,
@@ -264,20 +272,19 @@ export function getDesignerPerformanceRows(
   }
 
   for (const order of filteredOrders) {
-    if (!seen.has(order.designer)) {
-      if (allowedNames && !allowedNames.has(order.designer)) continue;
-      seen.add(order.designer);
-      rows.push(
-        buildDesignerPerformanceRow(
-          order.designer,
-          filteredOrders,
-          filteredSupplements,
-          resolveSubtitle?.(order.designer),
-          period,
-          orders,
-        ),
-      );
-    }
+    if (!order.designer || seen.has(order.designer)) continue;
+    if (allowedNames && !allowedNames.has(order.designer)) continue;
+    seen.add(order.designer);
+    rows.push(
+      buildDesignerPerformanceRow(
+        order.designer,
+        filteredOrders,
+        filteredSupplements,
+        resolveSubtitle?.(order.designer),
+        period,
+        orders,
+      ),
+    );
   }
 
   return rows.sort(

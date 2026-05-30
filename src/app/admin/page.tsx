@@ -1,10 +1,12 @@
 "use client";
 
-import { AdminViewTabs } from "@/components/admin/admin-view-tabs";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
+import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
+import { OrderLookupPanel } from "@/components/admin/order-lookup-panel";
 import { SiteBrandingSettings } from "@/components/admin/site-branding-settings";
 import { StaffManagement } from "@/components/admin/staff-management";
 import { AppShell } from "@/components/layout/app-shell";
-import { OrderSearchBar } from "@/components/manager/order-search-bar";
 import { LookupSectionHeading } from "@/components/shared/lookup-section-heading";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { DispatchForm } from "@/components/orders/dispatch-form";
@@ -13,8 +15,8 @@ import { resolveAssignedStoresForUser } from "@/lib/assigned-stores";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import {
+  canAssignDesigner,
   canCreateDispatch,
-  canDeleteOrder,
   canAccessAdminPage,
   lockedDesignerName,
   lockedDispatcherName,
@@ -30,24 +32,24 @@ import {
   resolveDispatchPreferredStore,
 } from "@/lib/store-manager-scope";
 import type { AdminViewMode } from "@/lib/admin-stats";
-import { searchOrders } from "@/lib/order-search";
-import {
-  isActiveOrder,
-  sortOrdersByLoginAccountPriority,
-} from "@/lib/order-utils";
+import type { DesignerName } from "@/lib/types";
+import { sortOrdersByLoginAccountPriority } from "@/lib/order-utils";
 import { loadAdminViewMode, saveAdminViewMode } from "@/lib/admin-ui-persistence";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const { orders, addOrder, deleteOrder, isHydrated } = useOrders();
-  const allowDeleteOrder = canDeleteOrder(user);
+  const { orders, addOrder, assignDesignerToOrder, isHydrated } = useOrders();
   const dispatcherLocked = lockedDispatcherName(user);
   const designerLocked = lockedDesignerName(user);
   const [viewMode, setViewMode] = useState<AdminViewMode>("dispatch");
-  const [activeOrderSearchQuery, setActiveOrderSearchQuery] = useState("");
+  const [lookupOrderId, setLookupOrderId] = useState<string | null>(null);
+  const [dispatchFocusDesigner, setDispatchFocusDesigner] = useState<
+    string | null
+  >(null);
+  const urlNavApplied = useRef(false);
   const allowedAdminModes = useMemo(
     () => getVisibleAdminViewModes(user),
     [user],
@@ -61,29 +63,17 @@ export default function AdminPage() {
   );
   const sessionResetKey = getSessionResetKey(user);
 
-  const activeOrders = useMemo(() => {
-    let list = orders.filter(isActiveOrder);
+  const undispatchedOrders = useMemo(() => {
+    let list = orders.filter((o) => o.status === "未派单");
     if (user?.accessLevel === "store_manager" && managedStore) {
       list = filterOrdersByDispatcherAffiliatedStore(list, managedStore);
     } else if (assignedStores.length > 0) {
       list = filterOrdersByDispatcherAffiliatedStores(list, assignedStores);
-    } else if (user?.role === "designer") {
-      list = list.filter((o) => o.designer === user.displayName);
-    } else if (
-      user?.role === "dispatcher" &&
-      user.accessLevel === "personal"
-    ) {
+    } else if (user?.role === "dispatcher" && user.accessLevel === "personal") {
       list = list.filter((o) => o.dispatcherName === user.displayName);
     }
     return sortOrdersByLoginAccountPriority(list, user);
   }, [orders, user, managedStore, assignedStores]);
-
-  const filteredActiveOrders = useMemo(
-    () => searchOrders(activeOrders, activeOrderSearchQuery),
-    [activeOrders, activeOrderSearchQuery],
-  );
-
-  const isActiveOrderSearching = activeOrderSearchQuery.trim().length > 0;
 
   useEffect(() => {
     if (!allowedAdminModes.includes(viewMode)) {
@@ -102,12 +92,41 @@ export default function AdminPage() {
   }, [sessionResetKey, allowedAdminModesKey, user, allowedAdminModes]);
 
   useEffect(() => {
+    if (!isHydrated || urlNavApplied.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    const orderId = params.get("orderId");
+    const designer = params.get("designer");
+    const focus = params.get("focus");
+    if (!view && !orderId && !designer) return;
+    urlNavApplied.current = true;
+    if (view === "orderLookup" && allowedAdminModes.includes("orderLookup")) {
+      setViewMode("orderLookup");
+    }
+    if (view === "dispatch" && allowedAdminModes.includes("dispatch")) {
+      setViewMode("dispatch");
+    }
+    if (designer) {
+      setDispatchFocusDesigner(designer);
+    }
+    if (orderId) {
+      setLookupOrderId(orderId);
+    }
+    if (focus === "undispatched" && view === "dispatch") {
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById("admin-undispatched-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, [isHydrated, allowedAdminModes]);
+
+  useEffect(() => {
     if (!user?.username) return;
     saveAdminViewMode(user.username, viewMode);
   }, [user?.username, viewMode]);
 
   const resetAdminBoardForSession = useCallback(() => {
-    setActiveOrderSearchQuery("");
     setViewMode("dispatch");
   }, []);
 
@@ -115,64 +134,93 @@ export default function AdminPage() {
 
   return (
     <RouteGuard canAccess={canAccessAdminPage(user)}>
-      <AppShell title="门店派单" badge={getSessionBadgeLabel(user)}>
-        <div className="space-y-6">
-          <AdminViewTabs
-            value={viewMode}
-            onChange={setViewMode}
-            allowedModes={allowedAdminModes}
-          />
-
+      <AppShell
+        title="新客户开发"
+        badge={getSessionBadgeLabel(user)}
+        mainClassName={EVAL_PAGE_MAIN_CLASS}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
           {!isHydrated ? (
             <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-400">
               加载订单数据…
             </div>
-          ) : viewMode === "dispatch" ? (
-            <div className="space-y-8">
+          ) : (
+            <ModuleWorkbenchLayout
+              sidebar={
+                <AdminSidebar
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  allowedModes={allowedAdminModes}
+                />
+              }
+            >
+          {viewMode === "dispatch" ? (
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+              {dispatchFocusDesigner ? (
+                <div className="shrink-0 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+                  <p className="font-semibold">
+                    超额派单协调 · {dispatchFocusDesigner}
+                  </p>
+                  <p className="mt-1 text-xs text-amber-900/90">
+                    该设计师在途已满。新建派单已预填设计师并勾选「经理确认超额派单」；对下方
+                    「未派单客户」指派同一设计师时也需勾选确认。
+                  </p>
+                </div>
+              ) : null}
               <DispatchForm
                 onSubmit={addOrder}
                 lockedDispatcherName={dispatcherLocked}
                 lockedDesignerName={designerLocked}
+                initialDesignerName={dispatchFocusDesigner}
                 preferredStore={preferredStore}
                 readOnly={!canCreateDispatch(user)}
+                fillHeight
               />
 
-              <section className="space-y-4">
-                <OrderSearchBar
-                  value={activeOrderSearchQuery}
-                  onChange={setActiveOrderSearchQuery}
-                  resultCount={filteredActiveOrders.length}
-                  placeholder="在进行中订单内查找：客户、设计师、派单人、门店、状态…"
-                />
-
-                <LookupSectionHeading
-                  title="进行中订单列表"
-                  suffix={
-                    <span className="ml-2 text-xs font-normal text-slate-500">
-                      {isActiveOrderSearching
-                        ? `匹配 ${filteredActiveOrders.length} / 共 ${activeOrders.length} 笔`
-                        : `共 ${activeOrders.length} 笔`}
-                    </span>
-                  }
-                />
-
-                <OrderList
-                  orders={filteredActiveOrders}
-                  emptyMessage={
-                    isActiveOrderSearching
-                      ? "未找到匹配的进行中订单"
-                      : "暂无进行中订单，请在上方表单创建派单"
-                  }
-                  showDesigner
-                  onDeleteOrder={allowDeleteOrder ? deleteOrder : undefined}
-                />
-              </section>
+              {undispatchedOrders.length > 0 ? (
+                <section
+                  id="admin-undispatched-section"
+                  className="flex max-h-[min(38%,16rem)] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-24"
+                >
+                  <div className="shrink-0 border-b border-slate-200/80 px-4 py-2.5">
+                    <LookupSectionHeading
+                      title="未派单客户"
+                      suffix={
+                        <span className="ml-2 text-xs font-normal text-slate-500">
+                          共 {undispatchedOrders.length} 笔
+                        </span>
+                      }
+                    />
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                    <OrderList
+                      orders={undispatchedOrders}
+                      emptyMessage="暂无未派单客户"
+                      showDesigner={false}
+                      showAssignDesigner
+                      assignDesignerDefault={
+                        dispatchFocusDesigner as DesignerName | undefined
+                      }
+                      onAssignDesigner={(id, designer, force) =>
+                        assignDesignerToOrder(id, designer, force)
+                      }
+                      isOrderReadOnly={(order) => !canAssignDesigner(user, order)}
+                    />
+                  </div>
+                </section>
+              ) : null}
             </div>
+          ) : viewMode === "orderLookup" ? (
+            user ? (
+              <OrderLookupPanel user={user} initialOrderId={lookupOrderId} />
+            ) : null
           ) : viewMode === "staff" ? (
             <StaffManagement />
           ) : viewMode === "branding" ? (
             <SiteBrandingSettings />
           ) : null}
+            </ModuleWorkbenchLayout>
+          )}
         </div>
       </AppShell>
     </RouteGuard>

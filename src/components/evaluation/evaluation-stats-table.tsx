@@ -1,5 +1,9 @@
 import { ORDER_STATUSES } from "@/lib/constants";
 import {
+  EvaluationTableScroll,
+  TABLE_HEAD_STICKY_CLASS,
+} from "@/components/evaluation/evaluation-table-scroll";
+import {
   formatEvaluationMetric,
   type WorkflowEvaluationRow,
 } from "@/lib/evaluation-stats";
@@ -39,14 +43,13 @@ export function EvaluationStatsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[840px] border-collapse text-left">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
-              <th
-                className={`${thClass} min-w-[120px] sticky left-0 bg-slate-50/95`}
-              >
+    <EvaluationTableScroll>
+      <table className="w-full min-w-[840px] border-collapse text-left">
+        <thead>
+          <tr className={`border-b border-slate-100 ${TABLE_HEAD_STICKY_CLASS}`}>
+            <th
+              className={`${thClass} min-w-[120px] sticky left-0 z-20 bg-slate-50/95`}
+            >
                 {nameColumnLabel}
               </th>
               <th className={`${thClass} text-center`}>合计</th>
@@ -122,10 +125,6 @@ export function EvaluationStatsTable({
             ) : null}
           </tbody>
         </table>
-      </div>
-      <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-        共 {dataRows.length} 条 · 按流程状态 · 单元格为 数量 / 金额 · 末行为流程累计
-      </p>
-    </div>
+    </EvaluationTableScroll>
   );
 }

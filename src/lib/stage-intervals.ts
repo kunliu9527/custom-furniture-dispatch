@@ -2,12 +2,13 @@ import type { FlowOrderStatus, Order, StageIntervalDays } from "./types";
 
 export type { StageIntervalDays };
 
-export type StageTimeoutAlert = "量尺超时" | "出图超时" | "下单超时";
+export type StageTimeoutAlert = "量尺超时" | "出图超时" | "签约超时" | "下单超时";
 
 const MEASURE_TIMEOUT_DAYS = 3;
 const DRAWING_TIMEOUT_DAYS = 9;
 const DRAWING_TIMEOUT_BUDGET_THRESHOLD = 200_000;
 const DRAWING_TIMEOUT_BUDGET_DAYS = 15;
+const SIGN_TIMEOUT_DAYS = 7;
 const ORDER_TIMEOUT_DAYS = 3;
 
 /** 原始间隔天数（未取整） */
@@ -38,17 +39,20 @@ export function getStatusEnteredAt(
 ): string | undefined {
   const at = order.statusEnteredAt?.[status];
   if (at) return at;
-  if (status === "待量尺") return order.createdAt;
+  if (status === "未派单" || status === "待量尺") return order.createdAt;
   return undefined;
 }
 
 /** 当前环节是否应显示超时提示（未推进到下一状态时） */
 export function getStageTimeoutAlert(order: Order, now = new Date()): StageTimeoutAlert | null {
-  if (order.status === "待退单" || order.status === "已退单") return null;
+  if (order.status === "未派单" || order.status === "待退单" || order.status === "已退单") {
+    return null;
+  }
 
   const nowIso = now.toISOString();
 
   if (order.status === "待量尺") {
+    if (!order.designerAcceptedAt) return null;
     const from = getStatusEnteredAt(order, "待量尺");
     if (!from) return null;
     if (rawIntervalDays(from, nowIso) > MEASURE_TIMEOUT_DAYS) return "量尺超时";
@@ -63,6 +67,13 @@ export function getStageTimeoutAlert(order: Order, now = new Date()): StageTimeo
         ? DRAWING_TIMEOUT_BUDGET_DAYS
         : DRAWING_TIMEOUT_DAYS;
     if (rawIntervalDays(from, nowIso) > limit) return "出图超时";
+    return null;
+  }
+
+  if (order.status === "待签约") {
+    const from = getStatusEnteredAt(order, "待签约");
+    if (!from) return null;
+    if (rawIntervalDays(from, nowIso) > SIGN_TIMEOUT_DAYS) return "签约超时";
     return null;
   }
 
@@ -81,8 +92,11 @@ const ADVANCE_INTERVAL_KEY: Partial<
 > = {
   已量尺: "toMeasured",
   已出图: "toDrawn",
+  待签约: "toPendingSign",
   已签约: "toSigned",
   已下单: "toOrdered",
+  已安装: "toInstalled",
+  已验收: "toAccepted",
 };
 
 const ADVANCE_INTERVAL_MIN: Partial<Record<FlowOrderStatus, number>> = {
@@ -127,8 +141,11 @@ export function sumStageIntervals(intervals: StageIntervalDays): number {
   return (
     (intervals.toMeasured ?? 0) +
     (intervals.toDrawn ?? 0) +
+    (intervals.toPendingSign ?? 0) +
     (intervals.toSigned ?? 0) +
-    (intervals.toOrdered ?? 0)
+    (intervals.toOrdered ?? 0) +
+    (intervals.toInstalled ?? 0) +
+    (intervals.toAccepted ?? 0)
   );
 }
 
@@ -139,14 +156,19 @@ export function hasCompleteStageIntervals(
   return (
     intervals.toMeasured != null &&
     intervals.toDrawn != null &&
+    intervals.toPendingSign != null &&
     intervals.toSigned != null &&
-    intervals.toOrdered != null
+    intervals.toOrdered != null &&
+    intervals.toInstalled != null &&
+    intervals.toAccepted != null
   );
 }
 
 /** 已下单订单的累计耗时展示；无记录时为空 */
 export function formatTotalElapsedDisplay(order: Order): string | null {
-  if (order.status !== "已下单" && order.status !== "已安装") return null;
+  if (order.status !== "已下单" && order.status !== "已安装" && order.status !== "已验收") {
+    return null;
+  }
   if (order.totalElapsedDays == null) return null;
   return formatIntervalDays(order.totalElapsedDays);
 }
@@ -156,17 +178,23 @@ const REVERT_CLEAR_INTERVAL: Partial<
 > = {
   已量尺: "toMeasured",
   已出图: "toDrawn",
+  待签约: "toPendingSign",
   已签约: "toSigned",
   已下单: "toOrdered",
+  已安装: "toInstalled",
+  已验收: "toAccepted",
 };
 
 const FLOW_STATUSES_FOR_ENTERED: FlowOrderStatus[] = [
+  "未派单",
   "待量尺",
   "已量尺",
   "已出图",
+  "待签约",
   "已签约",
   "已下单",
   "已安装",
+  "已验收",
 ];
 
 /** 撤回时清除当前及之后环节的进入时间与间隔记录 */
@@ -204,14 +232,20 @@ export function normalizeStageIntervalDays(
   const result: StageIntervalDays = {
     toMeasured: pick("toMeasured"),
     toDrawn: pick("toDrawn"),
+    toPendingSign: pick("toPendingSign"),
     toSigned: pick("toSigned"),
     toOrdered: pick("toOrdered"),
+    toInstalled: pick("toInstalled"),
+    toAccepted: pick("toAccepted"),
   };
   if (
     result.toMeasured == null &&
     result.toDrawn == null &&
+    result.toPendingSign == null &&
     result.toSigned == null &&
-    result.toOrdered == null
+    result.toOrdered == null &&
+    result.toInstalled == null &&
+    result.toAccepted == null
   ) {
     return undefined;
   }

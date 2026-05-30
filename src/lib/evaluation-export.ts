@@ -10,6 +10,16 @@ import {
   type EvaluationViewMode,
   type WorkflowEvaluationRow,
 } from "./evaluation-stats";
+import type {
+  AcceptanceEvaluationSummary,
+  AcceptanceStoreRow,
+} from "./acceptance-evaluation-stats";
+import type {
+  OrderCustomerRatingRecord,
+  PersonRatingAggregate,
+} from "./customer-ratings";
+import type { DispatcherPerformanceRow } from "./dispatcher-performance";
+import { formatDispatchMoney } from "./dispatch-totals";
 
 function escapeCsvCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -221,10 +231,103 @@ function workflowCsvSection(
   return sectionToCsv(title, headers, mapped);
 }
 
+function personRatingCsvSection(
+  title: string,
+  items: PersonRatingAggregate[],
+): string {
+  const headers = ["姓名", "评价单数", "均分", "涉及订单"];
+  const body = items.map((item) => [
+    item.personName,
+    String(item.count),
+    item.avgStars.toFixed(1),
+    item.orderIds.join("、"),
+  ]);
+  return sectionToCsv(title, headers, body);
+}
+
+function acceptanceAggregateCsvSection(
+  summary: AcceptanceEvaluationSummary,
+): string {
+  return sectionToCsv(
+    "验收归总",
+    ["指标", "数值"],
+    [
+      ["已评价", `${summary.ratedCount} 单`],
+      ["综合均分", `${summary.avgOverall.toFixed(1)} 星`],
+      ["电子验收率", `${Math.round(summary.electronicRate * 100)}%`],
+    ],
+  );
+}
+
+function acceptanceStoreCsvSection(rows: AcceptanceStoreRow[]): string {
+  const headers = ["门店", "已评价", "待扫码", "均分", "电子验收率"];
+  const body = rows.map((row) => [
+    row.label,
+    String(row.ratedCount),
+    String(row.pendingCount),
+    row.ratedCount > 0 ? row.avgOverall.toFixed(1) : "—",
+    row.ratedCount > 0 ? `${Math.round(row.electronicRate * 100)}%` : "—",
+  ]);
+  return sectionToCsv("验收明细（门店）", headers, body);
+}
+
+function acceptanceOrderCsvSection(records: OrderCustomerRatingRecord[]): string {
+  const headers = [
+    "订单号",
+    "客户",
+    "门店",
+    "验收时间",
+    "综合均分",
+    "备注",
+  ];
+  const body = records.map((r) => [
+    r.orderId,
+    r.customerName,
+    r.dispatchStore,
+    r.acceptedAt,
+    r.avgRating.toFixed(1),
+    r.comment ?? "",
+  ]);
+  return sectionToCsv("按订单汇总", headers, body);
+}
+
+function dispatcherPerformanceCsvSection(
+  rows: DispatcherPerformanceRow[],
+): string {
+  const headers = [
+    "派单人",
+    "归属",
+    "新派单",
+    "定金合计",
+    "签约金额",
+    "下单金额",
+    "预量定金单",
+    "退单预算",
+    "签约超时",
+    "贡献分",
+    "预量奖金",
+  ];
+  const body = rows.map((row) => [
+    row.label,
+    row.subtitle ?? "",
+    String(row.newDispatchCount),
+    formatDispatchMoney(row.depositTotal),
+    formatDispatchMoney(row.signedContractAmount),
+    formatDispatchMoney(row.orderedAmount),
+    String(row.preMeasureDepositCount),
+    formatDispatchMoney(row.refundBudget),
+    String(row.signTimeoutCount),
+    String(row.contributionScore),
+    formatDispatchMoney(row.preMeasureBonus),
+  ]);
+  return sectionToCsv("派单人绩效", headers, body);
+}
+
 export interface EvaluationExportPayload {
   viewMode: EvaluationViewMode;
   periodLabel?: string;
   dispatcherRows: DispatcherEvaluationRow[];
+  dispatcherWorkflowRows: WorkflowEvaluationRow[];
   designerAmountRows: DispatcherEvaluationRow[];
   designerWorkflowRows: WorkflowEvaluationRow[];
   storeDispatcherAmountRows: DispatcherEvaluationRow[];
@@ -233,6 +336,20 @@ export interface EvaluationExportPayload {
   storeRankingDisplayRows?: DispatcherEvaluationRow[];
   /** 门店排名：全部门店数据（用于名次） */
   storeRankingRankSource?: DispatcherEvaluationRow[];
+  /** 客户验收：归总 */
+  acceptanceSummary?: AcceptanceEvaluationSummary;
+  /** 客户验收：门店明细 */
+  acceptanceStoreRows?: AcceptanceStoreRow[];
+  /** 客户验收：人员均分排名 */
+  acceptancePersonRanking?: {
+    dispatchers: PersonRatingAggregate[];
+    designers: PersonRatingAggregate[];
+    installers: PersonRatingAggregate[];
+  };
+  /** 客户验收：按订单汇总 */
+  acceptanceRatingRecords?: OrderCustomerRatingRecord[];
+  /** 派单人绩效（周报数据） */
+  dispatcherPerformanceRows?: DispatcherPerformanceRow[];
 }
 
 export function exportEvaluationData(payload: EvaluationExportPayload): void {
@@ -249,12 +366,22 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
         "派单人",
         payload.dispatcherRows,
       ),
+      workflowCsvSection(
+        "派单人个人数据",
+        "派单人",
+        payload.dispatcherWorkflowRows,
+      ),
       rankingCsvSection(
         "派单人排名",
         "派单人",
         payload.dispatcherRows,
       ),
     );
+    if (payload.dispatcherPerformanceRows?.length) {
+      sections.push(
+        dispatcherPerformanceCsvSection(payload.dispatcherPerformanceRows),
+      );
+    }
     downloadCsv(
       `评价看板-派单人数据${periodPart}-${stamp}.csv`,
       sections.join("\n\n"),
@@ -284,6 +411,43 @@ export function exportEvaluationData(payload: EvaluationExportPayload): void {
     );
     downloadCsv(
       `评价看板-设计师数据${periodPart}-${stamp}.csv`,
+      sections.join("\n\n"),
+    );
+    return;
+  }
+
+  if (payload.viewMode === "acceptance") {
+    if (payload.acceptanceSummary) {
+      sections.push(acceptanceAggregateCsvSection(payload.acceptanceSummary));
+    }
+    if (payload.acceptanceStoreRows?.length) {
+      sections.push(acceptanceStoreCsvSection(payload.acceptanceStoreRows));
+    }
+    const ranking = payload.acceptancePersonRanking;
+    if (ranking) {
+      if (ranking.dispatchers.length) {
+        sections.push(
+          personRatingCsvSection("派单人评价均分", ranking.dispatchers),
+        );
+      }
+      if (ranking.designers.length) {
+        sections.push(
+          personRatingCsvSection("设计师评价均分", ranking.designers),
+        );
+      }
+      if (ranking.installers.length) {
+        sections.push(
+          personRatingCsvSection("安装师评价均分", ranking.installers),
+        );
+      }
+    }
+    if (payload.acceptanceRatingRecords?.length) {
+      sections.push(
+        acceptanceOrderCsvSection(payload.acceptanceRatingRecords),
+      );
+    }
+    downloadCsv(
+      `评价看板-客户验收评价${periodPart}-${stamp}.csv`,
       sections.join("\n\n"),
     );
     return;

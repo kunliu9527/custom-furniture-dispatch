@@ -2,21 +2,14 @@
 
 import { AppShell } from "@/components/layout/app-shell";
 import { RouteGuard } from "@/components/auth/route-guard";
-import { DesignerSummaryBar } from "@/components/manager/designer-summary-bar";
-import { DispatcherResultSummary } from "@/components/admin/dispatcher-result-summary";
-import { DispatcherSummaryBar } from "@/components/admin/dispatcher-summary-bar";
-import { ManagerResultSummary } from "@/components/manager/manager-result-summary";
-import { ManagerSupplementTable } from "@/components/manager/manager-supplement-table";
-import { ManagerAlertPanel } from "@/components/manager/manager-alert-panel";
-import { ManagerPendingAcceptancePanel } from "@/components/manager/manager-pending-acceptance-panel";
-import { WeeklyDigestPanel } from "@/components/manager/weekly-digest-panel";
-import { ManagerOrderTable } from "@/components/manager/manager-order-table";
-import { StatusSummaryBar } from "@/components/manager/status-summary-bar";
-import { ViewTabs } from "@/components/manager/view-tabs";
-import { LookupSectionHeading } from "@/components/shared/lookup-section-heading";
-import { OrderSearchBar } from "@/components/manager/order-search-bar";
-import { StoreResultSummary } from "@/components/shared/store-result-summary";
-import { StoreSummaryBar } from "@/components/shared/store-summary-bar";
+import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
+import { AnomalyTodosPanel } from "@/components/manager/anomaly-todos-panel";
+import { WeeklyDigestSummaryCard } from "@/components/manager/weekly-digest-summary-card";
+import { ManagerSidebar } from "@/components/manager/manager-sidebar";
+import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
+import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
+import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
+import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import {
@@ -27,6 +20,8 @@ import {
   canEditManagerPage,
   canModifyOrderInUserScope,
   hasFullOrderScope,
+  isPersonalDispatcherLookup,
+  isPersonalManagerLookupOnly,
   resolveManagedStoreForLookup,
   resolveDesignerLookupStores,
   resolveDispatcherStatsStoreFilter,
@@ -36,11 +31,19 @@ import {
   showLookupAllOption,
   showStoreSummaryAllOption,
 } from "@/lib/permissions";
-import { canAccessManagerPage } from "@/lib/nav-access";
+import { canAccessManagerPage, getSessionBadgeLabel } from "@/lib/nav-access";
 import {
   getDefaultDispatcherFilter,
   getManagerRoleDefaults,
 } from "@/lib/role-routes";
+import {
+  filterDesignerStatsByAllowList,
+  filterDispatcherStatsByAllowList,
+  getVisibleManagerViewModes,
+  isManagerViewModeVisible,
+  resolveManagerDesignerNameAllowList,
+  resolveManagerDispatcherNameAllowList,
+} from "@/lib/lookup-scope";
 import {
   filterOrdersByDispatcher,
   getDispatcherStats,
@@ -59,27 +62,69 @@ import {
 import { getEffectiveDesignersInStores } from "@/lib/designer-staff-store";
 import { searchOrders } from "@/lib/order-search";
 import {
+  formatStrongPinEmptyMessage,
+  formatStrongPinSearchHint,
+  resolveStrongPinOrder,
+  resolveStrongPinOrSearchMatches,
+} from "@/lib/strong-pin-order";
+import {
   filterOrdersByDispatcherStore,
   filterStoreStatsByStores,
   getStoreStatsByDispatcher,
 } from "@/lib/store-stats";
 import {
   applyResultDrillFilters,
-  drillFilterLabel,
   EMPTY_RESULT_DRILL,
   type ResultDrillFilters,
 } from "@/lib/result-drill";
-import { DispatchTotalsSummary } from "@/components/shared/dispatch-totals-summary";
-import { sumDispatchTotals } from "@/lib/dispatch-totals";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
+import { resolveEvaluationScopeLabel, resolveReportPersonScope } from "@/lib/evaluation-scope";
 import { getManagerAlerts } from "@/lib/manager-alerts";
+import {
+  loadManagerUi,
+  saveManagerUi,
+  type ManagerMainSection,
+  type ManagerReportTab,
+  type ManagerWeeklyPeriodPreset,
+} from "@/lib/manager-ui-persistence";
+import { SNAPSHOT_REPORT_HINT } from "@/lib/report-period-sync";
+import { parseManagerFocus, parseManagerOrderStatus } from "@/lib/manager-deep-link";
+import { resolvePendingConfirmNavigate } from "@/lib/order-action-link";
+import {
+  DEFAULT_PERIOD,
+  filterOrdersByPeriod,
+  type PeriodSelection,
+} from "@/lib/period-filter";
+import {
+  loadWorkbenchPeriod,
+  saveWorkbenchPeriod,
+} from "@/lib/workbench-period-persistence";
 import { isSingleOrderDetailView, sortOrdersNewestFirst } from "@/lib/order-utils";
+import { resolveOrderDisplayName } from "@/lib/order-remark";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import type { DesignerName, Order, OrderStatus, StoreName } from "@/lib/types";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { PendingConfirmKind } from "@/lib/pending-confirm";
 
 export default function ManagerPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-400">
+          加载…
+        </div>
+      }
+    >
+      <ManagerPageContent />
+    </Suspense>
+  );
+}
+
+function ManagerPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();
   const {
     orders,
@@ -90,6 +135,8 @@ export default function ManagerPage() {
     setOrderIssueTags,
   } = useOrders();
   const managerReadOnly = !canEditManagerPage(user);
+  const lookupOnly = isPersonalManagerLookupOnly(user);
+  const personalWeeklyOnly = lookupOnly;
   const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "全部">("全部");
   const [designerFilter, setDesignerFilter] = useState<DesignerName | "全部">(
@@ -102,6 +149,15 @@ export default function ManagerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [resultDrill, setResultDrill] =
     useState<ResultDrillFilters>(EMPTY_RESULT_DRILL);
+  const [mainSection, setMainSection] =
+    useState<ManagerMainSection>("weekly");
+  const [reportTab, setReportTab] = useState<ManagerReportTab>("pending");
+  const [weeklyPeriod, setWeeklyPeriod] = useState<PeriodSelection>({
+    preset: "thisWeek",
+  });
+  const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
+  const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
+  const [uiHydrated, setUiHydrated] = useState(false);
 
   const assignedStores = user ? resolveAssignedStoresForUser(user) : [];
   const managedStore = user ? resolveManagedStoreForLookup(user) : null;
@@ -124,13 +180,96 @@ export default function ManagerPage() {
     [orders, user],
   );
 
+  const managerScopeLabel = resolveEvaluationScopeLabel(user);
+
+  const reportPersonScope = useMemo(
+    () => resolveReportPersonScope(user, scopedOrders, staffRecords),
+    [user, scopedOrders, staffRecords],
+  );
+
+  const scopedReportSupplements = useMemo(
+    () => filterSupplementsByOrders(supplements, scopedOrders),
+    [supplements, scopedOrders],
+  );
+
+  const periodScopedOrders = useMemo(
+    () => filterOrdersByPeriod(scopedOrders, period),
+    [scopedOrders, period],
+  );
+
   const managerAlerts = useMemo(
     () => getManagerAlerts(scopedOrders),
     [scopedOrders],
   );
 
+  const pendingAcceptCount = useMemo(
+    () =>
+      scopedOrders.filter(
+        (o) => o.status === "待量尺" && !o.designerAcceptedAt,
+      ).length,
+    [scopedOrders],
+  );
+
+  useEffect(() => {
+    if (!user) return;
+    const savedPeriod = loadWorkbenchPeriod(user.username);
+    if (savedPeriod) setPeriod(savedPeriod);
+    const savedUi = loadManagerUi(user.username);
+    if (lookupOnly) {
+      const defaults = getManagerRoleDefaults(user, staffRecords);
+      setStoreFilter(defaults.storeFilter);
+      setDispatcherFilter(defaults.dispatcherFilter);
+      setDesignerFilter(defaults.designerFilter);
+      if (user.role === "designer") {
+        setViewMode("designer");
+      } else if (isPersonalDispatcherLookup(user)) {
+        setViewMode("dispatcher");
+      }
+      if (savedUi?.mainSection === "lookup") {
+        setMainSection("lookup");
+      } else if (savedUi?.mainSection === "reports") {
+        setMainSection("weekly");
+      } else {
+        setMainSection(savedUi?.mainSection ?? "weekly");
+      }
+      if (savedUi?.weeklyPeriod === "lastWeek") {
+        setWeeklyPeriod({ preset: "lastWeek" });
+      }
+    } else if (savedUi) {
+      setMainSection(savedUi.mainSection);
+      setReportTab(savedUi.reportTab);
+      setViewMode(savedUi.viewMode);
+      if (savedUi.weeklyPeriod === "lastWeek") {
+        setWeeklyPeriod({ preset: "lastWeek" });
+      }
+    }
+    setUiHydrated(true);
+  }, [user, lookupOnly, staffRecords]);
+
+  useEffect(() => {
+    if (!user || !uiHydrated) return;
+    saveWorkbenchPeriod(user.username, period);
+  }, [user, period, uiHydrated]);
+
+  useEffect(() => {
+    if (!user || !uiHydrated) return;
+    saveManagerUi(user.username, {
+      mainSection,
+      reportTab,
+      viewMode,
+      weeklyPeriod: weeklyPeriod.preset === "lastWeek" ? "lastWeek" : "thisWeek",
+    });
+  }, [user, mainSection, reportTab, viewMode, weeklyPeriod, uiHydrated]);
+
+  useEffect(() => {
+    if (mainSection !== "reports") {
+      setFocusOrderId(null);
+    }
+  }, [mainSection]);
+
   const handleAlertDesignerSelect = useCallback(
     (designer: string) => {
+      setMainSection("lookup");
       setViewMode("designer");
       setDesignerFilter(designer as DesignerName);
       setSearchQuery("");
@@ -140,9 +279,63 @@ export default function ManagerPage() {
     [],
   );
 
+  const applyManagerLookupForOrder = useCallback(
+    (
+      order: Order,
+      options?: { status?: OrderStatus | "全部"; viewMode?: ViewMode },
+    ) => {
+      setMainSection("lookup");
+      setViewMode(options?.viewMode ?? "status");
+      setStatusFilter(options?.status ?? "全部");
+      setDesignerFilter("全部");
+      setDispatcherFilter("全部");
+      setStoreFilter("全部");
+      setSearchQuery(resolveOrderDisplayName(order));
+      setResultDrill(EMPTY_RESULT_DRILL);
+    },
+    [],
+  );
+
+  const handleOpenPendingOrder = useCallback(
+    ({
+      kind,
+      order,
+    }: {
+      orderId: string;
+      kind: PendingConfirmKind;
+      order: Order;
+    }) => {
+      const target = resolvePendingConfirmNavigate(user, order, kind);
+      if (!target) return;
+      if (
+        target.href.startsWith("/admin") ||
+        target.href.startsWith("/designer")
+      ) {
+        router.push(target.href);
+        return;
+      }
+      if (kind === "undispatched") {
+        applyManagerLookupForOrder(order, { status: "未派单" });
+        return;
+      }
+      if (kind === "pending-refund") {
+        applyManagerLookupForOrder(order, { status: "待退单" });
+        return;
+      }
+      if (kind === "designer-accept") {
+        applyManagerLookupForOrder(order, { status: "待量尺" });
+      }
+    },
+    [user, router, applyManagerLookupForOrder],
+  );
+
   const dispatcherLookupOrders = useMemo(
-    () => scopeOrdersForDispatcherLookup(orders, user),
-    [orders, user],
+    () =>
+      filterOrdersByPeriod(
+        scopeOrdersForDispatcherLookup(orders, user),
+        period,
+      ),
+    [orders, user, period],
   );
 
   const designerLookupStores = resolveDesignerLookupStores(user);
@@ -157,31 +350,51 @@ export default function ManagerPage() {
   }, [designerLookupStores, designerHomeStoreIndex, staffRecords]);
 
   const designerLookupOrders = useMemo(
-    () => scopeOrdersForDesignerLookup(orders, user, staffRecords),
-    [orders, user, staffRecords],
+    () =>
+      filterOrdersByPeriod(
+        scopeOrdersForDesignerLookup(orders, user, staffRecords),
+        period,
+      ),
+    [orders, user, staffRecords, period],
   );
 
   const statusCounts = useMemo(
-    () => countOrdersByStatus(scopedOrders),
-    [scopedOrders],
+    () => countOrdersByStatus(periodScopedOrders),
+    [periodScopedOrders],
   );
-  const designerStats = useMemo(
+  const designerNameAllowList = useMemo(
     () =>
-      getDesignerStats(
-        designerLookupOrders,
-        designerLookupStores,
-        designerHomeStoreIndex,
+      resolveManagerDesignerNameAllowList(
+        user,
+        scopedOrders,
         staffRecords,
+        designerHomeStoreIndex,
       ),
-    [
+    [user, scopedOrders, staffRecords, designerHomeStoreIndex],
+  );
+
+  const dispatcherNameAllowList = useMemo(
+    () => resolveManagerDispatcherNameAllowList(user, scopedOrders),
+    [user, scopedOrders],
+  );
+
+  const designerStats = useMemo(() => {
+    const raw = getDesignerStats(
       designerLookupOrders,
       designerLookupStores,
       designerHomeStoreIndex,
       staffRecords,
-    ],
-  );
+    );
+    return filterDesignerStatsByAllowList(raw, designerNameAllowList);
+  }, [
+    designerLookupOrders,
+    designerLookupStores,
+    designerHomeStoreIndex,
+    staffRecords,
+    designerNameAllowList,
+  ]);
   const storeStats = useMemo(() => {
-    const all = getStoreStatsByDispatcher(scopedOrders);
+    const all = getStoreStatsByDispatcher(periodScopedOrders);
     if (hasFullOrderScope(user)) return all;
     if (assignedStores.length > 0) {
       return filterStoreStatsByStores(all, assignedStores);
@@ -190,20 +403,24 @@ export default function ManagerPage() {
       return all.filter((s) => s.store === managedStore);
     }
     return all;
-  }, [scopedOrders, assignedStores, managedStore, user]);
+  }, [periodScopedOrders, assignedStores, managedStore, user]);
   const dispatcherStatsStoreFilter = useMemo(
     () => resolveDispatcherStatsStoreFilter(user),
     [user],
   );
-  const dispatcherStats = useMemo(
-    () =>
-      getDispatcherStats(
-        dispatcherLookupOrders,
-        staffRecords,
-        dispatcherStatsStoreFilter,
-      ),
-    [dispatcherLookupOrders, staffRecords, dispatcherStatsStoreFilter],
-  );
+  const dispatcherStats = useMemo(() => {
+    const raw = getDispatcherStats(
+      dispatcherLookupOrders,
+      staffRecords,
+      dispatcherStatsStoreFilter,
+    );
+    return filterDispatcherStatsByAllowList(raw, dispatcherNameAllowList);
+  }, [
+    dispatcherLookupOrders,
+    staffRecords,
+    dispatcherStatsStoreFilter,
+    dispatcherNameAllowList,
+  ]);
 
   const searchResults = useMemo(() => {
     const base =
@@ -211,22 +428,124 @@ export default function ManagerPage() {
         ? dispatcherLookupOrders
         : viewMode === "designer"
           ? designerLookupOrders
-          : scopedOrders;
+          : periodScopedOrders;
     return sortOrdersNewestFirst(searchOrders(base, searchQuery));
   }, [
     viewMode,
     dispatcherLookupOrders,
     designerLookupOrders,
-    scopedOrders,
+    periodScopedOrders,
     searchQuery,
   ]);
+
+  const strongPin = useMemo(
+    () => resolveStrongPinOrder(periodScopedOrders, searchQuery),
+    [periodScopedOrders, searchQuery],
+  );
+
+  const lookupSearchCount = useMemo(() => {
+    if (!searchQuery.trim()) return searchResults.length;
+    return resolveStrongPinOrSearchMatches(
+      periodScopedOrders,
+      searchQuery,
+      strongPin,
+    ).length;
+  }, [periodScopedOrders, searchQuery, strongPin, searchResults.length]);
+
+  const lookupSearchHint = formatStrongPinSearchHint(
+    strongPin,
+    searchQuery,
+    "订单查询按此统计周期",
+  );
+
+  const lookupEmptyMessageOverride = useMemo(() => {
+    if (!searchQuery.trim()) return undefined;
+    return formatStrongPinEmptyMessage(
+      strongPin,
+      searchQuery,
+      "未找到匹配的订单",
+    );
+  }, [strongPin, searchQuery]);
+
+  const resetLookupFiltersForViewMode = useCallback(
+    (mode: ViewMode) => {
+      if (!user) return;
+      setStatusFilter("全部");
+      if (user.role === "dispatcher") {
+        const defaults = getManagerRoleDefaults(user, staffRecords);
+        if (mode === "designer") {
+          setDesignerFilter(defaults.designerFilter);
+        }
+        if (mode === "store") {
+          setStoreFilter(defaults.storeFilter);
+        }
+      } else if (!hasFullOrderScope(user) && user.role !== "designer") {
+        setDesignerFilter("全部");
+        setStoreFilter(getManagerRoleDefaults(user, staffRecords).storeFilter);
+      }
+      setResultDrill(EMPTY_RESULT_DRILL);
+      if (mode === "dispatcher") {
+        setDispatcherFilter(getDefaultDispatcherFilter(user, staffRecords));
+      }
+    },
+    [user, staffRecords],
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      setSearchQuery("");
+      resetLookupFiltersForViewMode(mode);
+      setViewMode(mode);
+    },
+    [resetLookupFiltersForViewMode],
+  );
+
+  const handlePeriodChange = useCallback((next: PeriodSelection) => {
+    setSearchQuery("");
+    setPeriod(next);
+  }, []);
+
+  const handleStatusFilterChange = useCallback(
+    (value: OrderStatus | "全部") => {
+      setSearchQuery("");
+      setStatusFilter(value);
+    },
+    [],
+  );
+
+  const handleDesignerFilterChange = useCallback(
+    (value: DesignerName | "全部") => {
+      setSearchQuery("");
+      setDesignerFilter(value);
+    },
+    [],
+  );
+
+  const handleDispatcherFilterChange = useCallback((value: string | "全部") => {
+    setSearchQuery("");
+    setDispatcherFilter(value);
+  }, []);
+
+  const handleStoreFilterChange = useCallback((value: StoreName | "全部") => {
+    setSearchQuery("");
+    setStoreFilter(value);
+  }, []);
 
   const isSearching = searchQuery.trim().length > 0;
 
   const filteredOrders = useMemo(() => {
-    if (isSearching) return searchResults;
+    const q = searchQuery.trim();
+    if (q) {
+      return sortOrdersNewestFirst(
+        resolveStrongPinOrSearchMatches(
+          periodScopedOrders,
+          searchQuery,
+          strongPin,
+        ),
+      );
+    }
     const sorted = sortOrdersNewestFirst(
-      viewMode === "designer" ? designerLookupOrders : scopedOrders,
+      viewMode === "designer" ? designerLookupOrders : periodScopedOrders,
     );
     if (viewMode === "status") {
       return filterOrdersByStatus(sorted, statusFilter);
@@ -242,7 +561,7 @@ export default function ManagerPage() {
     }
     return filterOrdersByDispatcherStore(sorted, storeFilter);
   }, [
-    scopedOrders,
+    periodScopedOrders,
     designerLookupOrders,
     dispatcherLookupOrders,
     viewMode,
@@ -250,14 +569,16 @@ export default function ManagerPage() {
     designerFilter,
     dispatcherFilter,
     storeFilter,
-    isSearching,
-    searchResults,
+    searchQuery,
+    strongPin,
   ]);
 
-  const dispatchTotals = useMemo(
-    () => sumDispatchTotals(filteredOrders, supplements),
-    [filteredOrders, supplements],
-  );
+  useEffect(() => {
+    if (strongPin.kind !== "pin") return;
+    if (viewMode !== "status") setViewMode("status");
+    const nextStatus = strongPin.order.status;
+    if (statusFilter !== nextStatus) setStatusFilter(nextStatus);
+  }, [strongPin, viewMode, statusFilter]);
 
   const displayOrders = useMemo(
     () => applyResultDrillFilters(filteredOrders, resultDrill),
@@ -282,33 +603,20 @@ export default function ManagerPage() {
     setResultDrill(EMPTY_RESULT_DRILL);
     if (user.role === "designer") {
       setViewMode("designer");
+    } else if (isPersonalDispatcherLookup(user)) {
+      setViewMode("dispatcher");
     }
   }, [user, staffRecords]);
 
   useOnSessionScopeChange(sessionResetKey, resetManagerBoardForSession);
 
   useEffect(() => {
-    if (!user) return;
-    setStatusFilter("全部");
-    if (user.role === "dispatcher") {
-      const defaults = getManagerRoleDefaults(user, staffRecords);
-      if (viewMode === "designer") {
-        setDesignerFilter(defaults.designerFilter);
-      }
-      if (viewMode === "store") {
-        setStoreFilter(defaults.storeFilter);
-      }
-    } else if (!hasFullOrderScope(user) && user.role !== "designer") {
-      setDesignerFilter("全部");
-      setStoreFilter(getManagerRoleDefaults(user, staffRecords).storeFilter);
+    if (!user || !uiHydrated) return;
+    if (!isManagerViewModeVisible(user, viewMode)) {
+      const modes = getVisibleManagerViewModes(user);
+      handleViewModeChange(modes[0] ?? "status");
     }
-    setSearchQuery("");
-    setResultDrill(EMPTY_RESULT_DRILL);
-    if (viewMode === "dispatcher") {
-      setDispatcherFilter(getDefaultDispatcherFilter(user, staffRecords));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅切换 Tab 时重置
-  }, [viewMode, user]);
+  }, [user, viewMode, uiHydrated, handleViewModeChange]);
 
   useEffect(() => {
     if (!user || storeSummaryShowAll) return;
@@ -337,304 +645,203 @@ export default function ManagerPage() {
     setResultDrill(EMPTY_RESULT_DRILL);
   }, [statusFilter, designerFilter, dispatcherFilter, storeFilter, searchQuery]);
 
-  const tableTitle = isSearching
-    ? `关键词查找结果（${searchResults.length}）`
-    : viewMode === "status"
-      ? statusFilter === "全部"
-        ? "全部状态订单明细"
-        : `「${statusFilter}」订单明细`
-      : viewMode === "designer"
-        ? designerFilter === "全部"
-          ? "全部设计师订单明细"
-          : `「${designerFilter}」订单明细`
-        : viewMode === "dispatcher"
-          ? dispatcherFilter === "全部"
-            ? `全部派单人订单明细${managedStoresLabel ? `（${managedStoresLabel}）` : ""}`
-            : `「${dispatcherFilter}」订单明细${managedStoresLabel ? `（${managedStoresLabel}）` : ""}`
-          : storeFilter === "全部"
-          ? "全部门店订单明细"
-          : `「${storeFilter}」订单明细`;
+  useEffect(() => {
+    if (!isHydrated || !uiHydrated) return;
+
+    const focus = parseManagerFocus(searchParams.get("focus"));
+    const section = searchParams.get("section");
+    const orderId = searchParams.get("orderId");
+    const status = parseManagerOrderStatus(searchParams.get("status"));
+    const designer = searchParams.get("designer");
+    const view = searchParams.get("view");
+
+    if (!focus && !section && !orderId && !designer) return;
+
+    if (focus) {
+      switch (focus) {
+        case "flow-timeout":
+          if (lookupOnly) {
+            setMainSection("weekly");
+          } else {
+            setMainSection("reports");
+          }
+          break;
+        case "sign-timeout":
+          setMainSection("lookup");
+          setViewMode("status");
+          setStatusFilter("待签约");
+          break;
+        case "pending-acceptance":
+          if (lookupOnly) {
+            setMainSection("weekly");
+          } else {
+            setMainSection("reports");
+          }
+          break;
+        case "pending-refund":
+          setMainSection("lookup");
+          setViewMode("status");
+          setStatusFilter("待退单");
+          break;
+      }
+    }
+
+    if (section === "lookup") {
+      setMainSection("lookup");
+    } else if (section === "weekly") {
+      setMainSection("weekly");
+    } else if (section === "reports") {
+      setMainSection("reports");
+    }
+
+    if (view === "designer" && designer) {
+      setViewMode("designer");
+      setDesignerFilter(designer as DesignerName);
+    }
+    if (status) {
+      setViewMode("status");
+      setStatusFilter(status);
+    }
+    if (orderId) {
+      const order = scopedOrders.find((o) => o.id === orderId);
+      if (order && section === "reports") {
+        setMainSection("reports");
+        setFocusOrderId(orderId);
+      } else if (order) {
+        setSearchQuery(resolveOrderDisplayName(order));
+        setFocusOrderId(null);
+      }
+    } else {
+      setFocusOrderId(null);
+    }
+  }, [isHydrated, uiHydrated, searchParams, scopedOrders, lookupOnly]);
 
   return (
     <RouteGuard canAccess={canAccessManagerPage(user)}>
-    <AppShell title="设计经理看板" badge="经理">
-      <div className="space-y-6">
-        {isHydrated ? (
-          <>
-            <WeeklyDigestPanel orders={scopedOrders} supplements={supplements} />
-            <ManagerPendingAcceptancePanel
-              orders={scopedOrders}
-              onSelectDesigner={handleAlertDesignerSelect}
-            />
-            {managerAlerts.length > 0 ? (
-              <ManagerAlertPanel
-                alerts={managerAlerts}
-                onSelectDesigner={handleAlertDesignerSelect}
-              />
-            ) : null}
-          </>
-        ) : null}
-
-        <ViewTabs value={viewMode} onChange={setViewMode} />
-
-        {!isHydrated ? (
-          <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-400">
-            加载数据…
-          </div>
-        ) : viewMode === "dispatcher" ? (
-          <>
-            <OrderSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              resultCount={searchResults.length}
-            />
-
-            {!isSearching ? (
-              <section className="space-y-4">
-                <LookupSectionHeading
-                  title="按派单人查找"
-                  suffix={
-                    managedStoresLabel ? (
-                      <span className="ml-1 font-normal text-slate-500">
-                        · {managedStoresLabel}
-                      </span>
-                    ) : null
+      <AppShell
+        title="项目进程管理"
+        badge={getSessionBadgeLabel(user) ?? "经理"}
+        mainClassName={EVAL_PAGE_MAIN_CLASS}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          {!isHydrated ? (
+            <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center text-sm text-slate-400">
+              加载数据…
+            </div>
+          ) : (
+            <ModuleWorkbenchLayout
+              periodBar={
+                mainSection === "lookup" ? (
+                  <WorkbenchPeriodSearchBar
+                    period={period}
+                    onPeriodChange={handlePeriodChange}
+                    query={searchQuery}
+                    onQueryChange={setSearchQuery}
+                    hint={lookupSearchHint}
+                    placeholder="客户姓名、电话、地址、设计师、派单人、门店…"
+                    resultCount={lookupSearchCount}
+                  />
+                ) : mainSection === "weekly" ? (
+                  <PeriodFilterBar
+                    value={weeklyPeriod}
+                    onChange={setWeeklyPeriod}
+                    embedded
+                    variant="weeklyBriefOnly"
+                    hint={
+                      personalWeeklyOnly
+                        ? `${user?.displayName ?? ""} · 本周简报`
+                        : managerScopeLabel
+                          ? `${managerScopeLabel} · 本周简报`
+                          : "本周简报"
+                    }
+                  />
+                ) : mainSection === "reports" ? (
+                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+                    <p className="text-xs text-slate-600">
+                      异常待办
+                      {managerScopeLabel ? ` · ${managerScopeLabel}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      异常订单按触发时间排序，最新在最上 · {SNAPSHOT_REPORT_HINT}
+                    </p>
+                  </div>
+                ) : null
+              }
+              sidebar={
+                <ManagerSidebar
+                  mainSection={mainSection}
+                  onMainSectionChange={setMainSection}
+                  personalWeeklyOnly={personalWeeklyOnly}
+                />
+              }
+            >
+              {mainSection === "weekly" ? (
+                <WeeklyDigestSummaryCard
+                  orders={scopedOrders}
+                  supplements={scopedReportSupplements}
+                  period={weeklyPeriod}
+                  storeScopeLabel={personalWeeklyOnly ? null : managerScopeLabel}
+                  personScope={reportPersonScope}
+                  personalMode={personalWeeklyOnly}
+                  personalTitle={
+                    personalWeeklyOnly
+                      ? `${user?.displayName ?? "本人"} · 本周简报`
+                      : null
                   }
                 />
-                <DispatcherSummaryBar
-                  stats={dispatcherStats}
-                  total={dispatcherLookupOrders.length}
-                  selected={dispatcherFilter}
-                  onSelect={setDispatcherFilter}
-                  showAllOption={showLookupAllOption(user, "dispatcher")}
+              ) : mainSection === "reports" ? (
+                <AnomalyTodosPanel
+                  orders={scopedOrders}
+                  focusOrderId={focusOrderId}
+                  onSelectDesigner={handleAlertDesignerSelect}
+                  onOpenPendingOrder={handleOpenPendingOrder}
                 />
-              </section>
-            ) : null}
-
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {tableTitle}
-                </h2>
-                <DispatchTotalsSummary
-                  totals={dispatchTotals}
-                  accentClassName="text-violet-700"
+              ) : (
+                <ManagerLookupPanel
+                  user={user}
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                  isSearching={isSearching}
+                  statusFilter={statusFilter}
+                  onStatusFilterChange={handleStatusFilterChange}
+                  designerFilter={designerFilter}
+                  onDesignerFilterChange={handleDesignerFilterChange}
+                  dispatcherFilter={dispatcherFilter}
+                  onDispatcherFilterChange={handleDispatcherFilterChange}
+                  storeFilter={storeFilter}
+                  onStoreFilterChange={handleStoreFilterChange}
+                  statusCounts={statusCounts}
+                  designerStats={designerStats}
+                  dispatcherStats={dispatcherStats}
+                  storeStats={storeStats}
+                  periodScopedOrderCount={periodScopedOrders.length}
+                  designerLookupOrderCount={designerLookupOrders.length}
+                  dispatcherLookupOrderCount={dispatcherLookupOrders.length}
+                  managedStoresLabel={managedStoresLabel}
+                  filteredOrders={filteredOrders}
+                  displayOrders={displayOrders}
+                  supplements={supplements}
+                  filteredSupplements={filteredSupplements}
+                  orderTableDetailMode={orderTableDetailMode}
+                  managerReadOnly={managerReadOnly}
+                  isOrderReadOnly={isOrderReadOnly}
+                  designerRoster={reassignDesignerRoster}
+                  onReassign={managerReadOnly ? undefined : reassignOrder}
+                  onSetAfterSalesAmount={
+                    managerReadOnly ? undefined : setAfterSalesAmount
+                  }
+                  onSetIssueTags={
+                    managerReadOnly ? undefined : setOrderIssueTags
+                  }
+                  resultDrill={resultDrill}
+                  onResultDrillChange={setResultDrill}
+                  lookupEmptyMessage={lookupEmptyMessageOverride}
                 />
-              </div>
-
-              <DispatcherResultSummary
-                orders={filteredOrders}
-                supplements={supplements}
-                dispatcherFilter={dispatcherFilter}
-                isKeywordSearch={isSearching}
-                drill={resultDrill}
-                onDrillChange={setResultDrill}
-              />
-
-              <ManagerOrderTable
-                orders={displayOrders}
-                supplements={supplements}
-                detailMode={orderTableDetailMode}
-                showDesigner
-                readOnly={managerReadOnly}
-                isOrderReadOnly={isOrderReadOnly}
-                designerRoster={reassignDesignerRoster}
-                onReassign={managerReadOnly ? undefined : reassignOrder}
-                onSetAfterSalesAmount={
-                  managerReadOnly ? undefined : setAfterSalesAmount
-                }
-                onSetIssueTags={
-                  managerReadOnly ? undefined : setOrderIssueTags
-                }
-                emptyMessage={
-                  isSearching
-                    ? "未找到匹配的订单"
-                    : drillFilterLabel(resultDrill)
-                      ? `当前筛选（${drillFilterLabel(resultDrill)}）下暂无订单`
-                      : "该派单人暂无相关订单"
-                }
-              />
-            </section>
-
-            {filteredSupplements.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  增补单明细
-                </h2>
-                <ManagerSupplementTable supplements={filteredSupplements} />
-              </section>
-            ) : null}
-          </>
-        ) : viewMode === "store" ? (
-          <>
-            <OrderSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              resultCount={searchResults.length}
-            />
-
-            {!isSearching ? (
-              <section className="space-y-4">
-                <LookupSectionHeading title="按门店汇总" />
-                <StoreSummaryBar
-                  stats={storeStats}
-                  total={scopedOrders.length}
-                  selected={storeFilter}
-                  onSelect={setStoreFilter}
-                  accent="indigo"
-                  showAllOption={storeSummaryShowAll}
-                />
-              </section>
-            ) : null}
-
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {tableTitle}
-                </h2>
-                <DispatchTotalsSummary
-                  totals={dispatchTotals}
-                  accentClassName="text-violet-700"
-                />
-              </div>
-
-              <StoreResultSummary
-                orders={filteredOrders}
-                supplements={supplements}
-                storeFilter={storeFilter}
-                isKeywordSearch={isSearching}
-                drill={resultDrill}
-                onDrillChange={setResultDrill}
-                managerViewMode={viewMode}
-                statusFilter={statusFilter}
-                designerFilter={designerFilter}
-              />
-
-              <ManagerOrderTable
-                orders={displayOrders}
-                supplements={supplements}
-                detailMode={orderTableDetailMode}
-                showDesigner
-                readOnly={managerReadOnly}
-                isOrderReadOnly={isOrderReadOnly}
-                designerRoster={reassignDesignerRoster}
-                onReassign={managerReadOnly ? undefined : reassignOrder}
-                onSetAfterSalesAmount={
-                  managerReadOnly ? undefined : setAfterSalesAmount
-                }
-                onSetIssueTags={
-                  managerReadOnly ? undefined : setOrderIssueTags
-                }
-                emptyMessage={
-                  isSearching
-                    ? "未找到匹配的订单"
-                    : drillFilterLabel(resultDrill)
-                      ? `当前筛选（${drillFilterLabel(resultDrill)}）下暂无订单`
-                      : "该门店暂无相关订单"
-                }
-              />
-            </section>
-
-            {filteredSupplements.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  增补单明细
-                </h2>
-                <ManagerSupplementTable supplements={filteredSupplements} />
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <OrderSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              resultCount={searchResults.length}
-            />
-
-            {!isSearching && viewMode === "status" ? (
-              <section className="space-y-4">
-                <LookupSectionHeading title="按状态查找" />
-                <StatusSummaryBar
-                  counts={statusCounts}
-                  total={scopedOrders.length}
-                  selected={statusFilter}
-                  onSelect={setStatusFilter}
-                />
-              </section>
-            ) : !isSearching ? (
-              <section className="space-y-4">
-                <LookupSectionHeading title="按设计师查找" />
-                <DesignerSummaryBar
-                  stats={designerStats}
-                  total={designerLookupOrders.length}
-                  selected={designerFilter}
-                  onSelect={setDesignerFilter}
-                />
-              </section>
-            ) : null}
-
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {tableTitle}
-                </h2>
-                <DispatchTotalsSummary
-                  totals={dispatchTotals}
-                  accentClassName="text-violet-700"
-                />
-              </div>
-
-              <ManagerResultSummary
-                viewMode={viewMode}
-                orders={filteredOrders}
-                supplements={supplements}
-                statusFilter={statusFilter}
-                designerFilter={designerFilter}
-                isKeywordSearch={isSearching}
-                drill={resultDrill}
-                onDrillChange={setResultDrill}
-              />
-
-              <ManagerOrderTable
-                orders={displayOrders}
-                supplements={supplements}
-                detailMode={orderTableDetailMode}
-                showDesigner
-                readOnly={managerReadOnly}
-                isOrderReadOnly={isOrderReadOnly}
-                designerRoster={reassignDesignerRoster}
-                onReassign={managerReadOnly ? undefined : reassignOrder}
-                onSetAfterSalesAmount={
-                  managerReadOnly ? undefined : setAfterSalesAmount
-                }
-                onSetIssueTags={
-                  managerReadOnly ? undefined : setOrderIssueTags
-                }
-                emptyMessage={
-                  isSearching
-                    ? "未找到匹配的订单"
-                    : drillFilterLabel(resultDrill)
-                      ? `当前筛选（${drillFilterLabel(resultDrill)}）下暂无订单`
-                      : viewMode === "status"
-                        ? "该状态下暂无订单"
-                        : "该设计师暂无承接订单"
-                }
-              />
-            </section>
-
-            {filteredSupplements.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-slate-900">
-                  增补单明细
-                </h2>
-                <ManagerSupplementTable supplements={filteredSupplements} />
-              </section>
-            ) : null}
-          </>
-        )}
-      </div>
-    </AppShell>
+              )}
+            </ModuleWorkbenchLayout>
+          )}
+        </div>
+      </AppShell>
     </RouteGuard>
   );
 }

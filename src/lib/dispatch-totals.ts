@@ -20,7 +20,7 @@ function getMainOrderAmountValue(order: Order): number {
 }
 
 function isMainOrderPlaced(order: Order): boolean {
-  return order.status === "已下单" || order.status === "已安装";
+  return order.status === "已下单" || order.status === "已安装" || order.status === "已验收";
 }
 
 /** 主单是否计入「已下单金额」（已下单/已安装，或已填写下单金额） */

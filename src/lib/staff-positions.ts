@@ -12,9 +12,11 @@ import {
 /** 添加人员时可选的固定岗位（不含管理员） */
 export const BUILTIN_ADDABLE_POSITIONS = [
   "设计经理",
+  "验收经理",
   "总经理",
   "派单人",
   "设计师",
+  "安装师",
 ] as const satisfies readonly StaffPosition[];
 
 export function getAddablePositionOptions(): StaffPosition[] {
@@ -45,10 +47,14 @@ export function resolveDefaultAccessLevelForPosition(
     case "管理员":
       return "admin";
     case "设计经理":
-    case "总经理":
       return "design_manager";
+    case "总经理":
+      return "general_manager";
+    case "验收经理":
+      return "acceptance_manager";
     case "派单人":
     case "设计师":
+    case "安装师":
       return "personal";
     default: {
       const custom = findCustomPositionDefinition(position);
@@ -58,7 +64,8 @@ export function resolveDefaultAccessLevelForPosition(
 }
 
 export function isDesignManagerDefaultPosition(position: string): boolean {
-  return resolveDefaultAccessLevelForPosition(position) === "design_manager";
+  const level = resolveDefaultAccessLevelForPosition(position);
+  return level === "design_manager" || level === "general_manager";
 }
 
 export function roleForPositionAndAccess(
@@ -66,7 +73,13 @@ export function roleForPositionAndAccess(
   accessLevel: StaffAccessLevel,
 ): UserRole {
   if (accessLevel === "admin") return "admin";
-  if (accessLevel === "design_manager") return "design_manager";
+  if (
+    accessLevel === "design_manager" ||
+    accessLevel === "general_manager"
+  ) {
+    return "design_manager";
+  }
+  if (accessLevel === "acceptance_manager") return "dispatcher";
 
   const mapped = POSITION_TO_ROLE[position];
   if (mapped) return mapped;

@@ -27,6 +27,10 @@ export function isDispatcherStaff(row: StaffRecord): boolean {
   return row.role === "dispatcher" || row.position === "派单人";
 }
 
+export function isInstallerStaff(row: StaffRecord): boolean {
+  return row.position === "安装师";
+}
+
 /** 设计师名册：内置顺序 + 人员管理中新增的设计师 */
 export function buildEffectiveDesignerRoster(
   staffRecords: StaffRecord[],
@@ -105,4 +109,19 @@ export function filterRosterByStores(
   if (!stores.length) return roster;
   const allowed = new Set(stores);
   return roster.filter((d) => allowed.has(d.homeStore));
+}
+
+/** 按岗位从人员名册构建列表（如安装师） */
+export function buildEffectivePersonnelRosterByPosition(
+  staffRecords: StaffRecord[],
+  position: string,
+): PersonnelRosterEntry[] {
+  const seen = new Set<string>();
+  const result: PersonnelRosterEntry[] = [];
+  for (const row of staffRecords) {
+    if (row.position !== position || seen.has(row.name)) continue;
+    seen.add(row.name);
+    result.push({ name: row.name, homeStore: row.homeStore });
+  }
+  return result;
 }

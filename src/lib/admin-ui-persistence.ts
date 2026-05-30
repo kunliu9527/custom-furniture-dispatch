@@ -13,7 +13,7 @@ export function loadAdminViewMode(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as { viewMode?: string };
     const mode = parsed.viewMode;
-    if (mode === "dispatch" || mode === "staff" || mode === "branding") {
+    if (mode === "dispatch" || mode === "orderLookup" || mode === "staff" || mode === "branding") {
       return mode;
     }
     return null;

@@ -6,6 +6,7 @@ import {
 import type { StaffAccessOverrides } from "./staff-access-storage";
 import type { StaffExtraStoresOverrides } from "./staff-extra-stores-storage";
 import type { StaffHomeStoreOverrides } from "./staff-home-store-storage";
+import type { StaffPhoneOverrides } from "./staff-phone-storage";
 import type { StaffPasswordOverrides } from "./staff-password-storage";
 import type { StaffRecord } from "./staff-roster";
 import type { StoreName } from "./types";
@@ -71,6 +72,26 @@ function withHomeStore(
   return homeStore ? { ...record, homeStore } : record;
 }
 
+function withPhone(
+  record: StaffRecord,
+  phoneOverrides: StaffPhoneOverrides,
+): StaffRecord {
+  if (Object.prototype.hasOwnProperty.call(phoneOverrides, record.id)) {
+    const phone = phoneOverrides[record.id]?.trim() ?? "";
+    if (!phone) {
+      const { phone: _removed, ...rest } = record;
+      return rest as StaffRecord;
+    }
+    return { ...record, phone };
+  }
+  const phone = record.phone?.trim();
+  if (!phone) {
+    const { phone: _removed, ...rest } = record;
+    return rest as StaffRecord;
+  }
+  return { ...record, phone };
+}
+
 export function mergeStaffRecords(
   builtin: StaffRecord[],
   custom: StaffRecord[],
@@ -78,26 +99,33 @@ export function mergeStaffRecords(
   passwordOverrides: StaffPasswordOverrides = {},
   homeStoreOverrides: StaffHomeStoreOverrides = {},
   extraStoreOverrides: StaffExtraStoresOverrides = {},
+  phoneOverrides: StaffPhoneOverrides = {},
 ): StaffRecord[] {
   const names = new Set(builtin.map((s) => s.name));
   const merged: StaffRecord[] = builtin.map((s) =>
-    withExtraStores(
-      withHomeStore(
-        withPassword(withAccessLevel(s, accessOverrides), passwordOverrides),
-        homeStoreOverrides,
+    withPhone(
+      withExtraStores(
+        withHomeStore(
+          withPassword(withAccessLevel(s, accessOverrides), passwordOverrides),
+          homeStoreOverrides,
+        ),
+        extraStoreOverrides,
       ),
-      extraStoreOverrides,
+      phoneOverrides,
     ),
   );
   for (const row of custom) {
     if (names.has(row.name)) continue;
     merged.push(
-      withExtraStores(
-        withHomeStore(
-          withPassword(withAccessLevel(row, accessOverrides), passwordOverrides),
-          homeStoreOverrides,
+      withPhone(
+        withExtraStores(
+          withHomeStore(
+            withPassword(withAccessLevel(row, accessOverrides), passwordOverrides),
+            homeStoreOverrides,
+          ),
+          extraStoreOverrides,
         ),
-        extraStoreOverrides,
+        phoneOverrides,
       ),
     );
     names.add(row.name);

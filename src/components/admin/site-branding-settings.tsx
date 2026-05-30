@@ -2,8 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/auth-context";
-import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
+import {
+  DEFAULT_SITE_BRANDING,
+  DEFAULT_STANDARD_CONTRACT_TEXT,
+} from "@/lib/site-branding";
 import { canManageStaff } from "@/lib/permissions";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -11,12 +15,16 @@ export function SiteBrandingSettings() {
   const { user, siteBranding, updateSiteBranding } = useAuth();
   const [badgeLabel, setBadgeLabel] = useState(siteBranding.badgeLabel);
   const [headlineTitle, setHeadlineTitle] = useState(siteBranding.headlineTitle);
+  const [standardContractText, setStandardContractText] = useState(
+    siteBranding.standardContractText,
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setBadgeLabel(siteBranding.badgeLabel);
     setHeadlineTitle(siteBranding.headlineTitle);
+    setStandardContractText(siteBranding.standardContractText);
   }, [siteBranding]);
 
   if (!canManageStaff(user)) {
@@ -34,6 +42,7 @@ export function SiteBrandingSettings() {
     const result = updateSiteBranding({
       badgeLabel: badgeLabel.trim(),
       headlineTitle: headlineTitle.trim(),
+      standardContractText: standardContractText.trim(),
     });
     if (!result.ok) {
       setError(result.error ?? "保存失败");
@@ -46,6 +55,7 @@ export function SiteBrandingSettings() {
   function handleReset() {
     setBadgeLabel(DEFAULT_SITE_BRANDING.badgeLabel);
     setHeadlineTitle(DEFAULT_SITE_BRANDING.headlineTitle);
+    setStandardContractText(DEFAULT_SITE_BRANDING.standardContractText);
     setMessage(null);
     setError(null);
   }
@@ -58,7 +68,7 @@ export function SiteBrandingSettings() {
       <div className="mb-6">
         <h2 className="text-sm font-semibold text-slate-900">公司名修改</h2>
         <p className="mt-1 text-xs text-slate-500">
-          修改首页徽章文案与主标题；保存后各电脑通过云端同步一致（已开启云端同步时）。
+          修改首页徽章文案、主标题与电子签约标准合同正文；保存后各电脑通过云端同步一致（已开启云端同步时）。
         </p>
       </div>
 
@@ -81,6 +91,15 @@ export function SiteBrandingSettings() {
           onChange={(e) => setHeadlineTitle(e.target.value)}
           placeholder={DEFAULT_SITE_BRANDING.headlineTitle}
         />
+        <Textarea
+          label="电子签约标准合同正文"
+          name="standardContractText"
+          required
+          rows={4}
+          value={standardContractText}
+          onChange={(e) => setStandardContractText(e.target.value)}
+          placeholder={DEFAULT_STANDARD_CONTRACT_TEXT}
+        />
       </div>
 
       <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
@@ -97,6 +116,10 @@ export function SiteBrandingSettings() {
             </span>
           </p>
         </div>
+        <p className="mt-4 text-xs text-slate-500">签约页标准条款预览：</p>
+        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">
+          {standardContractText.trim() || DEFAULT_STANDARD_CONTRACT_TEXT}
+        </p>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

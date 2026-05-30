@@ -13,6 +13,10 @@ import {
   type StaffHomeStoreOverrides,
 } from "./staff-home-store-storage";
 import {
+  loadStaffPhoneOverrides,
+  type StaffPhoneOverrides,
+} from "./staff-phone-storage";
+import {
   loadStaffPasswordOverrides,
   type StaffPasswordOverrides,
 } from "./staff-password-storage";
@@ -31,6 +35,7 @@ export interface AuthUser {
   displayName: string;
   role: UserRole;
   accessLevel: StaffAccessLevel;
+  position: string;
   password: string;
   homeStore?: StoreName;
   assignedStores?: StoreName[];
@@ -44,6 +49,7 @@ export function staffToAuthUser(staff: StaffRecord): AuthUser {
     displayName: staff.position === "管理员" ? "管理员" : staff.name,
     role: staff.role,
     accessLevel: staff.accessLevel,
+    position: staff.position,
     password: staff.password,
     homeStore: staff.homeStore,
     assignedStores,
@@ -57,11 +63,13 @@ export function buildAuthUsers(
   passwordOverrides?: StaffPasswordOverrides,
   homeStoreOverrides?: StaffHomeStoreOverrides,
   extraStoreOverrides?: StaffExtraStoresOverrides,
+  phoneOverrides?: StaffPhoneOverrides,
 ): AuthUser[] {
   const overrides = accessOverrides ?? loadStaffAccessOverrides();
   const passwords = passwordOverrides ?? loadStaffPasswordOverrides();
   const homeStores = homeStoreOverrides ?? loadStaffHomeStoreOverrides();
   const extraStores = extraStoreOverrides ?? loadStaffExtraStoresOverrides();
+  const phones = phoneOverrides ?? loadStaffPhoneOverrides();
   const allStaff = mergeStaffRecords(
     [ADMIN_STAFF_RECORD, ...BUILTIN_STAFF_RECORDS],
     customStaff.filter(
@@ -73,6 +81,7 @@ export function buildAuthUsers(
     passwords,
     homeStores,
     extraStores,
+    phones,
   );
   return allStaff.map(staffToAuthUser);
 }

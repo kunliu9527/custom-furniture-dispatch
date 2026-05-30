@@ -11,7 +11,7 @@ export function LookupSectionHeading({
   suffix,
 }: LookupSectionHeadingProps) {
   return (
-    <h2 className="text-sm font-semibold text-slate-900">
+    <h2 className="vi-heading-section text-base tracking-tight">
       {title}
       {suffix}
     </h2>
