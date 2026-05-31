@@ -33,7 +33,7 @@ function isExecutiveNavUser(user: SessionUser): boolean {
 }
 
 export function canAccessDesignerPage(user: SessionUser | null): boolean {
-  if (!user) return true;
+  if (!user) return false;
   if (isAcceptanceManagerAccess(user) || isInstallerSession(user)) return false;
   if (isExecutiveNavUser(user)) return true;
   return user.role === "designer";

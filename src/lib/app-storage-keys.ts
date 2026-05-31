@@ -9,6 +9,13 @@ export const APP_STORAGE_PREFIX = "custom-furniture-dispatch-";
 
 export const AUTH_STORAGE_KEY = `${APP_STORAGE_PREFIX}auth-v1`;
 
+/** @deprecated 登录态已迁至 sessionStorage；保留键名供清理旧数据 */
+export const LEGACY_AUTH_STORAGE_KEY = AUTH_STORAGE_KEY;
+
+export const AUTH_SESSION_STORAGE_KEY = `${APP_STORAGE_PREFIX}auth-session-v1`;
+
+export const LAST_LOGIN_USERNAME_KEY = `${APP_STORAGE_PREFIX}last-login-username`;
+
 export const ORDERS_STORAGE_KEY = `${APP_STORAGE_PREFIX}data-v13`;
 
 export const LEGACY_ORDERS_STORAGE_KEYS = [

@@ -78,6 +78,18 @@ import {
   AUTH_STORAGE_KEY,
   isStaffConfigStorageKey,
 } from "@/lib/app-storage-keys";
+import {
+  clearStoredAuthSession,
+  createStoredAuthSession,
+  readStoredAuthSession,
+  saveLastLoginUsername,
+  sessionExpiryMessage,
+  touchStoredAuthSession,
+  validateAuthSessionRecord,
+  writeStoredAuthSession,
+  computePasswordRevision,
+  type SessionExpiryReason,
+} from "@/lib/auth-session";
 import { clearClientSessionRecordsForUser } from "@/lib/clear-client-app-data";
 import {
   ensureSnapshotCacheReady,
@@ -91,6 +103,7 @@ import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import { dedupePhysicalStores } from "@/lib/assigned-stores";
 import { createShortId } from "@/lib/create-id";
 import { resolveLiveSessionUser, sessionUsersEqual } from "@/lib/session-user";
+import { showStatusToast } from "@/lib/status-toast";
 import { isHeadquartersStore } from "@/lib/stores";
 import {
   DEFAULT_SITE_BRANDING,
@@ -130,6 +143,8 @@ interface AuthContextValue {
       }
     | { ok: false; error?: string };
   logout: () => void;
+  touchAuthSession: () => void;
+  checkAuthSessionExpiry: () => void;
   changeOwnPassword: (
     currentPassword: string,
     newPassword: string,
@@ -185,30 +200,6 @@ function toSession(user: AuthUser): SessionUser {
   };
 }
 
-function refreshSessionForUser(
-  username: string,
-  customStaff: StaffRecord[],
-  accessOverrides: StaffAccessOverrides,
-  passwordOverrides: StaffPasswordOverrides,
-  homeStoreOverrides: StaffHomeStoreOverrides,
-  extraStoreOverrides: StaffExtraStoresOverrides,
-  setSessionUser: (user: SessionUser | null) => void,
-): void {
-  const users = buildAuthUsers(
-    customStaff,
-    accessOverrides,
-    passwordOverrides,
-    homeStoreOverrides,
-    extraStoreOverrides,
-  );
-  const found = findAuthUser(users, username);
-  if (found) {
-    const session = toSession(found);
-    setSessionUser(session);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [customStaff, setCustomStaff] = useState<StaffRecord[]>([]);
@@ -229,6 +220,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const staffApplyingRemoteRef = useRef(false);
   const staffRemoteReadyRef = useRef(false);
+  const sessionUserRef = useRef<SessionUser | null>(null);
+  sessionUserRef.current = sessionUser;
+
+  const clearAuthSession = useCallback(() => {
+    const username = sessionUserRef.current?.username;
+    clearClientSessionRecordsForUser(username);
+    setSessionUser(null);
+    clearStoredAuthSession();
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }, []);
+
+  const expireSession = useCallback(
+    (reason: SessionExpiryReason, notify = true) => {
+      clearAuthSession();
+      if (notify) {
+        showStatusToast(sessionExpiryMessage(reason));
+      }
+      if (typeof window !== "undefined" && window.location.pathname !== "/") {
+        window.location.replace("/");
+      }
+    },
+    [clearAuthSession],
+  );
 
   const syncStaffConfigToRemote = useCallback(
     (sources: {
@@ -330,6 +344,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   );
 
+  const authUsersRef = useRef(authUsers);
+  authUsersRef.current = authUsers;
+
+  const touchAuthSession = useCallback(() => {
+    if (!sessionUserRef.current) return;
+    touchStoredAuthSession();
+  }, []);
+
+  const checkAuthSessionExpiry = useCallback(() => {
+    if (!sessionUserRef.current) return;
+    const stored = readStoredAuthSession();
+    if (!stored) return;
+    const reason = validateAuthSessionRecord(stored, authUsersRef.current);
+    if (reason) {
+      expireSession(reason);
+    }
+  }, [expireSession]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -362,27 +394,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applyStaffConfig(config);
       staffRemoteReadyRef.current = true;
 
-      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as SessionUser;
-          const users = buildAuthUsers(
-            config.customStaff,
-            config.accessOverrides,
-            config.passwordOverrides,
-            config.homeStoreOverrides,
-            config.extraStoreOverrides,
-          );
-          const found = findAuthUser(users, parsed.username);
-          if (
-            found &&
-            found.role === parsed.role &&
-            found.accessLevel === (parsed.accessLevel ?? found.accessLevel)
-          ) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+
+      const users = buildAuthUsers(
+        config.customStaff,
+        config.accessOverrides,
+        config.passwordOverrides,
+        config.homeStoreOverrides,
+        config.extraStoreOverrides,
+      );
+
+      const stored = readStoredAuthSession();
+      if (stored) {
+        const expiryReason = validateAuthSessionRecord(stored, users);
+        if (!expiryReason) {
+          const found = findAuthUser(users, stored.user.username);
+          if (found) {
             setSessionUser(toSession(found));
+          } else {
+            clearStoredAuthSession();
           }
-        } catch {
-          /* ignore */
+        } else {
+          clearStoredAuthSession();
         }
       }
       setIsHydrated(true);
@@ -454,12 +487,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!sessionUser) return;
+    if (!sessionUser || !isHydrated) return;
+    const staff = allStaffRecords.find((s) => s.name === sessionUser.username);
+    if (!staff) {
+      expireSession("account");
+      return;
+    }
     const next = resolveLiveSessionUser(sessionUser, allStaffRecords);
-    if (!next || sessionUsersEqual(sessionUser, next)) return;
-    setSessionUser(next);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(next));
-  }, [sessionUser, allStaffRecords]);
+    if (!next || !sessionUsersEqual(sessionUser, next)) {
+      expireSession("permission");
+    }
+  }, [sessionUser, allStaffRecords, isHydrated, expireSession]);
 
   const login = useCallback(
     (username: string, password: string) => {
@@ -468,8 +506,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false as const, error: "账号或密码错误" };
       }
       const session = toSession(found);
+      const record = createStoredAuthSession(session, found);
       setSessionUser(session);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+      writeStoredAuthSession(record);
+      saveLastLoginUsername(session.username);
       return {
         ok: true as const,
         role: session.role,
@@ -481,11 +521,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
-    const username = sessionUser?.username;
-    clearClientSessionRecordsForUser(username);
-    setSessionUser(null);
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }, [sessionUser?.username]);
+    clearAuthSession();
+  }, [clearAuthSession]);
 
   const changeOwnPassword = useCallback(
     (currentPassword: string, newPassword: string) => {
@@ -516,6 +553,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPasswordOverrides(nextPasswords);
         saveStaffPasswordOverrides(nextPasswords);
       }
+
+      const updatedAuth = { ...found, password: trimmed };
+      const stored = readStoredAuthSession();
+      const now = Date.now();
+      writeStoredAuthSession({
+        user: sessionUserRef.current ?? toSession(updatedAuth),
+        loggedInAt: stored?.loggedInAt ?? now,
+        lastActiveAt: stored?.lastActiveAt ?? now,
+        passwordRevision: computePasswordRevision(updatedAuth),
+      });
 
       return { ok: true };
     },
@@ -631,18 +678,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         saveStaffExtraStoresOverrides(nextExtraStores);
       }
 
-      if (liveUser?.username === target.name) {
-        refreshSessionForUser(
-          target.name,
-          customStaff,
-          nextOverrides,
-          passwordOverrides,
-          homeStoreOverrides,
-          nextExtraStores,
-          setSessionUser,
-        );
-      }
-
       return { ok: true };
     },
     [
@@ -694,18 +729,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setExtraStoreOverrides(nextExtraStores);
           saveStaffExtraStoresOverrides(nextExtraStores);
         }
-      }
-
-      if (liveUser?.username === target.name) {
-        refreshSessionForUser(
-          target.name,
-          nextCustom,
-          accessOverrides,
-          passwordOverrides,
-          nextHomeStores,
-          nextExtraStores,
-          setSessionUser,
-        );
       }
 
       return { ok: true };
@@ -762,18 +785,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setExtraStoreOverrides(nextExtraStores);
         saveStaffExtraStoresOverrides(nextExtraStores);
-      }
-
-      if (liveUser?.username === target.name) {
-        refreshSessionForUser(
-          target.name,
-          nextCustom,
-          accessOverrides,
-          passwordOverrides,
-          homeStoreOverrides,
-          nextExtraStores,
-          setSessionUser,
-        );
       }
 
       return { ok: true };
@@ -1010,6 +1021,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       siteBranding,
       login,
       logout,
+      touchAuthSession,
+      checkAuthSessionExpiry,
       changeOwnPassword,
       addStaffMember,
       updateStaffPhone,
@@ -1028,6 +1041,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       siteBranding,
       login,
       logout,
+      touchAuthSession,
+      checkAuthSessionExpiry,
       changeOwnPassword,
       addStaffMember,
       updateStaffPhone,

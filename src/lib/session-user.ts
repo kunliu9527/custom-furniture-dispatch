@@ -9,7 +9,7 @@ export function resolveLiveSessionUser(
 ): SessionUser | null {
   if (!session) return null;
   const staff = staffRecords.find((row) => row.name === session.username);
-  if (!staff) return session;
+  if (!staff) return null;
 
   const auth = staffToAuthUser(staff);
   return {

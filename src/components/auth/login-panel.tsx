@@ -9,7 +9,8 @@ import { ACCESS_LEVEL_LABELS } from "@/lib/staff-access";
 import { getDefaultPathForSession } from "@/lib/role-routes";
 import { isAdminAccess } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { loadLastLoginUsername } from "@/lib/auth-session";
 
 interface LoginPanelProps {
   variant?: "home" | "inline";
@@ -32,6 +33,14 @@ export function LoginPanel({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  useEffect(() => {
+    if (!isHydrated || user) return;
+    const lastUsername = loadLastLoginUsername();
+    if (lastUsername) {
+      setUsername(lastUsername);
+    }
+  }, [isHydrated, user]);
 
   function handleLogout() {
     logout();

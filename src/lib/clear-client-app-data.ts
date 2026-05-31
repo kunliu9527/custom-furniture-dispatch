@@ -1,6 +1,7 @@
 import {
   APP_STORAGE_PREFIX,
   AUTH_STORAGE_KEY,
+  AUTH_SESSION_STORAGE_KEY,
   AUTHOR_CREDIT_STORAGE_KEY,
   DIGEST_HISTORY_STORAGE_PREFIX,
   isAppLocalStorageKey,
@@ -83,6 +84,8 @@ export function clearAllClientAppData(): void {
   for (const key of sessionKeys) {
     sessionStorage.removeItem(key);
   }
+  sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+  localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
 /** 重新初始化本地：清空缓存并刷新（需配合服务端 snapshot 重置） */
