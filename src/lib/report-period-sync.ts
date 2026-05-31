@@ -3,12 +3,16 @@ import {
   type PeriodPreset,
   type PeriodSelection,
 } from "./period-filter";
-import type { ReportTab } from "./report-hub-config";
+import { getAllSummaryBriefLabel, type ReportTab } from "./report-hub-config";
+
+export const ALL_SUMMARY_SCOPE_HINT =
+  "登录范围内全部订单 · 累计分析";
 
 export type ReportPeriodFilterVariant =
   | "default"
   | "reportWeekly"
   | "reportMonthly"
+  | "reportAllSummary"
   | "reportNeutral"
   | "weeklyBriefOnly";
 
@@ -16,6 +20,9 @@ export const WEEKLY_BRIEF_PRESETS: PeriodPreset[] = ["thisWeek", "lastWeek"];
 
 export const SNAPSHOT_REPORT_HINT =
   "待办与在途指标为当前快照，不受统计周期影响";
+
+export const FLOW_DISTRIBUTION_HINT =
+  "当前登录范围内 · 不受统计周期影响";
 
 export function isMonthPeriod(selection: PeriodSelection): boolean {
   return (
@@ -37,6 +44,9 @@ export function resolvePeriodForReportTab(
     case "monthly":
       if (isMonthPeriod(current)) return null;
       return { preset: "thisMonth" };
+    case "allSummary":
+      if (current.preset === "all") return null;
+      return { preset: "all" };
     default:
       return null;
   }
@@ -50,6 +60,8 @@ export function periodFilterVariantForReportTab(
       return "reportWeekly";
     case "monthly":
       return "reportMonthly";
+    case "allSummary":
+      return "reportAllSummary";
     case "pending":
     case "alerts":
     case "history":
@@ -69,6 +81,10 @@ export function reportPeriodBarHint(
       return `${scope}周报与顶部统计周期（本周/上周）同步`;
     case "monthly":
       return `${scope}月报与顶部统计周期（本月/上月/指定月）同步`;
+    case "allSummary": {
+      const briefLabel = getAllSummaryBriefLabel(storeScopeLabel);
+      return `${scope}${briefLabel} · 统计周期：全部（${ALL_SUMMARY_SCOPE_HINT}）`;
+    }
     case "pending":
     case "alerts":
       return `${scope}${SNAPSHOT_REPORT_HINT}`;

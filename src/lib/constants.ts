@@ -67,8 +67,7 @@ export const ADMIN_ONLY_REVERT_STATUSES: FlowOrderStatus[] = [
 /** 须客户扫码完成，不可手动推进 */
 export const CUSTOMER_GATE_STATUSES: FlowOrderStatus[] = ["待签约", "已安装"];
 
-export const STORAGE_KEY = "custom-furniture-dispatch-data-v13";
-export const LEGACY_STORAGE_KEYS = [
-  "custom-furniture-dispatch-data-v12",
-  "custom-furniture-dispatch-data-v11",
-] as const;
+export {
+  ORDERS_STORAGE_KEY as STORAGE_KEY,
+  LEGACY_ORDERS_STORAGE_KEYS as LEGACY_STORAGE_KEYS,
+} from "./app-storage-keys";

@@ -106,7 +106,7 @@ export function EvaluationOperationsChartHub({
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="vi-panel">
       <div className="border-b border-slate-100 bg-white">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-1 border-b border-slate-100 px-4 pt-3 pb-2 sm:px-5">
           {visibleTabs.map((tab) => (

@@ -1,4 +1,5 @@
 import { averageCustomerRating } from "./customer-flow";
+import { getPeriodBounds, type PeriodSelection } from "./period-filter";
 import type { CustomerRatings, Order } from "./types";
 
 export const SKIPPED_ELECTRONIC_DEFAULT_STARS = 4 as const;
@@ -99,4 +100,25 @@ export function countBadAcceptanceReviews(orders: Order[]): number {
 
 export function countLowDimensionReviews(orders: Order[]): number {
   return orders.filter(orderHasLowDimensionRating).length;
+}
+
+/** 周期内新验收且含维度低评（按进入「已验收」时间） */
+export function countLowDimensionReviewsInPeriod(
+  orders: Order[],
+  period: PeriodSelection,
+  ref = new Date(),
+): number {
+  const bounds = getPeriodBounds(period, ref);
+  if (!bounds) return countLowDimensionReviews(orders);
+  return orders.filter((order) => {
+    if (!orderHasLowDimensionRating(order)) return false;
+    const at = order.statusEnteredAt?.["已验收"];
+    if (!at) return false;
+    const t = new Date(at).getTime();
+    return (
+      Number.isFinite(t) &&
+      t >= bounds.start.getTime() &&
+      t < bounds.end.getTime()
+    );
+  }).length;
 }

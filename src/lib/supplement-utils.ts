@@ -24,7 +24,7 @@ export function getMainOrderAmount(order: Order): number {
     : 0;
 }
 
-/** 单笔合计总派单（已下单 + 未下单预算 − 退单） */
+/** 单笔有效总派单（已下单 + 未下单预算 − 退单） */
 export function getCombinedOrderAmount(
   order: Order,
   supplements: SupplementOrder[],

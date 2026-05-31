@@ -14,6 +14,7 @@ import {
 } from "./role-evaluation-score";
 import {
   countBadAcceptanceReviews,
+  countLowDimensionReviews,
   orderHasBadAcceptanceReview,
   orderHasLowDimensionRating,
 } from "./acceptance-rating";
@@ -42,6 +43,7 @@ export interface DesignerPeriodSummary {
   timeoutTotal: number;
   refundTotal: number;
   badReviewTotal: number;
+  lowDimensionTotal: number;
   sectionSummary: string;
   topPerformers: DesignerPersonInsight[];
   needsImprovement: DesignerPersonInsight[];
@@ -203,6 +205,7 @@ export function buildDesignerPeriodSummary(
   const timeoutTotal = performance.reduce((s, r) => s + r.timeoutCount, 0);
   const refundTotal = performance.reduce((s, r) => s + r.refundCount, 0);
   const badReviewTotal = countBadAcceptanceReviews(orders);
+  const lowDimensionTotal = countLowDimensionReviews(orders);
 
   const topConversion = eligible
     .filter(
@@ -233,6 +236,7 @@ export function buildDesignerPeriodSummary(
     timeoutTotal,
     refundTotal,
     badReviewTotal,
+    lowDimensionTotal,
     sectionSummary: buildDesignerSectionSummary({
       eligibleCount: eligible.length,
       inProgressTotal,
@@ -251,8 +255,11 @@ export function buildDesignerPeriodSummary(
 
 export function formatLeaderboardsText(
   leaderboards: MonthlyLeaderboards,
+  options?: { heading?: string },
 ): string[] {
-  const lines: string[] = ["【本期排行 · 综合前5】"];
+  const lines: string[] = [
+    `【${options?.heading ?? "本期排行 · 综合前5"}】`,
+  ];
 
   if (leaderboards.dispatcherTop5.length > 0) {
     lines.push("派单人：");
@@ -321,11 +328,16 @@ export function formatLeaderboardsText(
 
 export function formatDesignerSummaryText(
   summary: DesignerPeriodSummary,
+  options?: { ratingMetric?: "badReview" | "lowDimension" },
 ): string[] {
+  const ratingLine =
+    options?.ratingMetric === "lowDimension"
+      ? `维度低评 ${summary.lowDimensionTotal} 单`
+      : `验收差评 ${summary.badReviewTotal} 单`;
   const lines = [
     "【设计师环节】",
     summary.sectionSummary,
-    `在途 ${summary.inProgressTotal} 单 · 超时 ${summary.timeoutTotal} 单 · 退单 ${summary.refundTotal} 单 · 验收差评 ${summary.badReviewTotal} 单`,
+    `在途 ${summary.inProgressTotal} 单 · 超时 ${summary.timeoutTotal} 单 · 退单 ${summary.refundTotal} 单 · ${ratingLine}`,
   ];
   if (summary.topPerformers.length > 0) {
     lines.push(

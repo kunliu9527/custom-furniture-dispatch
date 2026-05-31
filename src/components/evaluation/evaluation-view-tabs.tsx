@@ -52,7 +52,7 @@ export function EvaluationViewTabs({
         <p className="px-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
           数据板块
         </p>
-        <ul className="space-y-0.5">
+        <ul className="space-y-1">
           {visibleTabs.map((tab) => {
             const summary = summaries[tab.id];
             const metric =
@@ -61,37 +61,40 @@ export function EvaluationViewTabs({
             const active = highlightMode && value === tab.id;
             return (
               <li key={tab.id}>
-                <button
-                  type="button"
-                  onClick={() => onChange(tab.id)}
-                  className={`w-full rounded-lg border px-2.5 py-2 text-left transition ${
-                    active
-                      ? "border-rose-300 bg-rose-50 ring-1 ring-rose-200"
-                      : "border-transparent hover:border-slate-200 hover:bg-slate-50"
+                <div
+                  className={`vi-view-tab w-full px-2.5 py-2 ${
+                    active ? "vi-view-tab-active" : ""
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-1">
-                    <span
-                      className={`text-[13px] font-semibold leading-tight ${
-                        active ? "text-rose-900" : "text-slate-900"
-                      }`}
+                  <div className="flex min-w-0 items-start gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onChange(tab.id)}
+                      className="min-w-0 flex-1 text-left"
                     >
-                      {tab.label}
-                    </span>
+                      <span
+                        className={`block text-[13px] font-semibold leading-snug ${
+                          active ? "text-indigo-950" : "text-slate-900"
+                        }`}
+                      >
+                        {tab.label}
+                      </span>
+                      <span
+                        className={`mt-0.5 block text-[11px] font-semibold tabular-nums leading-tight ${
+                          active ? "text-indigo-800" : "text-indigo-700"
+                        }`}
+                      >
+                        {metric}
+                      </span>
+                    </button>
                     <EvaluationExportButton
                       mode={tab.id}
                       data={exportData}
                       periodLabel={periodLabel}
+                      className="mt-0.5"
                     />
                   </div>
-                  <p
-                    className={`mt-0.5 text-[11px] font-semibold tabular-nums leading-tight ${
-                      active ? "text-rose-800" : "text-indigo-700"
-                    }`}
-                  >
-                    {metric}
-                  </p>
-                </button>
+                </div>
               </li>
             );
           })}
@@ -121,10 +124,8 @@ export function EvaluationViewTabs({
         return (
           <div
             key={tab.id}
-            className={`rounded-xl border px-4 py-4 transition ${
-              active
-                ? "border-rose-300 bg-rose-50 shadow-sm ring-1 ring-rose-200"
-                : "border-slate-200 bg-white hover:border-slate-300"
+            className={`vi-view-tab px-4 py-4 ${
+              active ? "vi-view-tab-active" : ""
             }`}
           >
             <div className="flex items-start justify-between gap-2">
@@ -135,14 +136,14 @@ export function EvaluationViewTabs({
               >
                 <p
                   className={`text-sm font-semibold ${
-                    active ? "text-rose-900" : "text-slate-900"
+                    active ? "text-indigo-950" : "text-slate-900"
                   }`}
                 >
                   {tab.label}
                 </p>
                 <p
                   className={`mt-1 text-xs ${
-                    active ? "text-rose-700" : "text-slate-500"
+                    active ? "text-indigo-700" : "text-slate-500"
                   }`}
                 >
                   {tab.description}
@@ -160,8 +161,8 @@ export function EvaluationViewTabs({
               className="mt-2 w-full text-left"
             >
               <p
-                className={`text-sm font-semibold tabular-nums ${
-                  active ? "text-rose-800" : "text-indigo-700"
+                className={`text-sm font-bold tabular-nums ${
+                  active ? "text-indigo-900" : "text-indigo-700"
                 }`}
               >
                 {metric}

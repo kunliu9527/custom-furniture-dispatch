@@ -39,7 +39,7 @@ export function EvaluationCockpit({
   return (
     <div className="space-y-4">
       {/* KPI 区：滚动时固定在站点导航下方 */}
-      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="vi-panel">
         <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>

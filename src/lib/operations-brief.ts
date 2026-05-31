@@ -539,19 +539,3 @@ export function enrichBriefWithSecondaryCompare(
     ),
   };
 }
-
-/** @deprecated 使用 enrichBriefWithSecondaryCompare */
-export function enrichBriefWithWoW(
-  brief: OperationsBrief,
-  orders: Order[],
-  supplements: SupplementOrder[],
-  ref = new Date(),
-): OperationsBrief {
-  return enrichBriefWithSecondaryCompare(
-    brief,
-    { preset: "thisMonth" },
-    orders,
-    supplements,
-    ref,
-  );
-}

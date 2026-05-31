@@ -1,11 +1,11 @@
 import { AppNav } from "@/components/layout/app-nav";
+import { SyncFooterStatus } from "@/components/sync/sync-footer-status";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 interface AppShellProps {
   title: string;
   description?: string;
-  badge?: string;
   children: ReactNode;
   actions?: ReactNode;
   mainClassName?: string;
@@ -14,7 +14,6 @@ interface AppShellProps {
 export function AppShell({
   title,
   description,
-  badge,
   children,
   actions,
   mainClassName = "mx-auto max-w-6xl px-4 py-8 sm:px-6",
@@ -35,7 +34,6 @@ export function AppShell({
                 <h1 className="vi-heading-section truncate text-base sm:text-lg">
                   {title}
                 </h1>
-                {badge ? <span className="vi-badge shrink-0">{badge}</span> : null}
               </div>
               {description ? (
                 <p className="mt-0.5 truncate text-xs text-zinc-500 sm:text-sm">
@@ -51,6 +49,7 @@ export function AppShell({
         </div>
       </header>
       <main className={mainClassName}>{children}</main>
+      <SyncFooterStatus />
     </div>
   );
 }

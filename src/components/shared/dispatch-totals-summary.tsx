@@ -17,7 +17,7 @@ export function DispatchTotalsSummary({
   return (
     <div className={`text-xs ${className}`}>
       <p className={accentClassName}>
-        合计总派单：
+        有效总派单：
         <span className="ml-1 font-semibold">
           {formatDispatchMoney(totals.totalDispatch)}
         </span>

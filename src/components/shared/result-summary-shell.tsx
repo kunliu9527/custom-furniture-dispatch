@@ -3,6 +3,7 @@ import {
   formatDispatchMoney,
   sumDispatchTotals,
 } from "@/lib/dispatch-totals";
+import { countNonRefundOrders } from "@/lib/store-summary-metrics";
 import { formatOrderAnomalySummary, type OrderAnomalyOptions } from "@/lib/order-anomaly";
 import type { DrillFlow, ResultDrillFilters } from "@/lib/result-drill";
 import type { Order, OrderStatus, SupplementOrder } from "@/lib/types";
@@ -32,6 +33,9 @@ export function ResultSummaryShell({
   anomalyOptions,
 }: ResultSummaryShellProps) {
   const amounts = sumDispatchTotals(baseOrders, supplements);
+  const effectiveCount = countNonRefundOrders(baseOrders);
+  const effectiveAvg =
+    effectiveCount > 0 ? amounts.totalDispatch / effectiveCount : 0;
   const anomalySummary = formatOrderAnomalySummary(baseOrders, anomalyOptions);
   const afterSalesTotal = baseOrders.reduce(
     (sum, order) => sum + (order.afterSalesAmount ?? 0),
@@ -60,8 +64,16 @@ export function ResultSummaryShell({
             </span>
           </p>
           <p className={`mt-1 text-xs font-semibold ${totalAmountClassName}`}>
-            合计总派单 {formatDispatchMoney(amounts.totalDispatch)}
+            有效总派单 {effectiveCount} / {formatDispatchMoney(amounts.totalDispatch)}
           </p>
+          {effectiveCount > 0 ? (
+            <p className="mt-1 text-xs text-slate-600">
+              有效均单值{" "}
+              <span className="font-medium text-slate-800">
+                {formatDispatchMoney(effectiveAvg)}
+              </span>
+            </p>
+          ) : null}
           {amounts.refundAmount > 0 ? (
             <p className="mt-1 text-xs text-red-600">
               退单金额 {formatDispatchMoney(amounts.refundAmount)}

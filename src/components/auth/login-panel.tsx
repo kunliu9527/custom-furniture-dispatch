@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
+import { reinitializeClientApp } from "@/lib/clear-client-app-data";
 import { formatManagedStoresLabel } from "@/lib/assigned-stores";
 import { ACCESS_LEVEL_LABELS } from "@/lib/staff-access";
 import { getDefaultPathForSession } from "@/lib/role-routes";
+import { isAdminAccess } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
@@ -34,6 +36,17 @@ export function LoginPanel({
   function handleLogout() {
     logout();
     router.push("/");
+  }
+
+  function handleReinitializeLocal() {
+    if (
+      !window.confirm(
+        "将清除本浏览器全部派单缓存、登录态、简报归档与界面记录，并回到首页。是否继续？",
+      )
+    ) {
+      return;
+    }
+    reinitializeClientApp();
   }
 
   function handleSubmit(e: FormEvent) {
@@ -125,6 +138,16 @@ export function LoginPanel({
         <Button type="button" variant="secondary" onClick={handleLogout}>
           退出
         </Button>
+        {isAdminAccess(user) ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-xs text-rose-600 hover:text-rose-700"
+            onClick={handleReinitializeLocal}
+          >
+            初始化本地
+          </Button>
+        ) : null}
         {passwordOpen ? (
           <form
             onSubmit={handleChangePassword}

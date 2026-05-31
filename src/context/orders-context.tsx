@@ -94,25 +94,25 @@ interface OrdersContextValue {
   advanceOrderStatus: (
     id: string,
     options?: number | AdvanceOrderOptions,
-  ) => void;
+  ) => boolean;
   addWorkflowRemark: (id: string, text: string, stage?: WorkflowRemarkStage) => void;
-  revertOrderStatus: (id: string) => void;
+  revertOrderStatus: (id: string) => boolean;
   markPendingRefund: (
     id: string,
     remark?: string,
     issueTags?: OrderIssueTag[],
-  ) => void;
+  ) => boolean;
   confirmRefund: (
     id: string,
     remark?: string,
     issueTags?: OrderIssueTag[],
-  ) => void;
+  ) => boolean;
   reassignOrder: (id: string, designer: DesignerName) => void;
   assignDesignerToOrder: (
     id: string,
     designer: DesignerName,
     forceOverCapacity?: boolean,
-  ) => void;
+  ) => boolean;
   initiateContract: (id: string, input: InitiateContractInput) => void;
   updateOrderDeposit: (id: string, deposit: number) => void;
   skipElectronicSign: (id: string) => void;
@@ -120,7 +120,7 @@ interface OrdersContextValue {
   confirmContractOffline: (id: string) => void;
   initiateAcceptance: (id: string) => void;
   skipElectronicAcceptance: (id: string) => void;
-  confirmDesignerAccept: (id: string) => void;
+  confirmDesignerAccept: (id: string) => boolean;
   setOrderIssueTags: (id: string, tags: OrderIssueTag[]) => void;
   addSupplementOrder: (
     parentOrderId: string,
@@ -440,8 +440,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     (id: string, designer: DesignerName, forceOverCapacity = false) => {
       const inProgress = countDesignerInProgress(orders, designer);
       if (isDispatchBlocked(inProgress) && !forceOverCapacity) {
-        return;
+        return false;
       }
+      let changed = false;
       const at = new Date().toISOString();
       setOrders((prev) =>
         prev.map((order) => {
@@ -464,9 +465,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
               ? `指派 ${designer}（超额，在途 ${inProgress}/${DESIGNER_MAX_IN_PROGRESS}）`
               : `指派 ${designer}`,
           });
+          changed = true;
           return reconcileOrderBusinessRules(updated);
         }),
       );
+      return changed;
     },
     [orders],
   );
@@ -684,6 +687,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const advanceOrderStatus = useCallback(
     (id: string, arg?: number | AdvanceOrderOptions) => {
       const { orderAmount, remark } = parseAdvanceOptions(arg);
+      let changed = false;
       setOrders((prev) =>
         prev.map((order) => {
           if (order.id !== id) return order;
@@ -709,6 +713,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
               status: next,
               orderAmount: amount,
             };
+            changed = true;
             return withEvent(nextOrder, actor, "状态推进", {
               fromStatus: order.status,
               toStatus: next,
@@ -725,6 +730,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                 installedAt: order.installation?.installedAt ?? atIso,
               },
             };
+            changed = true;
             return withEvent(nextOrder, actor, "状态推进", {
               fromStatus: order.status,
               toStatus: next,
@@ -732,17 +738,20 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             });
           }
           const nextOrder = { ...updated, ...intervalUpdates, status: next };
+          changed = true;
           return withEvent(nextOrder, actor, "状态推进", {
             fromStatus: order.status,
             toStatus: next,
           });
         }),
       );
+      return changed;
     },
     [],
   );
 
   const revertOrderStatus = useCallback((id: string) => {
+    let changed = false;
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id !== id) return order;
@@ -765,56 +774,67 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
           updates.revertedFromStatuses = [...revertedFrom, order.status];
         }
         const reverted = { ...order, ...updates };
+        changed = true;
         return withEvent(reverted, actorRef.current, "状态撤回", {
           fromStatus: revertedFromStatus,
           toStatus: prevStatus,
         });
       }),
     );
+    return changed;
   }, []);
 
   const markPendingRefund = useCallback(
     (id: string, remark?: string, issueTags?: OrderIssueTag[]) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== id) return order;
-        if (!canMarkPendingRefund(order.status)) return order;
-        let updated: Order = {
-          ...order,
-          status: "待退单",
-          issueTags: issueTags?.length ? issueTags : order.issueTags,
-        };
-        if (remark?.trim()) {
-          updated = appendWorkflowRemark(updated, "待退单", remark.trim());
-        }
-        return withEvent(updated, actorRef.current, "待退单", {
-          fromStatus: order.status,
-          toStatus: "待退单",
-        });
-      }),
-    );
-  }, []);
+      let changed = false;
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== id) return order;
+          if (!canMarkPendingRefund(order.status)) return order;
+          let updated: Order = {
+            ...order,
+            status: "待退单",
+            issueTags: issueTags?.length ? issueTags : order.issueTags,
+          };
+          if (remark?.trim()) {
+            updated = appendWorkflowRemark(updated, "待退单", remark.trim());
+          }
+          changed = true;
+          return withEvent(updated, actorRef.current, "待退单", {
+            fromStatus: order.status,
+            toStatus: "待退单",
+          });
+        }),
+      );
+      return changed;
+    },
+  []);
 
   const confirmRefund = useCallback(
     (id: string, remark?: string, issueTags?: OrderIssueTag[]) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== id || order.status !== "待退单") return order;
-        let updated: Order = {
-          ...order,
-          status: "已退单",
-          issueTags: issueTags?.length ? issueTags : order.issueTags,
-        };
-        if (remark?.trim()) {
-          updated = appendWorkflowRemark(updated, "已退单", remark.trim());
-        }
-        return withEvent(updated, actorRef.current, "已退单", {
-          fromStatus: "待退单",
-          toStatus: "已退单",
-        });
-      }),
-    );
-  }, []);
+      let changed = false;
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== id || order.status !== "待退单") return order;
+          let updated: Order = {
+            ...order,
+            status: "已退单",
+            issueTags: issueTags?.length ? issueTags : order.issueTags,
+          };
+          if (remark?.trim()) {
+            updated = appendWorkflowRemark(updated, "已退单", remark.trim());
+          }
+          changed = true;
+          return withEvent(updated, actorRef.current, "已退单", {
+            fromStatus: "待退单",
+            toStatus: "已退单",
+          });
+        }),
+      );
+      return changed;
+    },
+    [],
+  );
 
   const reassignOrder = useCallback((id: string, designer: DesignerName) => {
     setOrders((prev) =>
@@ -850,6 +870,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const confirmDesignerAccept = useCallback((id: string) => {
+    let changed = false;
     const at = new Date().toISOString();
     setOrders((prev) =>
       prev.map((order) => {
@@ -859,11 +880,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
           ...order,
           designerAcceptedAt: at,
         };
+        changed = true;
         return withEvent(updated, actorRef.current, "接单确认", {
           toStatus: "待量尺",
         });
       }),
     );
+    return changed;
   }, []);
 
   const setOrderIssueTags = useCallback((id: string, tags: OrderIssueTag[]) => {

@@ -5,36 +5,45 @@ interface DigestStatsProps {
   tone?: "violet" | "indigo" | "rose";
 }
 
+const tileToneClass: Record<
+  NonNullable<DigestStatsProps["tone"]>,
+  string
+> = {
+  violet: "vi-stat-tile-violet",
+  indigo: "vi-stat-tile-indigo",
+  rose: "vi-stat-tile-rose",
+};
+
+const labelClass: Record<NonNullable<DigestStatsProps["tone"]>, string> = {
+  violet: "text-violet-700",
+  indigo: "text-indigo-700",
+  rose: "text-rose-700",
+};
+
+const valueClass: Record<NonNullable<DigestStatsProps["tone"]>, string> = {
+  violet: "text-violet-950",
+  indigo: "text-indigo-950",
+  rose: "text-rose-950",
+};
+
 export function ManagerDigestStats({
   items,
   tone = "violet",
   className = "",
 }: DigestStatsProps & { className?: string }) {
-  const labelClass =
-    tone === "violet"
-      ? "text-violet-600"
-      : tone === "rose"
-        ? "text-rose-600"
-        : "text-indigo-600";
-  const valueClass =
-    tone === "violet"
-      ? "text-violet-950"
-      : tone === "rose"
-        ? "text-rose-950"
-        : "text-indigo-950";
-  const cardClass =
-    tone === "violet"
-      ? "bg-white/70"
-      : tone === "rose"
-        ? "bg-rose-50/80"
-        : "bg-slate-50/90";
-
   return (
     <dl className={`mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 ${className}`}>
       {items.map((item) => (
-        <div key={item.label} className={`rounded-lg px-2 py-1.5 ${cardClass}`}>
-          <dt className={`text-[10px] ${labelClass}`}>{item.label}</dt>
-          <dd className={`text-sm font-semibold tabular-nums ${valueClass}`}>
+        <div
+          key={item.label}
+          className={`vi-stat-tile ${tileToneClass[tone]}`}
+        >
+          <dt className={`text-[10px] font-semibold ${labelClass[tone]}`}>
+            {item.label}
+          </dt>
+          <dd
+            className={`mt-0.5 text-[0.9375rem] font-bold tabular-nums leading-tight ${valueClass[tone]}`}
+          >
             {item.value}
           </dd>
           {item.hint ? (

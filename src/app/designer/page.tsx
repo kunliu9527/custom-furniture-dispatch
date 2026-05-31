@@ -46,7 +46,12 @@ import {
 
   sortOrdersNewestFirst,
 
+  applyOrderPositionPin,
+
+  ORDER_POSITION_PIN_MS,
+
 } from "@/lib/order-utils";
+import type { OrderStatusTransitionPayload } from "@/lib/order-status-feedback";
 import { searchOrders } from "@/lib/order-search";
 import { resolveOrderDisplayName } from "@/lib/order-remark";
 import { resolveStrongPinOrder } from "@/lib/strong-pin-order";
@@ -176,7 +181,12 @@ export default function DesignerPage() {
   const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
   const [uiHydrated, setUiHydrated] = useState(false);
 
+  const [orderPositionPin, setOrderPositionPin] = useState<{
+    orderId: string;
+    index: number;
+  } | null>(null);
 
+  const orderPositionPinTimerRef = useRef<number | null>(null);
 
   const effectiveDesigner = (lockedName ?? currentDesigner) as DesignerName;
 
@@ -428,6 +438,43 @@ export default function DesignerPage() {
     return list;
   }, [myOrders, statusFilter, orderQuery, focusOrderId, strongPin]);
 
+  const handleOrderStatusUpdated = useCallback(
+    ({ orderId }: OrderStatusTransitionPayload) => {
+      if (statusFilter !== "全部" || strongPin.kind === "pin") return;
+      const index = filteredOrders.findIndex((order) => order.id === orderId);
+      if (index < 0) return;
+      setOrderPositionPin({ orderId, index });
+    },
+    [statusFilter, strongPin.kind, filteredOrders],
+  );
+
+  const displayOrders = useMemo(() => {
+    if (statusFilter !== "全部" || !orderPositionPin) return filteredOrders;
+    return applyOrderPositionPin(filteredOrders, orderPositionPin);
+  }, [filteredOrders, orderPositionPin, statusFilter]);
+
+  useEffect(() => {
+    if (statusFilter !== "全部") {
+      setOrderPositionPin(null);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (!orderPositionPin) return;
+    if (orderPositionPinTimerRef.current != null) {
+      window.clearTimeout(orderPositionPinTimerRef.current);
+    }
+    orderPositionPinTimerRef.current = window.setTimeout(() => {
+      setOrderPositionPin(null);
+      orderPositionPinTimerRef.current = null;
+    }, ORDER_POSITION_PIN_MS);
+    return () => {
+      if (orderPositionPinTimerRef.current != null) {
+        window.clearTimeout(orderPositionPinTimerRef.current);
+      }
+    };
+  }, [orderPositionPin]);
+
   useEffect(() => {
     if (strongPin.kind !== "pin") return;
     const nextStatus = strongPin.order.status as DesignerSidebarFilter;
@@ -656,8 +703,6 @@ export default function DesignerPage() {
 
         title="设计师工作台"
 
-        badge={effectiveDesigner}
-
         mainClassName={EVAL_PAGE_MAIN_CLASS}
 
       >
@@ -765,7 +810,15 @@ export default function DesignerPage() {
                   </div>
                   <OrderList
 
-                    orders={filteredOrders}
+                    orders={displayOrders}
+
+                    headingMode="address"
+
+                    inlineStatusFeedback={statusFilter !== "全部"}
+
+                    onStatusUpdated={
+                      statusFilter === "全部" ? handleOrderStatusUpdated : undefined
+                    }
 
                     focusOrderId={focusOrderId}
 

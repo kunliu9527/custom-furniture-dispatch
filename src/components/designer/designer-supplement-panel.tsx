@@ -5,6 +5,10 @@ import { SupplementInlineForm } from "@/components/orders/supplement-inline-form
 import { OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { LookupSectionHeading } from "@/components/shared/lookup-section-heading";
 import { searchOrders } from "@/lib/order-search";
+import {
+  displayCustomerNameColumn,
+  displayOrderNameColumn,
+} from "@/lib/order-remark";
 import { filterSupplementsByPeriod, type PeriodSelection } from "@/lib/period-filter";
 import type { Order, SupplementOrder } from "@/lib/types";
 
@@ -133,14 +137,14 @@ export function DesignerSupplementPanel({
                     defaultClassName="font-medium text-slate-900"
                     highlightCrossStore
                   >
-                    {order.address}
+                    {displayOrderNameColumn(order)}
                   </OrderAnomalyName>
                   <span className="shrink-0 text-xs text-slate-500">
                     {order.status}
                   </span>
                 </div>
                 <p className="mt-0.5 truncate text-xs text-slate-500">
-                  {order.customerName}
+                  {displayCustomerNameColumn(order) || "—"}
                 </p>
               </button>
             ))

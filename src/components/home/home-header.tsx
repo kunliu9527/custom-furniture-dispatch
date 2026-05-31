@@ -32,8 +32,6 @@ export function HomeHeader() {
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          <SyncStatusBadge />
-          <SyncRefreshButton />
           <LoginPanel variant="home" />
         </div>
       </div>

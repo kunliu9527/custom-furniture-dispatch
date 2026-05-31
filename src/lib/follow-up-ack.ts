@@ -63,15 +63,3 @@ export function countUnackedFollowUpOrders(
   }
   return orderIds.size;
 }
-
-/** @deprecated 按订单合并展示后请用 countUnackedFollowUpOrders */
-export function countUnackedFollowUpItems(
-  orders: Order[],
-  username?: string,
-): number {
-  const acks = loadFollowUpAcks(username);
-  return buildFollowUpSnapshot(orders).items.filter((item) => {
-    if (!followUpKindRequiresAck(item.kind)) return true;
-    return !isFollowUpAcked(acks, item);
-  }).length;
-}

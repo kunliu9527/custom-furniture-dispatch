@@ -22,7 +22,6 @@ import { StatusBadge } from "@/components/orders/status-badge";
 import { OrderAnomalyBadges, OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
-import { getSessionBadgeLabel } from "@/lib/nav-access";
 import {
   filterOrdersByAcceptanceLookup,
   type AcceptanceLookupFilter,
@@ -79,6 +78,10 @@ import {
   resolveAssignedStoresForUser,
 } from "@/lib/assigned-stores";
 import { formatOrderDate, sortOrdersNewestFirst } from "@/lib/order-utils";
+import {
+  displayCustomerNameColumn,
+  displayOrderNameColumn,
+} from "@/lib/order-remark";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import {
@@ -529,7 +532,6 @@ export default function DeliveryPage() {
     <RouteGuard canAccess={canAccessDeliveryPage(user)}>
       <AppShell
         title="验收与交付"
-        badge={getSessionBadgeLabel(user)}
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">
@@ -704,7 +706,7 @@ export default function DeliveryPage() {
                               defaultClassName="font-medium text-slate-900"
                               includeOperationalHints={false}
                             >
-                              {order.customerName}
+                              {displayOrderNameColumn(order)}
                             </OrderAnomalyName>
                             <StatusBadge status={order.status} />
                           </div>
@@ -714,15 +716,9 @@ export default function DeliveryPage() {
                             includeOperationalHints={false}
                             className="mt-1"
                           />
-                          <OrderAnomalyName
-                            order={order}
-                            as="p"
-                            className="mt-1 text-xs"
-                            defaultClassName="text-xs text-slate-500"
-                            includeOperationalHints={false}
-                          >
-                            {order.address}
-                          </OrderAnomalyName>
+                          <p className="mt-0.5 truncate text-xs text-slate-500">
+                            {displayCustomerNameColumn(order) || "—"}
+                          </p>
                           {order.installation?.installerName ? (
                             <p className="mt-0.5 text-xs text-slate-400">
                               安装师：{order.installation.installerName}
@@ -780,13 +776,22 @@ function DeliveryOrderDetail({
         defaultClassName="text-lg font-semibold text-slate-900"
         includeOperationalHints={false}
       >
-        {order.customerName}
+        {displayOrderNameColumn(order)}
       </OrderAnomalyName>
       <p className="mt-1 text-xs text-slate-500">
+        {displayCustomerNameColumn(order)
+          ? `${displayCustomerNameColumn(order)} · `
+          : null}
         录单 {formatOrderDate(order.createdAt)} · {order.dispatchStore}
       </p>
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div>
+          <dt className="text-slate-400">客户姓名</dt>
+          <dd className="text-slate-900">
+            {displayCustomerNameColumn(order) || "—"}
+          </dd>
+        </div>
+        <div className="sm:col-span-2">
           <dt className="text-slate-400">地址</dt>
           <OrderAnomalyName
             order={order}

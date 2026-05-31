@@ -9,7 +9,7 @@ export interface DispatchAmountTotals {
   notOrderedAmount: number;
   /** 退单订单对应金额（待退单、已退单） */
   refundAmount: number;
-  /** 合计总派单 = 已下单 + 未下单 - 退单 */
+  /** 有效总派单 = 已下单 + 未下单 - 退单 */
   totalDispatch: number;
 }
 
@@ -28,7 +28,7 @@ function countsAsOrderedMain(order: Order): boolean {
   return isMainOrderPlaced(order) || getMainOrderAmountValue(order) > 0;
 }
 
-/** 单笔订单对合计总派单的拆分（非退单计入已下单/未下单；退单计入退单金额） */
+/** 单笔订单对有效总派单的拆分（非退单计入已下单/未下单；退单计入退单金额） */
 export function getOrderDispatchParts(
   order: Order,
   supplements: SupplementOrder[],
@@ -67,7 +67,7 @@ export function getOrderDispatchParts(
   };
 }
 
-/** 单笔订单合计总派单（列表行展示用） */
+/** 单笔订单有效总派单（列表行展示用） */
 export function getOrderTotalDispatch(
   order: Order,
   supplements: SupplementOrder[],

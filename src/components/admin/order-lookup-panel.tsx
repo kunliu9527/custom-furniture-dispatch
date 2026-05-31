@@ -8,6 +8,10 @@ import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import { searchOrders } from "@/lib/order-search";
 import {
+  displayCustomerNameColumn,
+  displayOrderNameColumn,
+} from "@/lib/order-remark";
+import {
   formatStrongPinEmptyMessage,
   formatStrongPinSearchHint,
   resolveStrongPinOrder,
@@ -270,7 +274,7 @@ export function OrderLookupPanel({
                       defaultClassName="font-medium text-slate-900"
                       {...anomalyOptions}
                     >
-                      {order.address}
+                      {displayOrderNameColumn(order)}
                     </OrderAnomalyName>
                     <span className="shrink-0 text-xs text-slate-500">
                       {order.status}
@@ -278,7 +282,7 @@ export function OrderLookupPanel({
                   </div>
                   <OrderAnomalyBadges order={order} compact {...anomalyOptions} />
                   <p className="mt-0.5 truncate text-xs text-slate-500">
-                    {order.customerName}
+                    {displayCustomerNameColumn(order) || "—"}
                   </p>
                 </button>
               ))

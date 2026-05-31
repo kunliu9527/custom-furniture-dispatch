@@ -17,6 +17,7 @@ import {
 } from "@/lib/order-status-feedback";
 
 import type { DesignerName, Order, OrderIssueTag } from "@/lib/types";
+import { displayOrderNameColumn } from "@/lib/order-remark";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -38,11 +39,11 @@ interface OrderListProps {
 
   isOrderReadOnly?: (order: Order) => boolean;
 
-  onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => void;
+  onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => boolean;
 
   onAddWorkflowRemark?: (id: string, text: string) => void;
 
-  onRevertStatus?: (id: string) => void;
+  onRevertStatus?: (id: string) => boolean;
 
   onMarkPendingRefund?: (
 
@@ -52,7 +53,7 @@ interface OrderListProps {
 
     issueTags?: OrderIssueTag[],
 
-  ) => void;
+  ) => boolean;
 
   onConfirmRefund?: (
 
@@ -62,9 +63,9 @@ interface OrderListProps {
 
     issueTags?: OrderIssueTag[],
 
-  ) => void;
+  ) => boolean;
 
-  onConfirmDesignerAccept?: (id: string) => void;
+  onConfirmDesignerAccept?: (id: string) => boolean;
 
   showAcceptAction?: boolean;
 
@@ -84,7 +85,7 @@ interface OrderListProps {
 
     forceOverCapacity?: boolean,
 
-  ) => void;
+  ) => boolean;
 
   showAssignDesigner?: boolean;
 
@@ -121,6 +122,12 @@ interface OrderListProps {
   headingMode?: "customer" | "address";
 
   supplementPane?: ReactNode;
+
+  /** 为 false 时状态变更仅 toast，卡片保持可操作（如侧栏「全部」） */
+  inlineStatusFeedback?: boolean;
+
+  /** 状态变更成功时通知父级（如「全部」下列表位置冻结） */
+  onStatusUpdated?: (payload: OrderStatusTransitionPayload) => void;
 
 }
 
@@ -175,7 +182,7 @@ function StatusSuccessPlaceholder({
       </p>
       <p className="mt-2 truncate text-sm text-emerald-800/75">
 
-        {headingMode === "address" ? order.address : order.customerName}
+        {displayOrderNameColumn(order)}
 
       </p>
 
@@ -249,9 +256,13 @@ export function OrderList({
 
   layout = "grid",
 
-  headingMode = "customer",
+  headingMode = "address",
 
   supplementPane,
+
+  inlineStatusFeedback = true,
+
+  onStatusUpdated,
 
 }: OrderListProps) {
 
@@ -263,21 +274,25 @@ export function OrderList({
 
   const handleStatusTransition = useCallback(
 
-    ({ orderId, resultLabel }: OrderStatusTransitionPayload) => {
+    ({ orderId, resultLabel, orderSnapshot }: OrderStatusTransitionPayload) => {
+
+      if (!inlineStatusFeedback) return;
 
       const index = orders.findIndex((order) => order.id === orderId);
 
-      if (index < 0) return;
+      const order = index >= 0 ? orders[index]! : orderSnapshot;
 
-      const order = orders[index];
-
-      setPinnedStatusFeedback({ index, order, resultLabel });
+      setPinnedStatusFeedback({
+        index: index >= 0 ? index : 0,
+        order,
+        resultLabel,
+      });
 
       window.setTimeout(() => setPinnedStatusFeedback(null), ORDER_STATUS_SUCCESS_MS);
 
     },
 
-    [orders],
+    [orders, inlineStatusFeedback],
 
   );
 
@@ -499,9 +514,17 @@ export function OrderList({
 
             onStatusTransition={
 
-              hasStatusActions ? handleStatusTransition : undefined
+              hasStatusActions && inlineStatusFeedback
+
+                ? handleStatusTransition
+
+                : undefined
 
             }
+
+            inlineStatusFeedback={inlineStatusFeedback}
+
+            onStatusUpdated={onStatusUpdated}
 
           />
 

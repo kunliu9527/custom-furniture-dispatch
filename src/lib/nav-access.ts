@@ -102,26 +102,3 @@ export function getVisibleAdminViewModes(
   if (canManageStaff(user)) modes.push("staff", "branding");
   return modes;
 }
-
-export function getSessionBadgeLabel(user: SessionUser | null): string | undefined {
-  if (!user) return undefined;
-  switch (user.accessLevel) {
-    case "admin":
-      return "管理员";
-    case "design_manager":
-      return "设计经理";
-    case "general_manager":
-      return "总经理";
-    case "acceptance_manager":
-      return "验收经理";
-    case "store_manager":
-      return "店长";
-    case "personal":
-      if (isInstallerSession(user)) return "安装师";
-      if (user.role === "dispatcher") return "派单人";
-      if (user.role === "designer") return "设计师";
-      return undefined;
-    default:
-      return undefined;
-  }
-}

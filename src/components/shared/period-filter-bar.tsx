@@ -28,6 +28,8 @@ function presetsForVariant(variant: ReportPeriodFilterVariant) {
       return allPresets.filter((p) => REPORT_WEEKLY_PRESETS.includes(p.id));
     case "reportMonthly":
       return allPresets.filter((p) => REPORT_MONTHLY_PRESETS.includes(p.id));
+    case "reportAllSummary":
+      return allPresets.filter((p) => p.id === "all");
     case "reportNeutral":
       return allPresets.filter((p) => p.id !== "lastWeek");
     case "weeklyBriefOnly":
@@ -61,7 +63,7 @@ export function PeriodFilterBar({
   const presets = presetsForVariant(variant);
 
   const presetButtons = (
-    <>
+    <div className={embedded || inline ? "vi-segmented" : "vi-segmented"}>
       {presets.map((p) => {
         const active = value.preset === p.id;
         return (
@@ -77,14 +79,12 @@ export function PeriodFilterBar({
                     : undefined,
               })
             }
-            className={`rounded-md font-medium transition ${
-              embedded || inline
-                ? "px-2 py-1 text-[11px]"
-                : "rounded-lg px-3 py-1.5 text-xs"
-            } ${
+            className={`vi-segmented-item ${
               active
-                ? "bg-rose-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "vi-segmented-item-active vi-segmented-item-active-rose"
+                : ""
+            } ${
+              embedded || inline ? "px-2 py-1 text-[11px]" : "text-xs"
             }`}
           >
             {p.label}
@@ -98,10 +98,10 @@ export function PeriodFilterBar({
           onChange={(e) =>
             onChange({ preset: "custom", yearMonth: e.target.value })
           }
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700"
+          className="rounded-md border border-[var(--vi-border-strong)] bg-white px-2 py-1 text-xs text-slate-700 shadow-[var(--vi-shadow-xs)]"
         />
       ) : null}
-    </>
+    </div>
   );
 
   if (inline) {
@@ -121,7 +121,7 @@ export function PeriodFilterBar({
       className={
         embedded
           ? "flex flex-wrap items-center gap-2"
-          : "flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+          : "vi-panel flex flex-wrap items-center gap-3 px-4 py-3"
       }
     >
       <div className="min-w-0 flex-1">

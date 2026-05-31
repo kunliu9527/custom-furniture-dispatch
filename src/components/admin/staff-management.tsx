@@ -447,7 +447,7 @@ export function StaffManagement() {
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] text-left text-sm">
+                <table className="vi-data-table w-full min-w-[1180px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500">
                       <th className="px-4 py-3">姓名</th>

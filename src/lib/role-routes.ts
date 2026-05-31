@@ -45,28 +45,6 @@ export function getDefaultPathForSession(user: SessionUser): string {
   }
 }
 
-/** @deprecated 使用 getDefaultPathForSession */
-export function getDefaultPathForRole(
-  role: SessionUser["role"],
-  accessLevel?: SessionUser["accessLevel"],
-): string {
-  if (accessLevel === "acceptance_manager") return "/delivery";
-  if (accessLevel === "admin" || accessLevel === "design_manager" || accessLevel === "general_manager") {
-    return "/manager";
-  }
-  switch (role) {
-    case "admin":
-    case "design_manager":
-      return "/manager";
-    case "dispatcher":
-      return "/admin";
-    case "designer":
-      return "/designer";
-    default:
-      return "/";
-  }
-}
-
 /** 按派单人查找默认选中：店长权限优先本人（名册内），否则全部；个人派单人仅本人 */
 export function getDefaultDispatcherFilter(
   user: SessionUser | null,

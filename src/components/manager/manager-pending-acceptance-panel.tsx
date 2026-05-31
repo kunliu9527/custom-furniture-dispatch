@@ -5,6 +5,7 @@ import {
   isAcceptanceOverdue,
 } from "@/lib/designer-load";
 import { OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
+import { displayOrderNameColumn } from "@/lib/order-remark";
 import type { Order } from "@/lib/types";
 
 interface ManagerPendingAcceptancePanelProps {
@@ -72,7 +73,7 @@ export function ManagerPendingAcceptancePanel({
                 defaultClassName="font-medium text-slate-900"
                 includeOperationalHints={false}
               >
-                {order.customerName}
+                {displayOrderNameColumn(order)}
               </OrderAnomalyName>
               {onSelectDesigner && order.designer ? (
                 <button

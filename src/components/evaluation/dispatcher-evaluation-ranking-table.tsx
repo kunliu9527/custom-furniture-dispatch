@@ -1,6 +1,7 @@
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
 import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import type { DispatcherEvaluationRow } from "@/lib/evaluation-stats";
@@ -26,8 +27,7 @@ interface DispatcherEvaluationRankingTableProps {
   designerExtendedMetrics?: boolean;
 }
 
-const thClass =
-  "px-3 py-2 text-xs font-medium text-slate-500 whitespace-nowrap text-center";
+const thClass = `${TABLE_TH_CLASS} text-center`;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
 const dualRankColumns = [
@@ -146,7 +146,7 @@ export function DispatcherEvaluationRankingTable({
         </p>
       }
     >
-      <table className={`w-full ${minWidth} border-collapse text-left`}>
+      <table className={`vi-data-table w-full ${minWidth} border-collapse text-left`}>
         <thead>
           <TableAlgorithmCaption>
             {EVALUATION_AMOUNT_RULES} · {footnote}

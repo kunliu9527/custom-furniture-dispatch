@@ -81,7 +81,7 @@ export function DesignerPerformanceTable({
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="min-w-full text-left text-xs">
+        <table className="vi-data-table min-w-full text-left text-xs">
           <thead className="border-b border-slate-100 bg-slate-50 text-slate-600">
             <tr>
               <th
@@ -92,18 +92,18 @@ export function DesignerPerformanceTable({
               </th>
             </tr>
             <tr>
-              <th className="px-3 py-2.5 font-semibold">#</th>
-              <th className="px-3 py-2.5 font-semibold">设计师</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">在途</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">下单数</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">下单额</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">转化率</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">均出图</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">均总周期</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">超时</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">转派出/入</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">月操作</th>
-              <th className="px-3 py-2.5 font-semibold tabular-nums">月推进</th>
+              <th className="px-3 py-2.5 font-bold">#</th>
+              <th className="px-3 py-2.5 font-bold">设计师</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">在途</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">下单数</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">下单额</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">转化率</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">均出图</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">均总周期</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">超时</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">转派出/入</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">月操作</th>
+              <th className="px-3 py-2.5 font-bold tabular-nums">月推进</th>
               <th
                 className="px-3 py-2.5 font-semibold tabular-nums"
                 title={DESIGNER_CONTRIBUTION_FORMULA}

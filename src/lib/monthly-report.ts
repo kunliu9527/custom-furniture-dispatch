@@ -1,6 +1,7 @@
 import { getDesignerPerformanceRows, getMonthlyReportOverview } from "./designer-performance";
 import { aggregateIssueTags } from "./issue-tag-stats";
 import { getManagerAlerts } from "./manager-alerts";
+import { countLowDimensionReviewsInPeriod } from "./acceptance-rating";
 import {
   buildDesignerPeriodSummary,
   buildDigestAcceptanceStats,
@@ -145,7 +146,17 @@ export function buildMonthlyDigest(
     periodOrders,
     periodSupplements,
   );
-  const acceptanceStats = buildDigestAcceptanceStats(orders);
+  const acceptanceStats =
+    period.preset === "all"
+      ? buildDigestAcceptanceStats(orders)
+      : {
+          badReviewCount: 0,
+          lowDimensionCount: countLowDimensionReviewsInPeriod(
+            orders,
+            period,
+            ref,
+          ),
+        };
 
   const attentionDesigners: MonthlyDigest["attentionDesigners"] = [];
   for (const row of performance) {

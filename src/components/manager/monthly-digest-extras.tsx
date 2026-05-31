@@ -22,6 +22,10 @@ interface MonthlyDigestExtrasProps {
   leaderboards: MonthlyLeaderboards;
   designerSummary: DesignerPeriodSummary;
   showLeaderboards?: boolean;
+  showStoreRanks?: boolean;
+  leaderboardHeading?: string;
+  /** 门店汇总简报使用「维度低评」口径 */
+  ratingSummaryMode?: "default" | "dimensionLow";
 }
 
 export function MonthlyDigestExtras({
@@ -29,6 +33,9 @@ export function MonthlyDigestExtras({
   leaderboards,
   designerSummary,
   showLeaderboards = true,
+  showStoreRanks = true,
+  leaderboardHeading = "本期排行 · 综合前5",
+  ratingSummaryMode = "default",
 }: MonthlyDigestExtrasProps) {
   const hasPersonRanks =
     showLeaderboards &&
@@ -36,6 +43,7 @@ export function MonthlyDigestExtras({
       leaderboards.designerTop5.length > 0 ||
       leaderboards.installerTop5.length > 0);
   const hasStoreRanks =
+    showStoreRanks &&
     showLeaderboards &&
     (leaderboards.storeCompositeTop5.length > 0 ||
       leaderboards.storeTotalAmountTop5.length > 0 ||
@@ -43,23 +51,40 @@ export function MonthlyDigestExtras({
 
   return (
     <div className="mt-3 space-y-3 text-xs text-slate-700">
-      {(acceptanceStats.badReviewCount > 0 ||
-        acceptanceStats.lowDimensionCount > 0) && (
-        <div className="rounded-lg bg-rose-50/80 px-3 py-2 ring-1 ring-rose-100">
-          <p className="font-medium text-rose-900">验收异常</p>
+      {(ratingSummaryMode === "dimensionLow"
+        ? acceptanceStats.lowDimensionCount > 0
+        : acceptanceStats.badReviewCount > 0 ||
+          acceptanceStats.lowDimensionCount > 0) && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50/90 px-3 py-2 shadow-[var(--vi-shadow-xs)]">
+          <p className="font-medium text-rose-900">
+            {ratingSummaryMode === "dimensionLow" ? "维度低评" : "验收异常"}
+          </p>
           <p className="mt-0.5 text-rose-800">
-            差评 {acceptanceStats.badReviewCount} 单
-            {acceptanceStats.lowDimensionCount > 0
-              ? ` · 低分维度 ${acceptanceStats.lowDimensionCount} 单`
-              : ""}
-            <span className="text-rose-600/80">（无电子验收按默认 4 星，不计差评）</span>
+            {ratingSummaryMode === "dimensionLow" ? (
+              <>
+                维度低评 {acceptanceStats.lowDimensionCount} 单
+                <span className="text-rose-600/80">
+                  （综合不低但单维 &lt; 3 星；无电子验收按默认 4 星不计）
+                </span>
+              </>
+            ) : (
+              <>
+                差评 {acceptanceStats.badReviewCount} 单
+                {acceptanceStats.lowDimensionCount > 0
+                  ? ` · 低分维度 ${acceptanceStats.lowDimensionCount} 单`
+                  : ""}
+                <span className="text-rose-600/80">
+                  （无电子验收按默认 4 星，不计差评）
+                </span>
+              </>
+            )}
           </p>
         </div>
       )}
 
       {hasPersonRanks ? (
-        <div className="rounded-lg bg-slate-50/80 px-3 py-2 ring-1 ring-slate-100">
-          <p className="font-medium text-slate-800">本期排行 · 综合前5</p>
+        <div className="rounded-lg border border-[var(--vi-border-strong)] bg-white px-3 py-2 shadow-[var(--vi-shadow-xs)]">
+          <p className="font-medium text-slate-800">{leaderboardHeading}</p>
           <p className="mt-0.5 text-slate-500">{ROLE_COMPOSITE_WEIGHTS}</p>
           <div className="mt-2 -mx-1 overflow-x-auto px-1">
             <div className="grid min-w-[720px] grid-cols-3 gap-3">
@@ -81,7 +106,7 @@ export function MonthlyDigestExtras({
       ) : null}
 
       {hasStoreRanks ? (
-        <div className="rounded-lg bg-slate-50/80 px-3 py-2 ring-1 ring-slate-100">
+        <div className="rounded-lg border border-[var(--vi-border-strong)] bg-white px-3 py-2 shadow-[var(--vi-shadow-xs)]">
           <p className="font-medium text-slate-800">门店前5</p>
           <p className="mt-0.5 text-slate-500">
             {STORE_VALUE_FORMULA} · {STORE_COMPOSITE_FORMULA}
@@ -112,7 +137,10 @@ export function MonthlyDigestExtras({
         </div>
       ) : null}
 
-      <DesignerSummaryBlock summary={designerSummary} />
+      <DesignerSummaryBlock
+        summary={designerSummary}
+        ratingSummaryMode={ratingSummaryMode}
+      />
     </div>
   );
 }
@@ -138,7 +166,7 @@ export function WeeklyDigestExtras({
 
 export function WeeklyAnomalyBlock({ items }: { items: WeeklyAnomalyItem[] }) {
   return (
-    <div className="rounded-lg bg-rose-50/80 px-3 py-2 ring-1 ring-rose-100">
+    <div className="rounded-lg border border-rose-200 bg-rose-50/90 px-3 py-2 shadow-[var(--vi-shadow-xs)]">
       <p className="font-medium text-rose-900">本周已产生异常项</p>
       {items.length === 0 ? (
         <p className="mt-1 text-rose-800/80">本周暂无异常订单</p>
@@ -173,7 +201,7 @@ function RoleScoreColumn({
           {entries.map((entry, i) => (
             <li
               key={entry.name}
-              className="rounded-md bg-white/70 px-2 py-1.5 ring-1 ring-slate-100"
+              className="rounded-md border border-[var(--vi-border-strong)] bg-white px-2 py-1.5 shadow-[var(--vi-shadow-xs)]"
             >
               <p className="font-medium leading-snug text-slate-800">
                 {i + 1}. {entry.name}
@@ -243,7 +271,7 @@ function StoreRankList({
         {entries.map((entry, i) => (
           <li
             key={`${title}-${entry.store}`}
-            className="rounded-md bg-white/70 px-2 py-1.5 ring-1 ring-slate-100"
+            className="rounded-md border border-[var(--vi-border-strong)] bg-white px-2 py-1.5 shadow-[var(--vi-shadow-xs)]"
           >
             <p className="font-medium text-slate-800">
               {i + 1}. {entry.store}
@@ -284,16 +312,18 @@ function StoreRankList({
 export function DesignerSummaryBlock({
   summary,
   compact = false,
+  ratingSummaryMode = "default",
 }: {
   summary: DesignerPeriodSummary;
   compact?: boolean;
+  ratingSummaryMode?: "default" | "dimensionLow";
 }) {
   const hasConversionRanks = compact && summary.topConversion.length > 0;
   const hasPortraits =
     summary.topPerformers.length > 0 || summary.needsImprovement.length > 0;
 
   return (
-    <div className="rounded-lg bg-slate-50/80 px-3 py-2 ring-1 ring-slate-100">
+    <div className="rounded-lg border border-[var(--vi-border-strong)] bg-white px-3 py-2 shadow-[var(--vi-shadow-xs)]">
       <p className="font-medium text-slate-800">设计师环节</p>
       {summary.sectionSummary ? (
         <p className="mt-1 leading-relaxed text-slate-700">{summary.sectionSummary}</p>
@@ -301,7 +331,12 @@ export function DesignerSummaryBlock({
       <p className="mt-1 text-slate-600">
         在途 {summary.inProgressTotal} · 超时 {summary.timeoutTotal} · 退单{" "}
         {summary.refundTotal}
-        {!compact ? ` · 验收差评 ${summary.badReviewTotal}` : null}
+        {!compact && ratingSummaryMode === "dimensionLow"
+          ? ` · 维度低评 ${summary.lowDimensionTotal}`
+          : null}
+        {!compact && ratingSummaryMode !== "dimensionLow"
+          ? ` · 验收差评 ${summary.badReviewTotal}`
+          : null}
         {summary.eligibleDesignerCount > 0
           ? ` · ${summary.eligibleDesignerCount} 人参与排名`
           : null}

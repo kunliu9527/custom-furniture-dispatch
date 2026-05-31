@@ -75,9 +75,10 @@ import {
   type DesignerHomeStoreIndex,
 } from "@/lib/designer-staff-store";
 import {
-  buildStaffConfigSnapshotFromBrowserStorage,
+  AUTH_STORAGE_KEY,
   isStaffConfigStorageKey,
-} from "@/lib/staff-config-sync";
+} from "@/lib/app-storage-keys";
+import { clearClientSessionRecordsForUser } from "@/lib/clear-client-app-data";
 import {
   ensureSnapshotCacheReady,
   getCachedStaffConfig,
@@ -108,8 +109,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-
-const AUTH_STORAGE_KEY = "custom-furniture-dispatch-auth-v1";
 
 interface AuthContextValue {
   user: SessionUser | null;
@@ -437,7 +436,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     function reloadStaffConfigFromStorage() {
-      applyStaffConfig(buildStaffConfigSnapshotFromBrowserStorage());
+      applyStaffConfig(loadStaffConfigFromBrowser());
     }
 
     function onStorage(event: StorageEvent) {
@@ -445,7 +444,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       reloadStaffConfigFromStorage();
       if (isRemoteSyncEnabled()) {
         patchSnapshotCache({
-          staffConfig: buildStaffConfigSnapshotFromBrowserStorage(),
+          staffConfig: loadStaffConfigFromBrowser(),
         });
       }
     }
@@ -482,9 +481,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(() => {
+    const username = sessionUser?.username;
+    clearClientSessionRecordsForUser(username);
     setSessionUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
-  }, []);
+  }, [sessionUser?.username]);
 
   const changeOwnPassword = useCallback(
     (currentPassword: string, newPassword: string) => {

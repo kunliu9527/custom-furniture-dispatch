@@ -44,7 +44,7 @@ export function CustomerRatingTable({
 
     return (
       <div className="overflow-x-auto rounded-lg border border-slate-200">
-        <table className="min-w-full text-left text-sm">
+        <table className="vi-data-table min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs text-slate-500">
             <tr>
               <th className="px-3 py-2">客户</th>
@@ -99,7 +99,7 @@ export function CustomerRatingTable({
   const visible = maxRows ? entries.slice(0, maxRows) : entries;
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-200">
-      <table className="min-w-full text-left text-sm">
+      <table className="vi-data-table min-w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs text-slate-500">
           <tr>
             <th className="px-3 py-2">客户</th>

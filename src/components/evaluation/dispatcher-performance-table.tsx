@@ -20,7 +20,7 @@ export function DispatcherPerformanceTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-      <table className="min-w-full text-left text-sm">
+      <table className="vi-data-table min-w-full text-left text-sm">
         <thead className="bg-slate-50 text-xs text-slate-500">
           <TableAlgorithmCaption>
             按贡献分降序排名 · {DISPATCHER_CONTRIBUTION_FORMULA}

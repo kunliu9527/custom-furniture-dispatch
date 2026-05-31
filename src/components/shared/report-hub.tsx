@@ -38,6 +38,7 @@ interface ReportHubProps {
   onOpenPendingOrder?: (payload: OpenPendingOrderPayload) => void;
   /** 经营管理 · 非总部登录时所属门店标签 */
   storeScopeLabel?: string | null;
+  onOpenOrderLookup?: () => void;
 }
 
 export function ReportHub({
@@ -51,6 +52,7 @@ export function ReportHub({
   onSelectDesigner,
   onOpenPendingOrder,
   storeScopeLabel = null,
+  onOpenOrderLookup,
 }: ReportHubProps) {
   const { user, staffRecords } = useAuth();
   const tabs = getReportTabs(scope, { storeScopeLabel });
@@ -76,13 +78,15 @@ export function ReportHub({
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 bg-white">
-        <div className="flex flex-wrap items-end gap-x-5 gap-y-1 px-4 pt-3 pb-2 sm:px-5">
+    <section className="vi-panel overflow-hidden">
+      <div className="border-b border-[var(--vi-border-strong)] bg-slate-50/50 px-4 pt-3 pb-3 sm:px-5">
+        <div className="vi-segmented" role="tablist">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
               onClick={() =>
                 handleReportTabChange(
                   tab.id,
@@ -91,8 +95,12 @@ export function ReportHub({
                   onPeriodChange,
                 )
               }
-              className={`border-b-2 pb-1.5 text-sm font-semibold transition ${
-                activeTab === tab.id ? accent.activeTab : accent.inactiveTab
+              className={`vi-segmented-item ${
+                activeTab === tab.id
+                  ? `vi-segmented-item-active ${
+                      scope === "global" ? "vi-segmented-item-active-rose" : ""
+                    } ${accent.activeTab}`
+                  : accent.inactiveTab
               }`}
             >
               {tab.label}
@@ -127,6 +135,19 @@ export function ReportHub({
             reportScope={scope}
             storeScopeLabel={storeScopeLabel}
             personScope={personScope}
+          />
+        ) : null}
+        {activeTab === "allSummary" ? (
+          <MonthlyDigestPanel
+            orders={orders}
+            supplements={supplements}
+            period={{ preset: "all" }}
+            embedded
+            reportScope={scope}
+            storeScopeLabel={storeScopeLabel}
+            personScope={personScope}
+            digestVariant="allSummary"
+            onOpenOrderLookup={onOpenOrderLookup}
           />
         ) : null}
         {activeTab === "history" ? (

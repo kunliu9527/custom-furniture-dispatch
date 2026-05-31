@@ -1,6 +1,7 @@
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
 import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import {
@@ -24,8 +25,7 @@ interface DispatcherEvaluationTableProps {
   designerExtendedMetrics?: boolean;
 }
 
-const thClass =
-  "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 whitespace-nowrap";
+const thClass = TABLE_TH_CLASS;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
 const amountColumns = [
@@ -99,7 +99,7 @@ export function DispatcherEvaluationTable({
         </p>
       }
     >
-      <table className={`w-full ${minWidth} border-collapse text-left`}>
+      <table className={`vi-data-table w-full ${minWidth} border-collapse text-left`}>
         <thead>
           <TableAlgorithmCaption>
             {footnote}

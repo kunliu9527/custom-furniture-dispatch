@@ -17,6 +17,7 @@ import {
 import { ReportHub } from "@/components/shared/report-hub";
 import { EvaluationWorkbenchLayout } from "@/components/evaluation/evaluation-workbench-layout";
 import { EvaluationStatsTable } from "@/components/evaluation/evaluation-stats-table";
+import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { ManagerOrderTable } from "@/components/manager/manager-order-table";
 import { OrderAnomalySummaryLine } from "@/components/orders/order-anomaly-badges";
 import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
@@ -54,7 +55,6 @@ import {
 import { filterRankingDisplayRows } from "@/lib/evaluation-ranking";
 import {
   canAccessEvaluationPage,
-  getSessionBadgeLabel,
 } from "@/lib/nav-access";
 import {
   getDesignerPerformanceRows,
@@ -133,6 +133,7 @@ import {
 } from "@/lib/period-filter";
 import type { MonthlyCockpitSnapshot } from "@/lib/monthly-snapshot-types";
 import { getSessionResetKey } from "@/lib/session-user";
+import { useOrderLookupWorkbench } from "@/lib/use-order-lookup-workbench";
 import { searchOrders } from "@/lib/order-search";
 import {
   formatStrongPinEmptyMessage,
@@ -173,7 +174,7 @@ const viewConfig: Record<
 
 export default function EvaluationPage() {
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();
-  const { orders, supplements, isHydrated } = useOrders();
+  const { orders, supplements, isHydrated, reassignOrder, setAfterSalesAmount, setOrderIssueTags } = useOrders();
   const allowedModes = useMemo(
     () => getVisibleEvaluationViewModes(user),
     [user],
@@ -227,6 +228,24 @@ export default function EvaluationPage() {
     () => scopeOrdersForEvaluationBoard(orders, user),
     [orders, user],
   );
+
+  const lookup = useOrderLookupWorkbench({
+    user,
+    scopedOrders: boardOrders,
+    orders,
+    supplements,
+    staffRecords,
+    designerHomeStoreIndex,
+    period,
+    onPeriodChange: handlePeriodChange,
+    reassignOrder,
+    setAfterSalesAmount,
+    setOrderIssueTags,
+    sessionResetKey,
+    searchHintBase: storeScoped && scopeLabel
+      ? `${scopeLabel} · 订单查询按此统计周期`
+      : "订单查询按此统计周期",
+  });
 
   useEffect(() => {
     if (!user?.username) return;
@@ -1032,7 +1051,6 @@ export default function EvaluationPage() {
     <RouteGuard canAccess={canAccessEvaluationPage(user)}>
       <AppShell
         title={getEvaluationBoardTitle(scopeLabel)}
-        badge={getSessionBadgeLabel(user) ?? "统计"}
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">
@@ -1056,6 +1074,21 @@ export default function EvaluationPage() {
                         : "查询订单：客户、电话、地址、设计师、派单人、门店…"
                     }
                     resultCount={orderSearchResults.length}
+                  />
+                ) : mainSection === "operations" &&
+                  operationsSubView === "lookup" ? (
+                  <WorkbenchPeriodSearchBar
+                    period={period}
+                    onPeriodChange={lookup.handlePeriodChange}
+                    query={lookup.searchQuery}
+                    onQueryChange={lookup.setSearchQuery}
+                    hint={lookup.lookupSearchHint}
+                    placeholder={
+                      storeScoped && scopeLabel
+                        ? `查询 ${scopeLabel} 订单：客户、电话、地址、设计师、派单人…`
+                        : "客户姓名、电话、地址、设计师、派单人、门店…"
+                    }
+                    resultCount={lookup.lookupSearchCount}
                   />
                 ) : (
                   <PeriodFilterBar
@@ -1122,9 +1155,15 @@ export default function EvaluationPage() {
                     period={period}
                     activeTab={reportTab}
                     onTabChange={setReportTab}
-                    onPeriodChange={setPeriod}
+                    onPeriodChange={handlePeriodChange}
                     storeScopeLabel={scopeLabel}
+                    onOpenOrderLookup={() => {
+                      setMainSection("operations");
+                      setOperationsSubView("lookup");
+                    }}
                   />
+                ) : operationsSubView === "lookup" ? (
+                  <ManagerLookupPanel {...lookup.lookupPanelProps} />
                 ) : (
                 <>
                   <EvaluationCockpit

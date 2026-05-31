@@ -19,7 +19,17 @@ export function formatStatusRevertedLabel(status: string): string {
   return `已撤回至「${status}」`;
 }
 
+import type { Order } from "./types";
+
 export interface OrderStatusTransitionPayload {
   orderId: string;
   resultLabel: string;
+  /** 变更前订单快照，用于卡片移出列表时的占位展示 */
+  orderSnapshot: Order;
+}
+
+/** 从「已更新为「已下单」」等文案解析目标状态 */
+export function parseStatusFromFeedbackLabel(label: string): string | null {
+  const match = label.match(/「([^」]+)」/);
+  return match?.[1] ?? null;
 }

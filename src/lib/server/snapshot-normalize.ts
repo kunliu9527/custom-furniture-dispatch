@@ -1,4 +1,5 @@
 import { INITIAL_DATA } from "@/lib/initial-data";
+import { buildFreshPersistedOrders, buildFreshPersistedSupplements } from "@/lib/fresh-app-data";
 import { normalizeSiteBranding } from "@/lib/site-branding";
 import {
   EMPTY_STAFF_CONFIG,
@@ -10,8 +11,8 @@ export function createInitialSnapshot(): AppSnapshot {
   return {
     version: 1,
     updatedAt: new Date().toISOString(),
-    orders: INITIAL_DATA.orders,
-    supplements: INITIAL_DATA.supplements,
+    orders: buildFreshPersistedOrders(),
+    supplements: buildFreshPersistedSupplements(),
     staffConfig: { ...EMPTY_STAFF_CONFIG },
   };
 }

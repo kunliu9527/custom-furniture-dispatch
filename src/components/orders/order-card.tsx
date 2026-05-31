@@ -13,11 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { InitiateContractInput } from "@/components/orders/contract-panel";
 import type { AdvanceOrderOptions } from "@/context/orders-context";
-import { formatWorkflowRemark } from "@/lib/order-remark";
+import {
+  displayCustomerNameColumn,
+  displayOrderNameColumn,
+  formatWorkflowRemark,
+} from "@/lib/order-remark";
 import { useAuth } from "@/context/auth-context";
 import {
   getEffectiveDesignerHomeStore,
-  isCrossStoreOrderForDesigner,
 } from "@/lib/designer-staff-store";
 import {
   formatDeposit,
@@ -45,7 +48,7 @@ import {
 } from "@/lib/stage-intervals";
 import { IssueTagsEditor } from "@/components/shared/issue-tags-editor";
 import { needsDesignerAcceptance } from "@/lib/designer-load";
-import type { DesignerName, Order, OrderIssueTag } from "@/lib/types";
+import type { DesignerName, Order, OrderIssueTag, OrderStatus } from "@/lib/types";
 import { showStatusToast } from "@/lib/status-toast";
 import {
   formatStatusRevertedLabel,
@@ -53,6 +56,7 @@ import {
   ORDER_STATUS_SUCCESS_BANNER_CLASS,
   ORDER_STATUS_SUCCESS_CARD_CLASS,
   ORDER_STATUS_SUCCESS_MS,
+  parseStatusFromFeedbackLabel,
   type OrderStatusTransitionPayload,
 } from "@/lib/order-status-feedback";
 import { FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
@@ -64,20 +68,20 @@ interface OrderCardProps {
   /** 深链定位高亮 */
   focused?: boolean;
   readOnly?: boolean;
-  onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => void;
+  onAdvanceStatus?: (id: string, options?: number | AdvanceOrderOptions) => boolean;
   onAddWorkflowRemark?: (id: string, text: string) => void;
-  onRevertStatus?: (id: string) => void;
+  onRevertStatus?: (id: string) => boolean;
   onMarkPendingRefund?: (
     id: string,
     remark?: string,
     issueTags?: OrderIssueTag[],
-  ) => void;
+  ) => boolean;
   onConfirmRefund?: (
     id: string,
     remark?: string,
     issueTags?: OrderIssueTag[],
-  ) => void;
-  onConfirmDesignerAccept?: (id: string) => void;
+  ) => boolean;
+  onConfirmDesignerAccept?: (id: string) => boolean;
   showAcceptAction?: boolean;
   showAfterSales?: boolean;
   canRevertOrder?: (order: Order) => boolean;
@@ -87,7 +91,7 @@ interface OrderCardProps {
     id: string,
     designer: DesignerName,
     forceOverCapacity?: boolean,
-  ) => void;
+  ) => boolean;
   showAssignDesigner?: boolean;
   assignDesignerDefault?: DesignerName;
   showCustomerFlow?: boolean;
@@ -106,6 +110,10 @@ interface OrderCardProps {
   supplementPane?: ReactNode;
   /** 状态变更后通知列表占位（卡片即将移出筛选时） */
   onStatusTransition?: (payload: OrderStatusTransitionPayload) => void;
+  /** 任意成功状态变更时触发（含 inlineStatusFeedback=false） */
+  onStatusUpdated?: (payload: OrderStatusTransitionPayload) => void;
+  /** 为 false 时仅 toast，不显示绿条占位、不禁用操作（如「全部」订单列表） */
+  inlineStatusFeedback?: boolean;
 }
 
 export function OrderCard({
@@ -137,9 +145,11 @@ export function OrderCard({
   canConfirmContractOffline = false,
   onInitiateAcceptance,
   onSkipElectronicAccept,
-  headingMode = "customer",
+  headingMode = "address",
   supplementPane,
   onStatusTransition,
+  onStatusUpdated,
+  inlineStatusFeedback = true,
 }: OrderCardProps) {
   const { designerHomeStoreIndex } = useAuth();
   const nextStatus = getNextStatus(order.status);
@@ -167,14 +177,6 @@ export function OrderCard({
     Boolean(onRevertStatus && canRevertStatus(order.status)) &&
     (canRevertOrder?.(order) ?? true);
   const previousStatus = getPreviousStatus(order.status);
-  const crossStore =
-    highlightCrossStore &&
-    order.designer != null &&
-    isCrossStoreOrderForDesigner(
-      order.dispatchStore,
-      order.designer,
-      designerHomeStoreIndex,
-    );
   const designerStore = order.designer
     ? getEffectiveDesignerHomeStore(order.designer, designerHomeStoreIndex)
     : null;
@@ -198,9 +200,19 @@ export function OrderCard({
   }, []);
 
   function applyStatusFeedback(resultLabel: string) {
+    const payload = {
+      orderId: order.id,
+      resultLabel,
+      orderSnapshot: order,
+    };
+    showStatusToast(`${displayOrderNameColumn(order)} ${resultLabel}`);
+    onStatusUpdated?.(payload);
+    if (!inlineStatusFeedback) return;
+
+    setShowRefundPanel(false);
+    setShowOrderAmountForm(false);
     setStatusFeedbackLabel(resultLabel);
-    showStatusToast(`${order.customerName} ${resultLabel}`);
-    onStatusTransition?.({ orderId: order.id, resultLabel });
+    onStatusTransition?.(payload);
     if (statusFeedbackTimerRef.current != null) {
       window.clearTimeout(statusFeedbackTimerRef.current);
     }
@@ -241,16 +253,24 @@ export function OrderCard({
     submitAdvance({});
   }
 
+  function runStatusAction(
+    resultLabel: string,
+    action: () => boolean | undefined,
+  ) {
+    if (action() !== true) return;
+    applyStatusFeedback(resultLabel);
+  }
+
   function submitAdvance(opts: AdvanceOrderOptions) {
     const remark = remarkDraft.trim();
     const advancingTo = nextStatus;
-    if (advancingTo) {
-      applyStatusFeedback(formatStatusUpdatedLabel(advancingTo));
-    }
-    onAdvanceStatus?.(order.id, {
+    if (!advancingTo || !onAdvanceStatus) return;
+    const ok = onAdvanceStatus(order.id, {
       ...opts,
       remark: remark || opts.remark,
     });
+    if (!ok) return;
+    applyStatusFeedback(formatStatusUpdatedLabel(advancingTo));
     setRemarkDraft("");
   }
 
@@ -291,12 +311,35 @@ export function OrderCard({
   const totalElapsed = formatTotalElapsedDisplay(order);
   const intervals = order.stageIntervalDays;
   const addressAsTitle = headingMode === "address";
+  const orderTitle = displayOrderNameColumn(order);
+  const customerNameLabel = displayCustomerNameColumn(order) || "—";
+  const isFeedbackActive = Boolean(statusFeedbackLabel);
+  const displayStatus: OrderStatus =
+    isFeedbackActive && statusFeedbackLabel
+      ? ((parseStatusFromFeedbackLabel(statusFeedbackLabel) ??
+          order.status) as OrderStatus)
+      : order.status;
+  const hasPrimaryActions =
+    Boolean(pendingAccept && onConfirmDesignerAccept) ||
+    (!showRefundPanel &&
+      (canAdvance ||
+        canRevert ||
+        canMarkRefund ||
+        canConfirmRefund ||
+        canDelete));
+  const hasPrimaryActionBar =
+    !isFeedbackActive &&
+    (hasPrimaryActions ||
+      readOnly ||
+      order.status === "已安装" ||
+      order.status === "已验收" ||
+      order.status === "已退单");
 
   return (
     <article
       id={focused ? `order-card-${order.id}` : undefined}
       className={`vi-order-card ${
-        statusFeedbackLabel
+        isFeedbackActive
           ? ORDER_STATUS_SUCCESS_CARD_CLASS
           : focused
             ? "vi-order-card-focused"
@@ -318,16 +361,16 @@ export function OrderCard({
               defaultClassName="text-base font-semibold tracking-tight text-zinc-900"
               {...anomalyOptions}
             >
-              {addressAsTitle ? order.address : order.customerName}
+              {orderTitle}
             </OrderAnomalyName>
-            <StatusBadge status={order.status} />
+            <StatusBadge status={displayStatus} />
             <OrderAnomalyBadges order={order} {...anomalyOptions} />
             <PreMeasureDepositBadge order={order} />
           </div>
           <p className="mt-1 text-xs text-zinc-400">
-            {addressAsTitle ? (
+            {customerNameLabel !== "—" ? (
               <>
-                {order.customerName} · 派单时间 · {formatOrderDate(order.createdAt)}
+                {customerNameLabel} · 派单时间 · {formatOrderDate(order.createdAt)}
               </>
             ) : (
               <>派单时间 · {formatOrderDate(order.createdAt)}</>
@@ -355,164 +398,162 @@ export function OrderCard({
         ) : null}
       </div>
 
-      <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="vi-dl-term">联系电话</dt>
-          <dd className="vi-dl-value">{order.phone}</dd>
-        </div>
-        <div>
-          <dt className="vi-dl-term">派单门店</dt>
-          <dd className="vi-dl-value">{order.dispatchStore}</dd>
-        </div>
-        <div className="sm:col-span-2">
-          {addressAsTitle ? (
+      {!isFeedbackActive && hasPrimaryActionBar ? (
+        <div className="vi-order-action-bar mt-3 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+          {pendingAccept && onConfirmDesignerAccept ? (
             <>
-              <dt className="vi-dl-term">客户姓名</dt>
-              <dd className="vi-dl-value">{order.customerName}</dd>
-            </>
-          ) : (
-            <>
-              <dt className="vi-dl-term">小区地址</dt>
-              <OrderAnomalyName
-                order={order}
-                as="dd"
-                defaultClassName="vi-dl-value"
-                {...anomalyOptions}
+              <span className="w-full text-xs text-amber-800 sm:w-auto">
+                请先确认接单，再推进量尺等后续流程。
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  runStatusAction("已确认接单", () =>
+                    onConfirmDesignerAccept(order.id),
+                  );
+                }}
               >
-                {order.address}
-              </OrderAnomalyName>
-              {crossStore ? (
-                <p className="mt-0.5 text-xs text-red-500">
-                  派单门店「{order.dispatchStore}」与设计师门店「{designerStore}」不一致
-                </p>
+                确认接单
+              </Button>
+            </>
+          ) : showRefundPanel && canMarkRefund ? null : canAdvance ||
+            canRevert ||
+            canMarkRefund ||
+            canConfirmRefund ||
+            canDelete ? (
+            <>
+              {canAdvance ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={handleAdvanceClick}
+                >
+                  更新为「{nextStatus}」
+                </Button>
+              ) : null}
+              {canRevert && previousStatus ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    runStatusAction(formatStatusRevertedLabel(previousStatus), () =>
+                      onRevertStatus?.(order.id),
+                    );
+                  }}
+                >
+                  撤回更新
+                </Button>
+              ) : null}
+              {canMarkRefund ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => setShowRefundPanel(true)}
+                >
+                  标记待退单
+                </Button>
+              ) : null}
+              {canConfirmRefund ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-red-200 text-red-700 hover:bg-red-50 sm:w-auto"
+                  onClick={() => {
+                    runStatusAction(formatStatusUpdatedLabel("已退单"), () =>
+                      onConfirmRefund?.(order.id),
+                    );
+                  }}
+                >
+                  确认已退单
+                </Button>
+              ) : null}
+              {canDelete && onDeleteOrder ? (
+                <DeleteOrderButton
+                  orderId={order.id}
+                  customerLabel={order.customerName}
+                  onDelete={onDeleteOrder}
+                />
               ) : null}
             </>
-          )}
+          ) : readOnly ? (
+            <p className="text-xs text-slate-400">仅查看，无操作权限</p>
+          ) : order.status === "已安装" ? (
+            <p className="text-sm text-slate-500">订单已完成安装</p>
+          ) : order.status === "已验收" ? (
+            <p className="text-sm text-slate-500">订单已验收，流程已完结</p>
+          ) : order.status === "已退单" ? (
+            <p className="text-sm text-red-600">订单已退单，流程已终止</p>
+          ) : null}
         </div>
-        <div>
-          <dt className="vi-dl-term">派单人</dt>
-          <dd className="vi-dl-value">
-            {order.dispatcherName || "—"}
-          </dd>
+      ) : null}
+
+      <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-2.5 text-sm">
+        <div className="min-w-0">
+          <dt className="vi-dl-term">客户姓名</dt>
+          <dd className="vi-dl-value">{customerNameLabel}</dd>
         </div>
-        <div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">联系电话</dt>
+          <dd className="vi-dl-value break-all">{order.phone || "—"}</dd>
+        </div>
+        <div className="min-w-0">
           <dt className="vi-dl-term">定制空间</dt>
           <dd className="vi-dl-value">{formatSpaces(order.spaces)}</dd>
         </div>
-        {supplementPane ? (
-          <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2 sm:items-start">
-            <div className="grid gap-2">
-              <div>
-                <dt className="vi-dl-term">预算</dt>
-                <dd className="vi-dl-value">
-                  {formatBudget(order.budget)}
-                </dd>
-              </div>
-              <div>
-                {onUpdateDeposit ? (
-                  <DepositEditor
-                    order={order}
-                    onSave={onUpdateDeposit}
-                    readOnly={readOnly}
-                    compact
-                  />
-                ) : (
-                  <>
-                    <dt className="vi-dl-term">定金</dt>
-                    <dd
-                      className={`font-medium ${order.deposit <= 0 ? "text-amber-600" : "text-slate-800"}`}
-                    >
-                      {formatDeposit(order.deposit)}
-                    </dd>
-                  </>
-                )}
-              </div>
-              {hasOrderAmount ? (
-                <div>
-                  <dt className="vi-dl-term">下单金额</dt>
-                  <dd className="font-semibold text-indigo-700">
-                    {formatOrderAmount(order.orderAmount)}
-                  </dd>
-                </div>
-              ) : null}
-              {intervals?.toSigned != null ? (
-                <div>
-                  <dt className="vi-dl-term">签约间隔</dt>
-                  <dd className="vi-dl-value text-zinc-600">
-                    {formatIntervalDays(intervals.toSigned)}
-                  </dd>
-                </div>
-              ) : null}
-              {intervals?.toOrdered != null ? (
-                <div>
-                  <dt className="vi-dl-term">下单间隔</dt>
-                  <dd className="vi-dl-value text-zinc-600">
-                    {formatIntervalDays(intervals.toOrdered)}
-                  </dd>
-                </div>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <div className="self-start rounded-lg border border-indigo-100 bg-indigo-50/50 p-2.5">
-                {supplementPane}
-              </div>
-              {order.status === "已下单" || order.status === "已安装" ? (
-                <div>
-                  <dt className="vi-dl-term">耗时</dt>
-                  <dd className="vi-dl-value">
-                    {totalElapsed ?? ""}
-                  </dd>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div>
-              <dt className="vi-dl-term">预算</dt>
-              <dd className="vi-dl-value">
-                {formatBudget(order.budget)}
+        <div className="min-w-0">
+          <dt className="vi-dl-term">小区地址</dt>
+          <dd className="vi-dl-value break-words">
+            {order.address?.trim() || "—"}
+          </dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">预算</dt>
+          <dd className="vi-dl-value">{formatBudget(order.budget)}</dd>
+        </div>
+        <div className="min-w-0">
+          {onUpdateDeposit ? (
+            <DepositEditor
+              order={order}
+              onSave={onUpdateDeposit}
+              readOnly={readOnly}
+              compact
+            />
+          ) : (
+            <>
+              <dt className="vi-dl-term">定金</dt>
+              <dd
+                className={`font-medium ${order.deposit <= 0 ? "text-amber-600" : "text-slate-800"}`}
+              >
+                {formatDeposit(order.deposit)}
               </dd>
-            </div>
-            <div className="sm:col-span-2">
-              {onUpdateDeposit ? (
-                <DepositEditor
-                  order={order}
-                  onSave={onUpdateDeposit}
-                  readOnly={readOnly}
-                  compact
-                />
-              ) : (
-                <>
-                  <dt className="vi-dl-term">定金</dt>
-                  <dd
-                    className={`font-medium ${order.deposit <= 0 ? "text-amber-600" : "text-slate-800"}`}
-                  >
-                    {formatDeposit(order.deposit)}
-                  </dd>
-                </>
-              )}
-            </div>
-            {hasOrderAmount ? (
-              <div>
-                <dt className="vi-dl-term">下单金额</dt>
-                <dd className="font-semibold text-indigo-700">
-                  {formatOrderAmount(order.orderAmount)}
-                </dd>
-              </div>
-            ) : null}
-            {order.status === "已下单" || order.status === "已安装" ? (
-              <div>
-                <dt className="vi-dl-term">耗时</dt>
-                <dd className="vi-dl-value">
-                  {totalElapsed ?? ""}
-                </dd>
-              </div>
-            ) : null}
-          </>
-        )}
+            </>
+          )}
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">派单门店</dt>
+          <dd className="vi-dl-value">{order.dispatchStore}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">派单人</dt>
+          <dd className="vi-dl-value">{order.dispatcherName || "—"}</dd>
+        </div>
+        {hasOrderAmount ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">下单金额</dt>
+            <dd className="font-semibold text-indigo-700">
+              {formatOrderAmount(order.orderAmount)}
+            </dd>
+          </div>
+        ) : null}
         {intervals?.toMeasured != null ? (
-          <div>
+          <div className="min-w-0">
             <dt className="vi-dl-term">量尺间隔</dt>
             <dd className="vi-dl-value text-zinc-600">
               {formatIntervalDays(intervals.toMeasured)}
@@ -520,31 +561,37 @@ export function OrderCard({
           </div>
         ) : null}
         {intervals?.toDrawn != null ? (
-          <div>
+          <div className="min-w-0">
             <dt className="vi-dl-term">出图间隔</dt>
             <dd className="vi-dl-value text-zinc-600">
               {formatIntervalDays(intervals.toDrawn)}
             </dd>
           </div>
         ) : null}
-        {!supplementPane && intervals?.toSigned != null ? (
-          <div>
+        {intervals?.toSigned != null ? (
+          <div className="min-w-0">
             <dt className="vi-dl-term">签约间隔</dt>
             <dd className="vi-dl-value text-zinc-600">
               {formatIntervalDays(intervals.toSigned)}
             </dd>
           </div>
         ) : null}
-        {!supplementPane && intervals?.toOrdered != null ? (
-          <div>
+        {intervals?.toOrdered != null ? (
+          <div className="min-w-0">
             <dt className="vi-dl-term">下单间隔</dt>
             <dd className="vi-dl-value text-zinc-600">
               {formatIntervalDays(intervals.toOrdered)}
             </dd>
           </div>
         ) : null}
+        {order.status === "已下单" || order.status === "已安装" ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">耗时</dt>
+            <dd className="vi-dl-value">{totalElapsed ?? "—"}</dd>
+          </div>
+        ) : null}
         {!showDesigner && hasBeenTransferred(order) ? (
-          <div className="sm:col-span-2">
+          <div className="col-span-3 min-w-0 border-t border-slate-100 pt-2">
             <dt className="vi-dl-term">指派信息</dt>
             <dd>
               <AssignmentInfo order={order} />
@@ -552,7 +599,7 @@ export function OrderCard({
           </div>
         ) : null}
         {showAfterSales && hasAfterSales(order) ? (
-          <div className="sm:col-span-2 border-t border-slate-100 pt-2">
+          <div className="col-span-3 min-w-0 border-t border-slate-100 pt-2">
             <dt className="vi-dl-term">售后金</dt>
             <dd className="font-semibold text-rose-700">
               {formatAfterSalesAmount(order.afterSalesAmount)}
@@ -564,6 +611,12 @@ export function OrderCard({
         ) : null}
       </dl>
 
+      {supplementPane ? (
+        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-2.5">
+          {supplementPane}
+        </div>
+      ) : null}
+
       {remarkSummary ? (
         <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5">
           <p className="vi-label-caps">流程备注（按阶段）</p>
@@ -573,7 +626,7 @@ export function OrderCard({
         </div>
       ) : null}
 
-      {canEditRemark ? (
+      {canEditRemark && !isFeedbackActive ? (
         <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
           <Textarea
             label={`添加备注（当前：${order.status}）`}
@@ -601,18 +654,19 @@ export function OrderCard({
         </div>
       ) : null}
 
-      {order.status === "未派单" && showAssignDesigner && onAssignDesigner ? (
+      {!isFeedbackActive && order.status === "未派单" && showAssignDesigner && onAssignDesigner ? (
         <AssignDesignerPanel
           order={order}
           defaultDesigner={assignDesignerDefault}
           onAssign={(orderId, designer, forceOverCapacity) => {
-            applyStatusFeedback(formatStatusUpdatedLabel("待量尺"));
-            onAssignDesigner(orderId, designer, forceOverCapacity);
+            runStatusAction(formatStatusUpdatedLabel("待量尺"), () =>
+              onAssignDesigner(orderId, designer, forceOverCapacity),
+            );
           }}
         />
       ) : null}
 
-      {showCustomerFlow && onInitiateContract && order.status === "待签约" ? (
+      {!isFeedbackActive && showCustomerFlow && onInitiateContract && order.status === "待签约" ? (
         <ContractPanel
           order={order}
           onInitiate={(orderId, input) => {
@@ -631,7 +685,7 @@ export function OrderCard({
         />
       ) : null}
 
-      {showCustomerFlow && onInitiateAcceptance ? (
+      {!isFeedbackActive && showCustomerFlow && onInitiateAcceptance ? (
         <AcceptancePanel
           order={order}
           onInitiateAcceptance={(orderId) => {
@@ -650,7 +704,7 @@ export function OrderCard({
         />
       ) : null}
 
-      {showSignedOrderForm || showOrderAmountForm ? (
+      {!isFeedbackActive && (showSignedOrderForm || showOrderAmountForm) ? (
         <form
           onSubmit={handleOrderAmountSubmit}
           className="mt-4 space-y-3 border-t border-slate-100 pt-4"
@@ -692,22 +746,7 @@ export function OrderCard({
             ) : null}
           </div>
         </form>
-      ) : pendingAccept && onConfirmDesignerAccept ? (
-        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-          <p className="text-xs text-amber-800">
-            请先确认接单，再推进量尺等后续流程。
-          </p>
-          <Button
-            type="button"
-            onClick={() => {
-              applyStatusFeedback("已确认接单");
-              onConfirmDesignerAccept(order.id);
-            }}
-          >
-            确认接单
-          </Button>
-        </div>
-      ) : showRefundPanel && canMarkRefund ? (
+      ) : !isFeedbackActive && showRefundPanel && canMarkRefund ? (
         <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
           <p className="vi-label-caps">退单问题标签（可选）</p>
           <IssueTagsEditor value={refundTags} onChange={setRefundTags} />
@@ -716,12 +755,13 @@ export function OrderCard({
               type="button"
               variant="secondary"
               onClick={() => {
-                applyStatusFeedback(formatStatusUpdatedLabel("待退单"));
-                onMarkPendingRefund?.(
+                const ok = onMarkPendingRefund?.(
                   order.id,
                   remarkDraft.trim() || undefined,
                   refundTags,
                 );
+                if (ok !== true) return;
+                applyStatusFeedback(formatStatusUpdatedLabel("待退单"));
                 setShowRefundPanel(false);
                 setRefundTags([]);
                 setRemarkDraft("");
@@ -738,74 +778,6 @@ export function OrderCard({
             </Button>
           </div>
         </div>
-      ) : canAdvance || canRevert || canMarkRefund || canConfirmRefund || canDelete ? (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-          {canAdvance ? (
-            <Button
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={handleAdvanceClick}
-            >
-              更新为「{nextStatus}」
-            </Button>
-          ) : null}
-          {canRevert && previousStatus ? (
-            <Button
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={() => {
-                applyStatusFeedback(formatStatusRevertedLabel(previousStatus));
-                onRevertStatus?.(order.id);
-              }}
-            >
-              撤回更新
-            </Button>
-          ) : null}
-          {canMarkRefund ? (
-            <Button
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={() => setShowRefundPanel(true)}
-            >
-              标记待退单
-            </Button>
-          ) : null}
-          {canConfirmRefund ? (
-            <Button
-              variant="outline"
-              className="w-full border-red-200 text-red-700 hover:bg-red-50 sm:w-auto"
-              onClick={() => {
-                applyStatusFeedback(formatStatusUpdatedLabel("已退单"));
-                onConfirmRefund?.(order.id);
-              }}
-            >
-              确认已退单
-            </Button>
-          ) : null}
-          {canDelete && onDeleteOrder ? (
-            <DeleteOrderButton
-              orderId={order.id}
-              customerLabel={order.customerName}
-              onDelete={onDeleteOrder}
-            />
-          ) : null}
-        </div>
-      ) : readOnly ? (
-        <p className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-400">
-          仅查看，无操作权限
-        </p>
-      ) : order.status === "已安装" ? (
-        <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
-          订单已完成安装
-        </p>
-      ) : order.status === "已验收" ? (
-        <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-500">
-          订单已验收，流程已完结
-        </p>
-      ) : order.status === "已退单" ? (
-        <p className="mt-4 border-t border-slate-100 pt-4 text-sm text-red-600">
-          订单已退单，流程已终止
-        </p>
       ) : null}
     </article>
   );

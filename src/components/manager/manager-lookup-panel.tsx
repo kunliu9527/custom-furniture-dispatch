@@ -30,7 +30,7 @@ import type {
   SupplementOrder,
 } from "@/lib/types";
 
-interface ManagerLookupPanelProps {
+export interface ManagerLookupPanelProps {
   user: SessionUser | null;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;

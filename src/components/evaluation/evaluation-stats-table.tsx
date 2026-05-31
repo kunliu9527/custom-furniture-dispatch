@@ -2,6 +2,7 @@ import { ORDER_STATUSES } from "@/lib/constants";
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
 import {
   formatEvaluationMetric,
@@ -14,8 +15,7 @@ interface EvaluationStatsTableProps {
   emptyMessage?: string;
 }
 
-const thClass =
-  "px-3 py-2 text-xs font-medium uppercase tracking-wide text-slate-500 whitespace-nowrap";
+const thClass = TABLE_TH_CLASS;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
 export function EvaluationStatsTable({
@@ -44,9 +44,9 @@ export function EvaluationStatsTable({
 
   return (
     <EvaluationTableScroll>
-      <table className="w-full min-w-[840px] border-collapse text-left">
+      <table className="vi-data-table w-full min-w-[840px] border-collapse text-left">
         <thead>
-          <tr className={`border-b border-slate-100 ${TABLE_HEAD_STICKY_CLASS}`}>
+          <tr className={`border-b-2 border-[var(--vi-border-strong)] bg-slate-50/80 ${TABLE_HEAD_STICKY_CLASS}`}>
             <th
               className={`${thClass} min-w-[120px] sticky left-0 z-20 bg-slate-50/95`}
             >

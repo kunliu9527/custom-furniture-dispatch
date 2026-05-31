@@ -23,7 +23,6 @@ import {
   resolveManagedStoreForLookup,
 } from "@/lib/permissions";
 import {
-  getSessionBadgeLabel,
   getVisibleAdminViewModes,
 } from "@/lib/nav-access";
 import {
@@ -136,7 +135,6 @@ export default function AdminPage() {
     <RouteGuard canAccess={canAccessAdminPage(user)}>
       <AppShell
         title="新客户开发"
-        badge={getSessionBadgeLabel(user)}
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">

@@ -23,7 +23,7 @@ export function EvaluationTableScroll({
     : "overflow-x-auto";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+    <div className="vi-panel overflow-hidden">
       <div className={scrollClass}>{children}</div>
       {footer}
     </div>
@@ -32,3 +32,7 @@ export function EvaluationTableScroll({
 
 export const TABLE_HEAD_STICKY_CLASS =
   "sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm";
+
+/** 各板块明细表表头单元格 */
+export const TABLE_TH_CLASS =
+  "px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-slate-600 whitespace-nowrap";

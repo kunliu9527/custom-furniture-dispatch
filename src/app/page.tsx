@@ -1,4 +1,5 @@
 import { AuthorCredit } from "@/components/home/author-credit";
+import { SyncFooterStatus } from "@/components/sync/sync-footer-status";
 import { HomeBoardCards } from "@/components/home/home-board-cards";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeHero } from "@/components/home/home-hero";
@@ -17,6 +18,7 @@ export default function Home() {
         <HomeHero />
         <HomeBoardCards />
       </div>
+      <SyncFooterStatus />
       <AuthorCredit />
     </div>
   );

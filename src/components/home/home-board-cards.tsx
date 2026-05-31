@@ -1,39 +1,9 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
+import { BOARD_META } from "@/lib/board-meta";
 import { getVisibleNavLinks } from "@/lib/nav-access";
 import Link from "next/link";
-
-const boardMeta: Record<
-  string,
-  { title: string; description: string; accent: string }
-> = {
-  "/admin": {
-    title: "新客户开发",
-    description: "新建派单、新建客户与未派单指派",
-    accent: "from-indigo-500 to-violet-600",
-  },
-  "/designer": {
-    title: "设计师工作台",
-    description: "跟单、备注与状态更新",
-    accent: "from-emerald-500 to-teal-600",
-  },
-  "/manager": {
-    title: "项目进程管理",
-    description: "门店汇总、设计师业绩与节点预警",
-    accent: "from-amber-500 to-orange-600",
-  },
-  "/delivery": {
-    title: "验收与交付",
-    description: "已下单、安装与客户扫码验收评价",
-    accent: "from-cyan-500 to-sky-600",
-  },
-  "/evaluation": {
-    title: "综合系统看板",
-    description: "派单、设计师与门店排名",
-    accent: "from-rose-500 to-pink-600",
-  },
-};
 
 export function HomeBoardCards() {
   const { user, isHydrated } = useAuth();
@@ -41,25 +11,25 @@ export function HomeBoardCards() {
   const links = loggedIn
     ? getVisibleNavLinks(user)
     : [
-        { href: "/admin", label: "新客户开发" },
-        { href: "/designer", label: "设计师工作台" },
-        { href: "/manager", label: "项目进程管理" },
-        { href: "/delivery", label: "验收与交付" },
-        { href: "/evaluation", label: "综合系统看板" },
+        { href: "/admin" as const, label: "新客户开发" },
+        { href: "/designer" as const, label: "设计师工作台" },
+        { href: "/manager" as const, label: "项目进程管理" },
+        { href: "/delivery" as const, label: "验收与交付" },
+        { href: "/evaluation" as const, label: "综合系统看板" },
       ];
 
   return (
     <div className="mt-11 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {links.map((item) => {
-        const meta = boardMeta[item.href];
+        const meta = BOARD_META[item.href];
         if (!meta) return null;
 
         const cardClass =
-          "group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-sm transition";
+          "vi-card vi-card-hover group relative overflow-hidden p-6";
 
         const accentBar = (
           <div
-            className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.accent}`}
+            className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.accentGradient}`}
             aria-hidden
           />
         );

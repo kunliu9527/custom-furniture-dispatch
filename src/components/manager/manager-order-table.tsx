@@ -36,7 +36,7 @@ import type {
 } from "@/lib/types";
 
 const thClass =
-  "px-2.5 py-2 text-xs font-medium uppercase tracking-wide text-slate-500";
+  "px-2.5 py-2 text-xs font-bold uppercase tracking-wide text-slate-600";
 const tdClass = "px-2.5 py-2 align-top text-slate-700";
 
 interface ManagerOrderTableProps {
@@ -92,7 +92,7 @@ export function ManagerOrderTable({
     <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table
-          className={`w-full border-collapse text-left text-sm ${detailMode ? "min-w-[1280px]" : "min-w-[960px]"}`}
+          className={`vi-data-table w-full border-collapse text-left text-sm ${detailMode ? "min-w-[1280px]" : "min-w-[960px]"}`}
         >
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80">
@@ -111,7 +111,7 @@ export function ManagerOrderTable({
               <th className={`${thClass} w-[72px]`}>预算</th>
               <th className={`${thClass} w-[76px]`}>主单下单</th>
               <th className={`${thClass} min-w-[80px]`}>增补单</th>
-              <th className={`${thClass} w-[84px]`}>合计总派单</th>
+              <th className={`${thClass} w-[84px]`}>有效总派单</th>
               <th className={`${thClass} w-[76px]`}>售后金</th>
               {detailMode ? (
                 <th className={`${thClass} w-[68px]`}>定制空间</th>

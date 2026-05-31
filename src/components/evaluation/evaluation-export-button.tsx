@@ -13,12 +13,14 @@ interface EvaluationExportButtonProps {
   mode: EvaluationViewMode;
   data: EvaluationExportData;
   periodLabel?: string;
+  className?: string;
 }
 
 export function EvaluationExportButton({
   mode,
   data,
   periodLabel,
+  className = "",
 }: EvaluationExportButtonProps) {
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -30,7 +32,7 @@ export function EvaluationExportButton({
     <button
       type="button"
       onClick={handleClick}
-      className="shrink-0 rounded-md border border-slate-200/60 bg-white/60 px-2 py-0.5 text-[11px] font-normal text-slate-400 transition hover:border-slate-300 hover:bg-white hover:text-slate-600"
+      className={`shrink-0 rounded border border-[var(--vi-border-strong)] bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 shadow-[var(--vi-shadow-xs)] transition hover:border-indigo-200 hover:text-indigo-700 ${className}`}
     >
       导出
     </button>

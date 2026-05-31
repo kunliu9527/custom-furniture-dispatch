@@ -117,6 +117,21 @@ export function sortOrdersByFlowStatus<
   });
 }
 
+/** 「全部」列表：状态更新后短暂固定卡片位置，避免按流程重排造成跳位 */
+export const ORDER_POSITION_PIN_MS = 2600;
+
+export function applyOrderPositionPin<T extends { id: string }>(
+  orders: T[],
+  pin: { orderId: string; index: number } | null,
+): T[] {
+  if (!pin) return orders;
+  const pinned = orders.find((order) => order.id === pin.orderId);
+  if (!pinned) return orders;
+  const rest = orders.filter((order) => order.id !== pin.orderId);
+  const insertAt = Math.min(pin.index, rest.length);
+  return [...rest.slice(0, insertAt), pinned, ...rest.slice(insertAt)];
+}
+
 /** 进行中订单：派单人/设计师字段与登录姓名一致 */
 export function orderMatchesLoginAccount(
   order: Order,

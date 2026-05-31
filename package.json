@@ -8,8 +8,10 @@
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
     "dep": "node scripts/deploy.mjs",
+    "sync:pull": "node scripts/pull-cloud-snapshot.mjs",
     "digest:cron": "node scripts/weekly-digest-cron.mjs",
-    "digest:preview": "node scripts/weekly-digest-cron.mjs --preview"
+    "digest:preview": "node scripts/weekly-digest-cron.mjs --preview",
+    "reinit": "npx tsx scripts/reinit-local.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

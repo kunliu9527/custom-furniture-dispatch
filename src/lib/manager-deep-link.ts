@@ -25,12 +25,9 @@ export function managerAnomalyTodosHref(options?: { orderId?: string }): string 
   return `/manager?${params.toString()}`;
 }
 
-/** @deprecated 使用 managerAnomalyTodosHref */
-export function managerReportHref(
-  _tab?: "pending" | "alerts",
-  options?: { orderId?: string },
-): string {
-  return managerAnomalyTodosHref(options);
+/** 项目进程管理 · 订单查询 */
+export function managerOrderLookupHref(): string {
+  return "/manager?section=lookup";
 }
 
 export function parseManagerFocus(raw: string | null): ManagerFocus | null {
