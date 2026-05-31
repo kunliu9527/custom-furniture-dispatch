@@ -11,7 +11,8 @@
     "sync:pull": "node scripts/pull-cloud-snapshot.mjs",
     "digest:cron": "node scripts/weekly-digest-cron.mjs",
     "digest:preview": "node scripts/weekly-digest-cron.mjs --preview",
-    "reinit": "npx tsx scripts/reinit-local.ts"
+    "reinit": "npx tsx scripts/reinit-local.ts",
+    "bulk:skip-seed-accept": "npx tsx scripts/bulk-skip-acceptance-seed-orders.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
