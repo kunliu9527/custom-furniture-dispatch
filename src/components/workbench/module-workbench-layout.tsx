@@ -6,7 +6,6 @@ import {
   EVAL_WORKBENCH_CONTENT_OFFSET,
   EVAL_WORKBENCH_NAV_CARD,
   EVAL_WORKBENCH_PANE_SCROLL,
-  EVAL_WORKBENCH_SHELL_H,
   EVAL_WORKBENCH_SIDEBAR_WIDTH,
 } from "@/components/evaluation/sticky-section";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
@@ -95,11 +94,11 @@ export function ModuleWorkbenchLayout({
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {mobileTabs ? <div className="mb-4 shrink-0 lg:hidden">{mobileTabs}</div> : null}
 
       <div
-        className={`hidden min-h-0 flex-1 lg:flex ${EVAL_WORKBENCH_SHELL_H} ${EVAL_WORKBENCH_COL_GAP}`}
+        className={`hidden min-h-0 flex-1 lg:flex ${EVAL_WORKBENCH_COL_GAP}`}
       >
         <aside
           className={`flex min-h-0 flex-col overflow-hidden ${EVAL_WORKBENCH_SIDEBAR_WIDTH}`}
@@ -121,9 +120,9 @@ export function ModuleWorkbenchLayout({
         </div>
       </div>
 
-      <div className="space-y-4 lg:hidden">
+      <div className={`${EVAL_WORKBENCH_PANE_SCROLL} space-y-4 pb-8 lg:hidden`}>
         {periodBlock}
-        <div className="space-y-4 pb-8">{children}</div>
+        {children}
       </div>
     </div>
   );

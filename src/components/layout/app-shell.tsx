@@ -19,8 +19,8 @@ export function AppShell({
   mainClassName = "mx-auto max-w-6xl px-4 py-8 sm:px-6",
 }: AppShellProps) {
   return (
-    <div className="vi-app-bg min-h-full">
-      <header className="vi-glass-header sticky top-0 z-50">
+    <div className="vi-app-bg flex h-dvh flex-col overflow-hidden">
+      <header className="vi-glass-header sticky top-0 z-50 shrink-0">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3.5">
             <Link
@@ -48,7 +48,9 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className={mainClassName}>{children}</main>
+      <main className={`min-h-0 flex-1 overflow-hidden ${mainClassName}`}>
+        {children}
+      </main>
       <SyncFooterStatus />
     </div>
   );
