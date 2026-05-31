@@ -6,7 +6,12 @@
  *   npx tsx scripts/bulk-skip-acceptance-seed-orders.ts --fetch http://121.199.20.177 --dry-run
  *   npx tsx scripts/bulk-skip-acceptance-seed-orders.ts --fetch http://121.199.20.177 --apply --push http://121.199.20.177
  *
+ * 阿里云 ECS：真实数据在 SYNC_DATA_DIR（通常 /var/lib/custom-furniture-dispatch/snapshot.json），
+ * 不是项目内 data/snapshot.json。请用 --file 指向 .env.local 中的目录，或：
+ *   bash scripts/bulk-skip-acceptance-on-server.sh
+ *
  * 环境变量：SYNC_API_KEY（--push 时若服务端配置了密钥则必填）
+ *           SYNC_DATA_DIR（未指定 --file 时默认 snapshot 路径）
  */
 import { readFile, writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -15,8 +20,27 @@ import { isSeedOrderId } from "../src/lib/seed-order-id";
 import type { AppSnapshot } from "../src/lib/server/snapshot-types";
 import type { Order } from "../src/lib/types";
 
+function loadEnvLocalSyncDataDir(): string | undefined {
+  try {
+    const raw = require("fs").readFileSync(
+      path.join(process.cwd(), ".env.local"),
+      "utf8",
+    ) as string;
+    for (const line of raw.split("\n")) {
+      const m = line.match(/^\s*SYNC_DATA_DIR=(.+)\s*$/);
+      if (!m) continue;
+      return m[1].trim().replace(/^["']|["']$/g, "");
+    }
+  } catch {
+    /* no .env.local */
+  }
+  return undefined;
+}
+
 const DATA_DIR =
-  process.env.SYNC_DATA_DIR?.trim() || path.join(process.cwd(), "data");
+  process.env.SYNC_DATA_DIR?.trim() ||
+  loadEnvLocalSyncDataDir() ||
+  path.join(process.cwd(), "data");
 const DEFAULT_SNAPSHOT = path.join(DATA_DIR, "snapshot.json");
 
 function parseArgs(argv: string[]) {
@@ -136,7 +160,19 @@ async function main() {
       : "模式：apply（写入 snapshot" + (pushUrl ? " 并推送云端" : "") + "）",
   );
   if (fetchUrl) console.log("数据源：", fetchUrl);
-  else console.log("数据源：", filePath);
+  else {
+    console.log("数据源：", filePath);
+    if (
+      filePath.includes(`${path.sep}data${path.sep}snapshot.json`) &&
+      !process.env.SYNC_DATA_DIR &&
+      loadEnvLocalSyncDataDir()
+    ) {
+      console.warn(
+        "警告：检测到 .env.local 的 SYNC_DATA_DIR 与默认 data/ 不同，线上请改用：",
+      );
+      console.warn(`  --file ${path.join(loadEnvLocalSyncDataDir()!, "snapshot.json")}`);
+    }
+  }
 
   const snapshot = await loadSnapshot(fetchUrl, filePath);
   const orders = (snapshot.orders ?? []) as Order[];
