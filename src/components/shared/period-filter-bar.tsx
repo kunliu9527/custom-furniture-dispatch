@@ -106,12 +106,8 @@ export function PeriodFilterBar({
 
   if (inline) {
     return (
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <span className="text-xs font-semibold text-slate-600">统计周期</span>
-        <span className="hidden text-[11px] text-slate-500 sm:inline">
-          {label}
-        </span>
-        <div className="flex flex-wrap items-center gap-1">{presetButtons}</div>
+      <div className="flex flex-wrap items-center justify-end gap-1">
+        {presetButtons}
       </div>
     );
   }
