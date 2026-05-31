@@ -46,9 +46,9 @@ export function EvaluationStatsTable({
     <EvaluationTableScroll>
       <table className="vi-data-table w-full min-w-[840px] border-collapse text-left">
         <thead>
-          <tr className={`border-b-2 border-[var(--vi-border-strong)] bg-slate-50/80 ${TABLE_HEAD_STICKY_CLASS}`}>
+          <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
             <th
-              className={`${thClass} min-w-[120px] sticky left-0 z-20 bg-slate-50/95`}
+              className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell`}
             >
                 {nameColumnLabel}
               </th>

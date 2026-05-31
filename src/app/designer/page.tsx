@@ -702,7 +702,7 @@ export default function DesignerPage() {
       <AppShell
 
         title="设计师工作台"
-
+        board="/designer"
         mainClassName={EVAL_PAGE_MAIN_CLASS}
 
       >

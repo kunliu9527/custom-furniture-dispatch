@@ -14,7 +14,6 @@ import { WeeklyDigestPanel } from "@/components/manager/weekly-digest-panel";
 import { buildPendingConfirmSnapshot } from "@/lib/pending-confirm";
 import type { PeriodSelection } from "@/lib/period-filter";
 import {
-  getReportAccentClass,
   getReportTabs,
   type ReportScope,
   type ReportTab,
@@ -56,7 +55,6 @@ export function ReportHub({
 }: ReportHubProps) {
   const { user, staffRecords } = useAuth();
   const tabs = getReportTabs(scope, { storeScopeLabel });
-  const accent = getReportAccentClass(scope);
 
   const personScope = useMemo(
     () => resolveReportPersonScope(user, orders, staffRecords),
@@ -78,7 +76,7 @@ export function ReportHub({
   };
 
   return (
-    <section className="vi-panel overflow-hidden">
+    <section className="vi-panel">
       <div className="border-b border-[var(--vi-border-strong)] bg-slate-50/50 px-4 pt-3 pb-3 sm:px-5">
         <div className="vi-segmented" role="tablist">
           {tabs.map((tab) => (
@@ -96,11 +94,7 @@ export function ReportHub({
                 )
               }
               className={`vi-segmented-item ${
-                activeTab === tab.id
-                  ? `vi-segmented-item-active ${
-                      scope === "global" ? "vi-segmented-item-active-rose" : ""
-                    } ${accent.activeTab}`
-                  : accent.inactiveTab
+                activeTab === tab.id ? "vi-segmented-item-active" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               {tab.label}

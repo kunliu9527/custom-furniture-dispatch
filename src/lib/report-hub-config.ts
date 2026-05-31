@@ -45,19 +45,3 @@ export function getReportTabs(
     { id: "alerts", label: "需跟进" },
   ];
 }
-
-export function getReportAccentClass(scope: ReportScope): {
-  activeTab: string;
-  inactiveTab: string;
-} {
-  if (scope === "global") {
-    return {
-      activeTab: "text-rose-900",
-      inactiveTab: "text-slate-600 hover:text-slate-900",
-    };
-  }
-  return {
-    activeTab: "text-indigo-900",
-    inactiveTab: "text-slate-600 hover:text-slate-900",
-  };
-}

@@ -21,11 +21,11 @@ export function DispatcherPerformanceTable({
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table className="vi-data-table min-w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs text-slate-500">
+        <thead>
           <TableAlgorithmCaption>
             按贡献分降序排名 · {DISPATCHER_CONTRIBUTION_FORMULA}
           </TableAlgorithmCaption>
-          <tr>
+          <tr className="vi-table-head-row">
             <th className="px-3 py-2.5">名次</th>
             <th className="px-3 py-2.5">派单人</th>
             <th className="px-3 py-2.5" title={DISPATCHER_CONTRIBUTION_FORMULA}>

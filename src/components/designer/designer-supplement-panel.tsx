@@ -1,5 +1,6 @@
 "use client";
 
+import { EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SupplementInlineForm } from "@/components/orders/supplement-inline-form";
 import { OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
@@ -11,9 +12,6 @@ import {
 } from "@/lib/order-remark";
 import { filterSupplementsByPeriod, type PeriodSelection } from "@/lib/period-filter";
 import type { Order, SupplementOrder } from "@/lib/types";
-
-const PANEL_HEIGHT =
-  "h-[calc(100dvh-var(--eval-site-nav-h)-var(--eval-workbench-nav-gap)-var(--eval-scroll-bottom-pad)-2rem)] max-h-[calc(100dvh-var(--eval-site-nav-h)-var(--eval-workbench-nav-gap)-var(--eval-scroll-bottom-pad)-2rem)]";
 
 interface DesignerSupplementPanelProps {
   eligibleOrders: Order[];
@@ -98,7 +96,7 @@ export function DesignerSupplementPanel({
 
   return (
     <section
-      className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${PANEL_HEIGHT}`}
+      className={`${EVAL_WORKBENCH_FILL_PANE} rounded-xl border border-slate-200 bg-white shadow-sm`}
     >
       <div className="shrink-0 border-b border-slate-100 px-4 py-3">
         <LookupSectionHeading

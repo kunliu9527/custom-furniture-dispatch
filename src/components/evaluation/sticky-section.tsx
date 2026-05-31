@@ -1,11 +1,16 @@
 /** 工作台布局常量（各板块共用） */
 
-/** @deprecated 使用 flex-1 min-h-0；保留导出以免旧引用报错 */
-export const EVAL_WORKBENCH_SHELL_H = "min-h-0 flex-1";
-
-/** 板块内可滚动区域（flex 子项填满剩余高度后纵向滚动） */
+/** 板块内可滚动区域（flex 子项填满剩余高度后纵向滚动；勿加 flex-col，避免子项被压缩裁切） */
 export const EVAL_WORKBENCH_PANE_SCROLL =
   "min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]";
+
+/** 工作台正文内层：撑满滚动区高度，便于 fill 型面板（订单查询/增补单/派单）内部滚动 */
+export const EVAL_WORKBENCH_PANE_INNER =
+  "flex min-h-full flex-col gap-4 pb-[var(--eval-scroll-bottom-pad)] pr-0.5";
+
+/** 填满工作台剩余高度的面板（左右分栏、表单等） */
+export const EVAL_WORKBENCH_FILL_PANE =
+  "flex min-h-0 flex-1 flex-col overflow-hidden";
 
 /** 工作台列间距 */
 export const EVAL_WORKBENCH_COL_GAP = "gap-x-[var(--eval-workbench-col-gap)]";

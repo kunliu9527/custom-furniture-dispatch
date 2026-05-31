@@ -1,5 +1,6 @@
 "use client";
 
+import { EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
 import { OrderList } from "@/components/orders/order-list";
 import { OrderAnomalyBadges, OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { OrderSearchBar, type OrderDispatchLookupFilter } from "@/components/manager/order-search-bar";
@@ -221,7 +222,7 @@ export function OrderLookupPanel({
 
   return (
     <section
-      className="flex min-h-0 flex-col overflow-hidden vi-workbench-card shadow-[var(--vi-shadow-sm)] h-[calc(100dvh-var(--eval-site-nav-h)-var(--eval-workbench-nav-gap)-var(--eval-scroll-bottom-pad)-2rem)] max-h-[calc(100dvh-var(--eval-site-nav-h)-var(--eval-workbench-nav-gap)-var(--eval-scroll-bottom-pad)-2rem)]"
+      className={`${EVAL_WORKBENCH_FILL_PANE} vi-workbench-card shadow-[var(--vi-shadow-sm)]`}
     >
       <div className="shrink-0 border-b border-slate-100 bg-white p-4">
         <OrderSearchBar

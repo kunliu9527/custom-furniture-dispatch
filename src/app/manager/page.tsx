@@ -308,6 +308,7 @@ function ManagerPageContent() {
     <RouteGuard canAccess={canAccessManagerPage(user)}>
       <AppShell
         title="项目进程管理"
+        board="/manager"
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">

@@ -48,14 +48,14 @@ export function ViewTabs({ value, onChange, modes }: ViewTabsProps) {
         >
           <p
             className={`text-sm font-semibold ${
-              value === tab.id ? "text-[var(--vi-brand-deep)]" : "text-zinc-900"
+              value === tab.id ? "" : "text-zinc-900"
             }`}
           >
             {tab.label}
           </p>
           <p
             className={`mt-1 text-xs ${
-              value === tab.id ? "text-indigo-700/80" : "text-zinc-500"
+              value === tab.id ? "" : "text-zinc-500"
             }`}
           >
             {tab.description}

@@ -1,5 +1,7 @@
 import { AppNav } from "@/components/layout/app-nav";
 import { SyncFooterStatus } from "@/components/sync/sync-footer-status";
+import { boardKeyFromHref, type BoardKey } from "@/lib/board-meta";
+import type { NavHref } from "@/lib/nav-access";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -9,6 +11,8 @@ interface AppShellProps {
   children: ReactNode;
   actions?: ReactNode;
   mainClassName?: string;
+  /** 当前板块，用于按钮/表头与导航色一致 */
+  board?: NavHref;
 }
 
 export function AppShell({
@@ -17,10 +21,16 @@ export function AppShell({
   children,
   actions,
   mainClassName = "mx-auto max-w-6xl px-4 py-8 sm:px-6",
+  board,
 }: AppShellProps) {
+  const boardKey: BoardKey | undefined = board ? boardKeyFromHref(board) : undefined;
+
   return (
-    <div className="vi-app-bg flex h-dvh flex-col overflow-hidden">
-      <header className="vi-glass-header sticky top-0 z-50 shrink-0">
+    <div
+      className="vi-app-bg grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden"
+      {...(boardKey ? { "data-board": boardKey } : {})}
+    >
+      <header className="vi-glass-header z-50">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3.5">
             <Link
@@ -48,10 +58,10 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className={`min-h-0 flex-1 overflow-hidden ${mainClassName}`}>
+      <main className={`min-h-0 overflow-hidden ${mainClassName}`}>
         {children}
       </main>
-      <SyncFooterStatus />
+      <SyncFooterStatus className="shrink-0" />
     </div>
   );
 }

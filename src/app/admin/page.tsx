@@ -2,7 +2,7 @@
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
-import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
+import { EVAL_PAGE_MAIN_CLASS, EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
 import { OrderLookupPanel } from "@/components/admin/order-lookup-panel";
 import { SiteBrandingSettings } from "@/components/admin/site-branding-settings";
 import { StaffManagement } from "@/components/admin/staff-management";
@@ -135,6 +135,7 @@ export default function AdminPage() {
     <RouteGuard canAccess={canAccessAdminPage(user)}>
       <AppShell
         title="新客户开发"
+        board="/admin"
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">
@@ -153,7 +154,7 @@ export default function AdminPage() {
               }
             >
           {viewMode === "dispatch" ? (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+            <div className={`${EVAL_WORKBENCH_FILL_PANE} gap-3`}>
               {dispatchFocusDesigner ? (
                 <div className="shrink-0 rounded-lg border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
                   <p className="font-semibold">

@@ -5,6 +5,7 @@ import {
   EVAL_WORKBENCH_COL_GAP,
   EVAL_WORKBENCH_CONTENT_OFFSET,
   EVAL_WORKBENCH_NAV_CARD,
+  EVAL_WORKBENCH_PANE_INNER,
   EVAL_WORKBENCH_PANE_SCROLL,
   EVAL_WORKBENCH_SIDEBAR_WIDTH,
 } from "@/components/evaluation/sticky-section";
@@ -114,15 +115,17 @@ export function ModuleWorkbenchLayout({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {periodBlock}
-          <div className={`${EVAL_WORKBENCH_PANE_SCROLL} flex min-h-0 flex-1 flex-col gap-4 pr-0.5`}>
-            {children}
+          <div className={EVAL_WORKBENCH_PANE_SCROLL}>
+            <div className={EVAL_WORKBENCH_PANE_INNER}>{children}</div>
           </div>
         </div>
       </div>
 
-      <div className={`${EVAL_WORKBENCH_PANE_SCROLL} space-y-4 pb-8 lg:hidden`}>
-        {periodBlock}
-        {children}
+      <div className={`${EVAL_WORKBENCH_PANE_SCROLL} lg:hidden`}>
+        <div className={`${EVAL_WORKBENCH_PANE_INNER} pb-8`}>
+          {periodBlock}
+          {children}
+        </div>
       </div>
     </div>
   );

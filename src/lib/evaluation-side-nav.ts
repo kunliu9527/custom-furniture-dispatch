@@ -35,7 +35,7 @@ function buildEvaluationSideNavGroups(
         },
         {
           label: "绩效报告",
-          items: [{ id: "weekly", title: "派单人绩效周报" }],
+          items: [{ id: "performance", title: "派单人绩效报告" }],
         },
       ];
     case "designer":
@@ -53,7 +53,7 @@ function buildEvaluationSideNavGroups(
         },
         {
           label: "绩效报告",
-          items: [{ id: "performance", title: "设计师绩效月报" }],
+          items: [{ id: "performance", title: "设计师绩效报告" }],
         },
       ];
     case "store":

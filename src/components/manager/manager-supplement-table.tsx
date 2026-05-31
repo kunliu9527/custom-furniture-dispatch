@@ -24,7 +24,7 @@ export function ManagerSupplementTable({
       <div className="overflow-x-auto">
         <table className="vi-data-table w-full min-w-[640px] text-left text-sm">
           <thead>
-            <tr className="border-b border-teal-100 bg-teal-50/50 text-xs uppercase tracking-wide text-teal-800/80">
+            <tr className="vi-table-head-row text-xs uppercase tracking-wide">
               <th className="px-4 py-3">客户地址</th>
               <th className="px-4 py-3">关联订单</th>
               <th className="px-4 py-3">设计师</th>

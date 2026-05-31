@@ -128,7 +128,7 @@ export function EvaluationSidebar({
           }}
           className={`vi-sidebar-item w-full text-left ${
             operationsActive && operationsSubView === "cockpit"
-              ? "vi-sidebar-item-active border-l-[3px] border-l-rose-500 pl-[calc(0.625rem-2px)]"
+              ? "vi-sidebar-item-active"
               : ""
           }`}
         >
@@ -143,7 +143,7 @@ export function EvaluationSidebar({
           }}
           className={`vi-sidebar-item w-full text-left ${
             operationsActive && operationsSubView === "reports"
-              ? "vi-sidebar-item-active border-l-[3px] border-l-rose-500 pl-[calc(0.625rem-2px)]"
+              ? "vi-sidebar-item-active"
               : ""
           }`}
         >
@@ -166,7 +166,7 @@ export function EvaluationSidebar({
 
           className={`vi-sidebar-item vi-sidebar-item-stack w-full text-left ${
             operationsActive && operationsSubView === "lookup"
-              ? "vi-sidebar-item-active border-l-[3px] border-l-rose-500 pl-[calc(0.625rem-2px)]"
+              ? "vi-sidebar-item-active"
               : ""
           }`}
 
@@ -312,14 +312,10 @@ export function EvaluationMobileNav({
 
           }}
 
-          className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-
+          className={`vi-filter-chip flex-1 justify-center ${
             operationsActive && operationsSubView === "cockpit"
-
-              ? "border-rose-300 bg-rose-50 text-rose-900"
-
-              : "border-slate-200 bg-white text-slate-700"
-
+              ? "vi-filter-chip-active"
+              : ""
           }`}
 
         >
@@ -340,14 +336,10 @@ export function EvaluationMobileNav({
 
           }}
 
-          className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-
+          className={`vi-filter-chip flex-1 justify-center ${
             operationsActive && operationsSubView === "reports"
-
-              ? "border-rose-300 bg-rose-50 text-rose-900"
-
-              : "border-slate-200 bg-white text-slate-700"
-
+              ? "vi-filter-chip-active"
+              : ""
           }`}
 
         >
@@ -368,14 +360,10 @@ export function EvaluationMobileNav({
 
           }}
 
-          className={`w-full rounded-lg border px-3 py-2 text-sm font-medium ${
-
+          className={`vi-filter-chip w-full justify-center ${
             operationsActive && operationsSubView === "lookup"
-
-              ? "border-rose-300 bg-rose-50 text-rose-900"
-
-              : "border-slate-200 bg-white text-slate-700"
-
+              ? "vi-filter-chip-active"
+              : ""
           }`}
 
         >

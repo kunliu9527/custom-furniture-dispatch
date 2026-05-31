@@ -16,7 +16,7 @@ const labels: Record<SyncConnectionStatus, string> = {
   error: "同步异常",
 };
 
-export function SyncFooterStatus() {
+export function SyncFooterStatus({ className }: { className?: string }) {
   const remote = isRemoteSyncEnabled();
   const [status, setStatus] = useState<SyncConnectionStatus>(
     remote ? "connecting" : "local",
@@ -52,7 +52,7 @@ export function SyncFooterStatus() {
       : "text-[10px] text-slate-500";
 
   return (
-    <footer className="border-t border-slate-100/80 py-2">
+    <footer className={`border-t border-slate-100/80 py-2 ${className ?? ""}`}>
       <div
         className={`mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 sm:px-6 ${textClass}`}
       >

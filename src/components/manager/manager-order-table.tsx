@@ -95,7 +95,7 @@ export function ManagerOrderTable({
           className={`vi-data-table w-full border-collapse text-left text-sm ${detailMode ? "min-w-[1280px]" : "min-w-[960px]"}`}
         >
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/80">
+            <tr className="vi-table-head-row">
               <th className={`${thClass} min-w-[140px]`}>客户地址</th>
               {showDesigner ? (
                 <th className={`${thClass} min-w-[100px]`}>

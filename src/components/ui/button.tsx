@@ -17,14 +17,12 @@ const sizes: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary:
-    "border border-indigo-500/30 bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 text-white shadow-[var(--vi-shadow-sm)] ring-1 ring-indigo-400/25 [box-shadow:var(--vi-shadow-sm),var(--vi-shadow-inset-top)] hover:from-indigo-500 hover:to-violet-500 hover:shadow-[var(--vi-shadow-md)] hover:ring-indigo-400/35",
+  primary: "vi-btn-primary",
   secondary:
-    "border border-[var(--vi-border-strong)] bg-white text-zinc-800 shadow-[var(--vi-shadow-sm)] hover:border-indigo-200 hover:bg-indigo-50/30 hover:text-indigo-900",
+    "border border-[var(--vi-border-strong)] bg-white text-zinc-800 shadow-[var(--vi-shadow-sm)] hover:border-[var(--vi-border)] hover:bg-zinc-50 hover:text-zinc-900",
   ghost:
     "border border-transparent text-zinc-600 hover:border-[var(--vi-border)] hover:bg-zinc-100/90 hover:text-zinc-900",
-  outline:
-    "border border-indigo-200 bg-white text-zinc-700 shadow-[var(--vi-shadow-xs)] hover:border-indigo-300 hover:bg-indigo-50/50 hover:text-indigo-800",
+  outline: "vi-btn-outline border bg-white shadow-[var(--vi-shadow-xs)]",
 };
 
 export function Button({

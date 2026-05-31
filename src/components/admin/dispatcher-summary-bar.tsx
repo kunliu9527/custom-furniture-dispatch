@@ -34,22 +34,12 @@ export function DispatcherSummaryBar({
           key={item.key}
           type="button"
           onClick={() => onSelect(item.key)}
-          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-            selected === item.key
-              ? "border-emerald-300 bg-emerald-600 text-white shadow-sm"
-              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+          className={`vi-filter-chip ${
+            selected === item.key ? "vi-filter-chip-active" : ""
           }`}
         >
           <span className="font-medium">{item.label}</span>
-          <span
-            className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${
-              selected === item.key
-                ? "bg-emerald-500 text-white"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {item.count}
-          </span>
+          <span className="vi-filter-chip-badge">{item.count}</span>
         </button>
       ))}
     </div>

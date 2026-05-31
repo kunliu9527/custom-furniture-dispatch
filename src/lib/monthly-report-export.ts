@@ -45,7 +45,7 @@ export function exportMonthlyDesignerReport(
   const stamp = new Date().toISOString().slice(0, 10);
 
   const overviewLines = [
-    "# 设计经理月报总览",
+    "# 设计师绩效报告总览",
     rowToCsvLine(["指标", "数值"]),
     rowToCsvLine(["统计周期", overview.periodLabel]),
     rowToCsvLine(["周期内订单数", String(overview.orderCount)]),
@@ -125,5 +125,5 @@ export function exportMonthlyDesignerReport(
     tagSection,
   ].join("\n");
 
-  downloadCsv(`设计经理月报-${suffix}-${stamp}.csv`, content);
+  downloadCsv(`设计师绩效报告-${suffix}-${stamp}.csv`, content);
 }

@@ -181,7 +181,6 @@ export function ManagerLookupPanel({
               total={periodScopedOrderCount}
               selected={storeFilter}
               onSelect={onStoreFilterChange}
-              accent="indigo"
               showAllOption={storeSummaryShowAll}
             />
           )}

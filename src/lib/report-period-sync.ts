@@ -8,13 +8,18 @@ import { getAllSummaryBriefLabel, type ReportTab } from "./report-hub-config";
 export const ALL_SUMMARY_SCOPE_HINT =
   "登录范围内全部订单 · 累计分析";
 
+import type { EvaluationViewMode } from "./evaluation-stats";
+import type { EvaluationMainSection, EvaluationSubView } from "./evaluation-ui-persistence";
+
 export type ReportPeriodFilterVariant =
   | "default"
   | "reportWeekly"
   | "reportMonthly"
   | "reportAllSummary"
   | "reportNeutral"
-  | "weeklyBriefOnly";
+  | "weeklyBriefOnly"
+  | "performanceDispatcher"
+  | "performanceDesigner";
 
 export const WEEKLY_BRIEF_PRESETS: PeriodPreset[] = ["thisWeek", "lastWeek"];
 
@@ -123,6 +128,73 @@ export const REPORT_MONTHLY_PRESETS: PeriodPreset[] = [
   "lastMonth",
   "custom",
 ];
+
+/** 派单人绩效报告：周 + 月 + 全部 */
+export const PERFORMANCE_DISPATCHER_PRESETS: PeriodPreset[] = [
+  ...REPORT_WEEKLY_PRESETS,
+  ...REPORT_MONTHLY_PRESETS,
+  "all",
+];
+
+/** 设计师绩效报告：月 + 全部 */
+export const PERFORMANCE_DESIGNER_PRESETS: PeriodPreset[] = [
+  ...REPORT_MONTHLY_PRESETS,
+  "all",
+];
+
+export function isPerformanceDispatcherPeriod(
+  selection: PeriodSelection,
+): boolean {
+  return (
+    isWeekPeriod(selection) ||
+    isMonthPeriod(selection) ||
+    selection.preset === "all"
+  );
+}
+
+export function isPerformanceDesignerPeriod(
+  selection: PeriodSelection,
+): boolean {
+  return isMonthPeriod(selection) || selection.preset === "all";
+}
+
+/** 进入绩效报告子页时，将统计周期校正到允许范围 */
+export function resolvePeriodForPerformanceSubView(
+  viewMode: "dispatcher" | "designer",
+  current: PeriodSelection,
+): PeriodSelection | null {
+  if (viewMode === "dispatcher") {
+    if (isPerformanceDispatcherPeriod(current)) return null;
+    return { preset: "thisWeek" };
+  }
+  if (isPerformanceDesignerPeriod(current)) return null;
+  return { preset: "thisMonth" };
+}
+
+export function periodFilterVariantForDataSubView(
+  mainSection: EvaluationMainSection,
+  viewMode: EvaluationViewMode,
+  subView: EvaluationSubView,
+): ReportPeriodFilterVariant {
+  if (mainSection !== "data") return "default";
+  if (viewMode === "dispatcher" && subView === "performance") {
+    return "performanceDispatcher";
+  }
+  if (viewMode === "designer" && subView === "performance") {
+    return "performanceDesigner";
+  }
+  return "default";
+}
+
+export function performancePeriodBarHint(
+  viewMode: "dispatcher" | "designer",
+  storeScopeLabel?: string | null,
+): string {
+  const scope = storeScopeLabel ? `${storeScopeLabel} · ` : "";
+  return viewMode === "dispatcher"
+    ? `${scope}派单人绩效按此周期统计`
+    : `${scope}设计师绩效按此周期统计`;
+}
 
 export function handleReportTabChange(
   tab: ReportTab,

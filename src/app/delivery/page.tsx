@@ -532,6 +532,7 @@ export default function DeliveryPage() {
     <RouteGuard canAccess={canAccessDeliveryPage(user)}>
       <AppShell
         title="验收与交付"
+        board="/delivery"
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">
@@ -614,7 +615,6 @@ export default function DeliveryPage() {
                     total={periodDeliveryOrders.length}
                     selected={storeFilter}
                     onSelect={handleStoreFilterChange}
-                    accent="emerald"
                     showAllOption={storeSummaryShowAll}
                   />
                   <div className="space-y-3 border-t border-slate-100 pt-3">
@@ -634,7 +634,6 @@ export default function DeliveryPage() {
                         total={storeDesignerScopeCount}
                         selected={storeDesignerFilter}
                         onSelect={handleStoreDesignerFilterChange}
-                        accent="emerald"
                       />
                     </div>
                     <div className="space-y-2">
@@ -688,7 +687,7 @@ export default function DeliveryPage() {
 
                 {showOrderWorkspace ? (
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="min-h-0 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 lg:max-h-[min(32rem,calc(100dvh-var(--eval-site-nav-h)-var(--eval-workbench-nav-h)-12rem))]">
+                    <div className="min-h-0 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 lg:min-h-[16rem]">
                       {filteredOrders.map((order) => (
                         <button
                           key={order.id}

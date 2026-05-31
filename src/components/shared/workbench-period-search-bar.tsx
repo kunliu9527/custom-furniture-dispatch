@@ -2,6 +2,7 @@
 
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
 import { formatPeriodLabel, type PeriodSelection } from "@/lib/period-filter";
+import type { ReportPeriodFilterVariant } from "@/lib/report-period-sync";
 import type { ReactNode } from "react";
 
 export interface WorkbenchPeriodSearchBarProps {
@@ -20,6 +21,8 @@ export interface WorkbenchPeriodSearchBarProps {
   searchWidthClass?: string;
   /** 查询框右侧附加控件 */
   trailing?: ReactNode;
+  /** 统计周期按钮组口径 */
+  periodVariant?: ReportPeriodFilterVariant;
 }
 
 /** 工作台统计周期 + 订单查询（参考设计师 / 门店订单状态查询） */
@@ -35,6 +38,7 @@ export function WorkbenchPeriodSearchBar({
   headingLabel = "统计周期",
   searchWidthClass,
   trailing,
+  periodVariant = "default",
 }: WorkbenchPeriodSearchBarProps) {
   const label = formatPeriodLabel(period);
   const searchClass =
@@ -58,7 +62,12 @@ export function WorkbenchPeriodSearchBar({
         ) : null}
         {trailing}
         <div className="ml-auto flex shrink-0 items-center">
-          <PeriodFilterBar value={period} onChange={onPeriodChange} inline />
+          <PeriodFilterBar
+            value={period}
+            onChange={onPeriodChange}
+            inline
+            variant={periodVariant}
+          />
         </div>
       </div>
       <p className="text-[10px] leading-snug text-zinc-500">

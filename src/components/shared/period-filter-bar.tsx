@@ -8,6 +8,8 @@ import {
 } from "@/lib/period-filter";
 import type { ReportPeriodFilterVariant } from "@/lib/report-period-sync";
 import {
+  PERFORMANCE_DESIGNER_PRESETS,
+  PERFORMANCE_DISPATCHER_PRESETS,
   REPORT_MONTHLY_PRESETS,
   REPORT_WEEKLY_PRESETS,
   WEEKLY_BRIEF_PRESETS,
@@ -34,6 +36,14 @@ function presetsForVariant(variant: ReportPeriodFilterVariant) {
       return allPresets.filter((p) => p.id !== "lastWeek");
     case "weeklyBriefOnly":
       return allPresets.filter((p) => WEEKLY_BRIEF_PRESETS.includes(p.id));
+    case "performanceDispatcher":
+      return allPresets.filter((p) =>
+        PERFORMANCE_DISPATCHER_PRESETS.includes(p.id),
+      );
+    case "performanceDesigner":
+      return allPresets.filter((p) =>
+        PERFORMANCE_DESIGNER_PRESETS.includes(p.id),
+      );
     default:
       return allPresets.filter((p) => p.id !== "lastWeek");
   }
@@ -81,11 +91,9 @@ export function PeriodFilterBar({
             }
             className={`vi-segmented-item ${
               active
-                ? "vi-segmented-item-active vi-segmented-item-active-rose"
+                ? "vi-segmented-item-active"
                 : ""
-            } ${
-              embedded || inline ? "px-2 py-1 text-[11px]" : "text-xs"
-            }`}
+            } ${embedded || inline ? "px-2 py-1 text-[11px]" : "text-xs"}`}
           >
             {p.label}
           </button>

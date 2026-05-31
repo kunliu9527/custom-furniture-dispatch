@@ -3,7 +3,7 @@
 import { RouteGuard } from "@/components/auth/route-guard";
 import { AcceptanceEvaluationSection } from "@/components/evaluation/acceptance-evaluation-section";
 import { DispatcherPerformanceTable } from "@/components/evaluation/dispatcher-performance-table";
-import { DispatcherWeeklyPanel } from "@/components/evaluation/dispatcher-weekly-panel";
+import { DispatcherPerformanceDigestPanel } from "@/components/evaluation/dispatcher-performance-digest-panel";
 import { DispatcherEvaluationRankingTable } from "@/components/evaluation/dispatcher-evaluation-ranking-table";
 import { DispatcherEvaluationTable } from "@/components/evaluation/dispatcher-evaluation-table";
 import { DesignerPerformanceTable } from "@/components/evaluation/designer-performance-table";
@@ -71,7 +71,11 @@ import type { ReportTab } from "@/lib/report-hub-config";
 import {
   resolvePeriodForReportTab,
   periodFilterVariantForReportTab,
+  periodFilterVariantForDataSubView,
+  performancePeriodBarHint,
   reportPeriodBarHint,
+  resolvePeriodForPerformanceSubView,
+  isMonthPeriod,
 } from "@/lib/report-period-sync";
 import {
   loadWorkbenchPeriod,
@@ -322,6 +326,18 @@ export default function EvaluationPage() {
     if (next) setPeriod(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 进入报告区或切换 Tab 时对齐周期
   }, [mainSection, operationsSubView, reportTab]);
+
+  useEffect(() => {
+    if (mainSection !== "data") return;
+    if (viewMode === "dispatcher" && dispatcherSubView === "performance") {
+      const next = resolvePeriodForPerformanceSubView("dispatcher", period);
+      if (next) setPeriod(next);
+    } else if (viewMode === "designer" && designerSubView === "performance") {
+      const next = resolvePeriodForPerformanceSubView("designer", period);
+      if (next) setPeriod(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 进入绩效报告时校正周期
+  }, [mainSection, viewMode, dispatcherSubView, designerSubView]);
 
   const scopedOrdersByView = useMemo(
     () => ({
@@ -951,6 +967,8 @@ export default function EvaluationPage() {
               dispatcherWorkflowSummary.count,
               dispatcherWorkflowSummary.amount,
             );
+          } else if (item.id === "performance") {
+            suffix = `${periodLabel} · 贡献分`;
           }
         } else if (viewMode === "designer") {
           if (item.id === "aggregate") {
@@ -964,7 +982,7 @@ export default function EvaluationPage() {
               tabSummaries.designer.amount,
             );
           } else if (item.id === "performance") {
-            suffix = "贡献分 · 周期 · 超时";
+            suffix = `${periodLabel} · 贡献分 · 超时`;
           }
         } else if (viewMode === "store") {
           if (item.id === "aggregate") {
@@ -994,6 +1012,7 @@ export default function EvaluationPage() {
     designerAggregateSummary,
     storeAggregateSummary,
     acceptanceSummary,
+    periodLabel,
   ]);
 
   useEffect(() => {
@@ -1047,10 +1066,27 @@ export default function EvaluationPage() {
     ],
   );
 
+  const dataPeriodVariant = periodFilterVariantForDataSubView(
+    mainSection,
+    viewMode,
+    activeSubView,
+  );
+  const isDataPerformanceSubView =
+    mainSection === "data" &&
+    activeSubView === "performance" &&
+    (viewMode === "dispatcher" || viewMode === "designer");
+  const dataPeriodHint =
+    viewMode === "dispatcher" && activeSubView === "performance"
+      ? performancePeriodBarHint("dispatcher", scopeLabel)
+      : viewMode === "designer" && activeSubView === "performance"
+        ? performancePeriodBarHint("designer", scopeLabel)
+        : lookupSearchHint;
+
   return (
     <RouteGuard canAccess={canAccessEvaluationPage(user)}>
       <AppShell
         title={getEvaluationBoardTitle(scopeLabel)}
+        board="/evaluation"
         mainClassName={EVAL_PAGE_MAIN_CLASS}
       >
         <div className="flex min-h-0 flex-1 flex-col">
@@ -1067,7 +1103,9 @@ export default function EvaluationPage() {
                     onPeriodChange={handlePeriodChange}
                     query={orderQuery}
                     onQueryChange={setOrderQuery}
-                    hint={lookupSearchHint}
+                    hint={dataPeriodHint}
+                    showSearch={!isDataPerformanceSubView}
+                    periodVariant={dataPeriodVariant}
                     placeholder={
                       storeScoped && scopeLabel
                         ? `查询 ${scopeLabel} 订单：客户、电话、地址、设计师、派单人…`
@@ -1105,9 +1143,7 @@ export default function EvaluationPage() {
                       mainSection === "operations" &&
                       operationsSubView === "reports"
                         ? reportPeriodBarHint(reportTab, scopeLabel)
-                        : storeScoped && scopeLabel
-                          ? `${scopeLabel} · 数据汇总与订单查询按此周期`
-                          : undefined
+                        : undefined
                     }
                   />
                 )
@@ -1275,15 +1311,17 @@ export default function EvaluationPage() {
                   <>
                     {designerSubView === "performance" ? (
                       <div className="space-y-4">
-                        <MonthlySnapshotPanel
-                          orders={scopedOrdersByView.designer}
-                          supplements={supplements}
-                          period={period}
-                          designerNames={rowScope.designerNames}
-                          staffRecords={staffRecords}
-                          scopeLabel={scopeLabel ?? undefined}
-                          savedBy={user?.displayName}
-                        />
+                        {isMonthPeriod(period) ? (
+                          <MonthlySnapshotPanel
+                            orders={scopedOrdersByView.designer}
+                            supplements={supplements}
+                            period={period}
+                            designerNames={rowScope.designerNames}
+                            staffRecords={staffRecords}
+                            scopeLabel={scopeLabel ?? undefined}
+                            savedBy={user?.displayName}
+                          />
+                        ) : null}
                         <MonthlyOverviewCard
                           overview={monthlyOverview}
                           issueTagStats={issueTagStats}
@@ -1321,10 +1359,10 @@ export default function EvaluationPage() {
                   </>
                 ) : (
                   <>
-                    {dispatcherSubView === "weekly" ? (
+                    {dispatcherSubView === "performance" ? (
                       <div className="space-y-4">
-                        <DispatcherWeeklyPanel
-                          weekLabel={periodLabel}
+                        <DispatcherPerformanceDigestPanel
+                          periodLabel={periodLabel}
                           rows={dispatcherPerformanceRows}
                         />
                         <DispatcherPerformanceTable

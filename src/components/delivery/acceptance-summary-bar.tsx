@@ -25,22 +25,12 @@ export function AcceptanceSummaryBar({
           key={key}
           type="button"
           onClick={() => onSelect(key)}
-          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-            selected === key
-              ? "border-teal-300 bg-teal-600 text-white shadow-sm"
-              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+          className={`vi-filter-chip ${
+            selected === key ? "vi-filter-chip-active" : ""
           }`}
         >
           <span className="font-medium">{key}</span>
-          <span
-            className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${
-              selected === key
-                ? "bg-teal-500 text-white"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {counts[key]}
-          </span>
+          <span className="vi-filter-chip-badge">{counts[key]}</span>
         </button>
       ))}
     </div>

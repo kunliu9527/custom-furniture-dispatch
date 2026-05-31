@@ -53,16 +53,14 @@ export function DesignerPerformanceTable({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="vi-segmented flex-wrap">
           {rankTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setRankKind(tab.id)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-                rankKind === tab.id
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              className={`vi-segmented-item px-2.5 py-1 text-xs ${
+                rankKind === tab.id ? "vi-segmented-item-active" : ""
               }`}
             >
               按{tab.label}排序
@@ -75,14 +73,14 @@ export function DesignerPerformanceTable({
             onClick={onExportReport}
             className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
           >
-            导出{periodLabel}月报 CSV
+            导出{periodLabel}绩效报告 CSV
           </button>
         ) : null}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="vi-data-table min-w-full text-left text-xs">
-          <thead className="border-b border-slate-100 bg-slate-50 text-slate-600">
+          <thead>
             <tr>
               <th
                 colSpan={13}
@@ -91,7 +89,7 @@ export function DesignerPerformanceTable({
                 {DESIGNER_PERFORMANCE_RANK_TABS} · {DESIGNER_CONTRIBUTION_FORMULA}
               </th>
             </tr>
-            <tr>
+            <tr className="vi-table-head-row">
               <th className="px-3 py-2.5 font-bold">#</th>
               <th className="px-3 py-2.5 font-bold">设计师</th>
               <th className="px-3 py-2.5 font-bold tabular-nums">在途</th>

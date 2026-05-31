@@ -183,13 +183,13 @@ export function getDispatcherPerformanceRows(
     .sort((a, b) => b.contributionScore - a.contributionScore);
 }
 
-export function formatDispatcherWeeklyDigest(
+export function formatDispatcherPerformanceDigest(
   rows: DispatcherPerformanceRow[],
-  weekLabel: string,
+  periodLabel: string,
 ): string {
   const top = rows.filter((r) => r.contributionScore > 0).slice(0, 5);
   const lines = [
-    `【派单人绩效周报】${weekLabel}`,
+    `【派单人绩效报告】${periodLabel}`,
     "",
     `参与统计：${rows.length} 人`,
   ];

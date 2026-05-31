@@ -524,14 +524,12 @@ export function DispatchForm({
       <div className="shrink-0 border-b border-[var(--vi-border)] bg-gradient-to-r from-zinc-50/90 to-indigo-50/30 px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex rounded-xl border border-[var(--vi-border)] bg-white p-1 shadow-[var(--vi-shadow-xs)]">
+            <div className="vi-segmented">
               <button
                 type="button"
                 onClick={() => switchTab("new_dispatch")}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold tracking-tight transition-all duration-200 ${
-                  effectiveTab === "new_dispatch"
-                    ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-[var(--vi-shadow-sm)]"
-                    : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                className={`vi-segmented-item px-4 py-2 text-sm ${
+                  effectiveTab === "new_dispatch" ? "vi-segmented-item-active" : ""
                 }`}
               >
                 新建派单
@@ -540,10 +538,8 @@ export function DispatchForm({
                 <button
                   type="button"
                   onClick={() => switchTab("new_customer")}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold tracking-tight transition-all duration-200 ${
-                    effectiveTab === "new_customer"
-                      ? "bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-[var(--vi-shadow-sm)]"
-                      : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                  className={`vi-segmented-item px-4 py-2 text-sm ${
+                    effectiveTab === "new_customer" ? "vi-segmented-item-active" : ""
                   }`}
                 >
                   新建客户

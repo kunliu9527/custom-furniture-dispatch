@@ -152,9 +152,9 @@ export function DispatcherEvaluationRankingTable({
             {EVALUATION_AMOUNT_RULES} · {footnote}
             {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
           </TableAlgorithmCaption>
-          <tr className={`border-b border-slate-100 ${TABLE_HEAD_STICKY_CLASS}`}>
+          <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
               <th
-                className={`${thClass} min-w-[120px] sticky left-0 bg-slate-50/95 text-left`}
+                className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell text-left`}
               >
                 {nameColumnLabel}
               </th>

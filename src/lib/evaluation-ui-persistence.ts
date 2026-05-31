@@ -6,8 +6,7 @@ export type EvaluationSubView =
   | "aggregate"
   | "ranking"
   | "workflow"
-  | "performance"
-  | "weekly";
+  | "performance";
 
 export type EvaluationMainSection = "operations" | "data";
 export type EvaluationOperationsSubView = "cockpit" | "reports" | "lookup";
@@ -60,20 +59,21 @@ export function loadEvaluationUi(
       parsed.reportTab === "alerts"
         ? parsed.reportTab
         : "weekly";
-    const sub = (v: unknown): EvaluationSubView =>
-      v === "ranking" ||
-      v === "workflow" ||
-      v === "performance" ||
-      v === "weekly"
+    const sub = (v: unknown, migrateWeekly = false): EvaluationSubView => {
+      if (migrateWeekly && v === "weekly") return "performance";
+      return v === "ranking" ||
+        v === "workflow" ||
+        v === "performance"
         ? v
         : "aggregate";
+    };
     const period = parsePeriod(parsed.period);
     return {
       mainSection,
       operationsSubView,
       reportTab,
       viewMode: parsed.viewMode,
-      dispatcherSubView: sub(parsed.dispatcherSubView),
+      dispatcherSubView: sub(parsed.dispatcherSubView, true),
       storeSubView: sub(parsed.storeSubView),
       designerSubView: sub(parsed.designerSubView),
       acceptanceSubView: sub(parsed.acceptanceSubView),

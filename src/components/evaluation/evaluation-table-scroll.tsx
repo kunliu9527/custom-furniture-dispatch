@@ -31,7 +31,7 @@ export function EvaluationTableScroll({
 }
 
 export const TABLE_HEAD_STICKY_CLASS =
-  "sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm";
+  "sticky top-0 z-10 vi-table-head-row backdrop-blur-sm";
 
 /** 各板块明细表表头单元格 */
 export const TABLE_TH_CLASS =
