@@ -130,6 +130,15 @@ cd /opt/custom-furniture-dispatch
 bash scripts/deploy-update.sh
 ```
 
+若更新失败，先诊断（不修改系统）：
+
+```bash
+cd /opt/custom-furniture-dispatch
+bash scripts/diagnose-deploy.sh
+```
+
+常见原因：`git pull` 因服务器上有本地改动失败 → 新版 `deploy-update.sh` 会自动 stash 后重试；构建内存不足 → 脚本已设置 `NODE_OPTIONS=--max-old-space-size=1536`；`pm2` 无 `dispatch` 进程 → 脚本会自动 `pm2 start`。
+
 ---
 
 ## 费用与试用说明
