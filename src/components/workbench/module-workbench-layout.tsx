@@ -96,8 +96,6 @@ export function ModuleWorkbenchLayout({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {mobileTabs ? <div className="mb-4 shrink-0 lg:hidden">{mobileTabs}</div> : null}
-
       <div
         className={`hidden min-h-0 flex-1 lg:flex ${EVAL_WORKBENCH_COL_GAP}`}
       >
@@ -123,6 +121,7 @@ export function ModuleWorkbenchLayout({
 
       <div className={`${EVAL_WORKBENCH_PANE_SCROLL} lg:hidden`}>
         <div className={`${EVAL_WORKBENCH_PANE_INNER} pb-8`}>
+          {mobileTabs ? <div className="mb-3 shrink-0">{mobileTabs}</div> : null}
           {periodBlock}
           {children}
         </div>

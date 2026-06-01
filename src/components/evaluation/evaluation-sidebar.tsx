@@ -296,9 +296,9 @@ export function EvaluationMobileNav({
 
   return (
 
-    <div className="space-y-3">
+    <div className="space-y-2">
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
 
         <button
 
@@ -369,15 +369,11 @@ export function EvaluationMobileNav({
         >
 
           订单查询
-
           {periodLabel ? (
-
-            <span className="mt-0.5 block text-xs font-normal text-slate-500">
-
-              {periodLabel}
-
+            <span className="text-xs font-normal text-slate-500">
+              {" "}
+              · {periodLabel}
             </span>
-
           ) : null}
 
         </button>
@@ -402,11 +398,12 @@ export function EvaluationMobileNav({
         <button
           type="button"
           onClick={() => onMainSectionChange("data")}
-          className="vi-filter-chip w-full justify-center py-2.5"
+          className="vi-filter-chip w-full justify-center py-2"
         >
           <span className="font-semibold">数据板块</span>
-          <span className="mt-0.5 block text-xs font-normal text-slate-500">
-            派单人 · 设计师 · 门店 · 验收
+          <span className="text-xs font-normal text-slate-500">
+            {" "}
+            · 派单人 · 设计师 · 门店 · 验收
           </span>
         </button>
       )}
