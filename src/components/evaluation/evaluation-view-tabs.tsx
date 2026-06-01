@@ -29,7 +29,7 @@ interface EvaluationViewTabsProps {
   allowedModes: EvaluationViewMode[];
   exportData: EvaluationExportData;
   periodLabel?: string;
-  layout?: "grid" | "sidebar";
+  layout?: "grid" | "sidebar" | "compact";
   /** 为 false 时数据 Tab 不高亮（当前在管理经营） */
   highlightMode?: boolean;
 }
@@ -45,6 +45,39 @@ export function EvaluationViewTabs({
   highlightMode = true,
 }: EvaluationViewTabsProps) {
   const visibleTabs = tabs.filter((tab) => allowedModes.includes(tab.id));
+
+  if (layout === "compact") {
+    return (
+      <div className="-mx-0.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {visibleTabs.map((tab) => {
+          const summary = summaries[tab.id];
+          const metric =
+            summary.displayText ??
+            formatEvaluationMetric(summary.count, summary.amount);
+          const active = highlightMode && value === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onChange(tab.id)}
+              className={`vi-filter-chip shrink-0 flex-col items-start gap-0.5 py-2 ${
+                active ? "vi-filter-chip-active" : ""
+              }`}
+            >
+              <span className="text-xs font-semibold leading-tight">{tab.label}</span>
+              <span
+                className={`text-[10px] font-medium tabular-nums leading-tight ${
+                  active ? "opacity-95" : "text-slate-500"
+                }`}
+              >
+                {metric}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   if (layout === "sidebar") {
     return (

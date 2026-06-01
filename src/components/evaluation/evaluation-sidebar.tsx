@@ -384,31 +384,32 @@ export function EvaluationMobileNav({
 
       </div>
 
-      <EvaluationViewTabs
-
-        value={viewMode}
-
-        onChange={(mode) => {
-
-          onMainSectionChange("data");
-
-          onViewModeChange(mode);
-
-        }}
-
-        summaries={summaries}
-
-        allowedModes={allowedModes}
-
-        exportData={exportData}
-
-        periodLabel={periodLabel}
-
-        layout="grid"
-
-        highlightMode={mainSection === "data"}
-
-      />
+      {mainSection === "data" ? (
+        <EvaluationViewTabs
+          value={viewMode}
+          onChange={(mode) => {
+            onMainSectionChange("data");
+            onViewModeChange(mode);
+          }}
+          summaries={summaries}
+          allowedModes={allowedModes}
+          exportData={exportData}
+          periodLabel={periodLabel}
+          layout="compact"
+          highlightMode
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => onMainSectionChange("data")}
+          className="vi-filter-chip w-full justify-center py-2.5"
+        >
+          <span className="font-semibold">数据板块</span>
+          <span className="mt-0.5 block text-xs font-normal text-slate-500">
+            派单人 · 设计师 · 门店 · 验收
+          </span>
+        </button>
+      )}
 
     </div>
 
