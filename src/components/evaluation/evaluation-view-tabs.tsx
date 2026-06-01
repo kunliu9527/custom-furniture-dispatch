@@ -48,33 +48,43 @@ export function EvaluationViewTabs({
 
   if (layout === "compact") {
     return (
-      <div className="-mx-0.5 flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {visibleTabs.map((tab) => {
-          const summary = summaries[tab.id];
-          const metric =
-            summary.displayText ??
-            formatEvaluationMetric(summary.count, summary.amount);
-          const active = highlightMode && value === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onChange(tab.id)}
-              className={`vi-filter-chip shrink-0 flex-col items-start gap-0.5 py-2 ${
-                active ? "vi-filter-chip-active" : ""
-              }`}
-            >
-              <span className="text-xs font-semibold leading-tight">{tab.label}</span>
-              <span
-                className={`text-[10px] font-medium tabular-nums leading-tight ${
-                  active ? "opacity-95" : "text-slate-500"
+      <div className="flex items-start gap-2">
+        <div className="-mx-0.5 flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {visibleTabs.map((tab) => {
+            const summary = summaries[tab.id];
+            const metric =
+              summary.displayText ??
+              formatEvaluationMetric(summary.count, summary.amount);
+            const active = highlightMode && value === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onChange(tab.id)}
+                className={`vi-filter-chip shrink-0 flex-col items-start gap-0.5 py-2 ${
+                  active ? "vi-filter-chip-active" : ""
                 }`}
               >
-                {metric}
-              </span>
-            </button>
-          );
-        })}
+                <span className="text-xs font-semibold leading-tight">{tab.label}</span>
+                <span
+                  className={`text-[10px] font-medium tabular-nums leading-tight ${
+                    active ? "opacity-95" : "text-slate-500"
+                  }`}
+                >
+                  {metric}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {highlightMode ? (
+          <EvaluationExportButton
+            mode={value}
+            data={exportData}
+            periodLabel={periodLabel}
+            className="mt-0.5 shrink-0 py-1"
+          />
+        ) : null}
       </div>
     );
   }

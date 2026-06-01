@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  WorkbenchMobileChips,
+  type WorkbenchMobileChipItem,
+} from "@/components/workbench/workbench-mobile-chips";
 import type { EvaluationSubView } from "@/lib/evaluation-ui-persistence";
 import type { ReactNode } from "react";
 
@@ -56,5 +60,35 @@ export function EvaluationSideNav({
         </div>
       ))}
     </nav>
+  );
+}
+
+/** 移动端：子视图横向 chip（排名 / 归总 / 绩效等） */
+export function EvaluationSideNavMobile({
+  groups,
+  active,
+  onSelect,
+}: EvaluationSideNavProps) {
+  const chips: WorkbenchMobileChipItem[] = groups.flatMap((group) =>
+    group.items.map((item) => ({
+      id: item.id,
+      label: item.title,
+      hint:
+        typeof item.suffix === "string"
+          ? item.suffix
+          : item.suffix != null
+            ? String(item.suffix)
+            : undefined,
+    })),
+  );
+
+  if (chips.length === 0) return null;
+
+  return (
+    <WorkbenchMobileChips
+      items={chips}
+      value={active}
+      onChange={(id) => onSelect(id as EvaluationSubView)}
+    />
   );
 }

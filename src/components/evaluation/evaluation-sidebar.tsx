@@ -2,7 +2,10 @@
 
 
 
-import { EvaluationSideNav } from "@/components/evaluation/evaluation-side-nav";
+import {
+  EvaluationSideNav,
+  EvaluationSideNavMobile,
+} from "@/components/evaluation/evaluation-side-nav";
 
 import { EvaluationViewTabs } from "@/components/evaluation/evaluation-view-tabs";
 
@@ -260,6 +263,12 @@ export function EvaluationMobileNav({
 
   reportScopeLabel = null,
 
+  sideNavGroups,
+
+  activeSubView,
+
+  onSubViewSelect,
+
 }: Pick<
 
   EvaluationSidebarProps,
@@ -285,6 +294,12 @@ export function EvaluationMobileNav({
   | "periodLabel"
 
   | "reportScopeLabel"
+
+  | "sideNavGroups"
+
+  | "activeSubView"
+
+  | "onSubViewSelect"
 
 >) {
 
@@ -381,19 +396,26 @@ export function EvaluationMobileNav({
       </div>
 
       {mainSection === "data" ? (
-        <EvaluationViewTabs
-          value={viewMode}
-          onChange={(mode) => {
-            onMainSectionChange("data");
-            onViewModeChange(mode);
-          }}
-          summaries={summaries}
-          allowedModes={allowedModes}
-          exportData={exportData}
-          periodLabel={periodLabel}
-          layout="compact"
-          highlightMode
-        />
+        <>
+          <EvaluationViewTabs
+            value={viewMode}
+            onChange={(mode) => {
+              onMainSectionChange("data");
+              onViewModeChange(mode);
+            }}
+            summaries={summaries}
+            allowedModes={allowedModes}
+            exportData={exportData}
+            periodLabel={periodLabel}
+            layout="compact"
+            highlightMode
+          />
+          <EvaluationSideNavMobile
+            groups={sideNavGroups}
+            active={activeSubView}
+            onSelect={onSubViewSelect}
+          />
+        </>
       ) : (
         <button
           type="button"

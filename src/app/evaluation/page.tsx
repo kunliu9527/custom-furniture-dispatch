@@ -1161,6 +1161,9 @@ export default function EvaluationPage() {
                   exportData={exportData}
                   periodLabel={periodLabel}
                   reportScopeLabel={scopeLabel}
+                  sideNavGroups={sideNavGroups}
+                  activeSubView={activeSubView}
+                  onSubViewSelect={handleSubViewSelect}
                 />
               }
               sidebar={
