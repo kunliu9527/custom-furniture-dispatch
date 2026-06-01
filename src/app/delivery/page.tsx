@@ -5,7 +5,7 @@ import { RouteGuard } from "@/components/auth/route-guard";
 import { AcceptanceSummaryBar } from "@/components/delivery/acceptance-summary-bar";
 import { DeliveryCustomerAcceptancePanel } from "@/components/delivery/delivery-customer-acceptance-panel";
 import { DeliveryResultSummary } from "@/components/delivery/delivery-result-summary";
-import { DeliverySidebar } from "@/components/delivery/delivery-sidebar";
+import { DeliverySidebar, DeliveryMobileNav } from "@/components/delivery/delivery-sidebar";
 import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
 import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
 import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
@@ -542,6 +542,13 @@ export default function DeliveryPage() {
             </div>
           ) : (
             <ModuleWorkbenchLayout
+              mobileTabs={
+                <DeliveryMobileNav
+                  viewMode={viewMode}
+                  onViewModeChange={handleViewModeChange}
+                  user={user}
+                />
+              }
               periodBar={
                 <WorkbenchPeriodSearchBar
                   period={period}

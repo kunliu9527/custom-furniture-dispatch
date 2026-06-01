@@ -1,6 +1,10 @@
 "use client";
 
 import type { ManagerMainSection } from "@/lib/manager-ui-persistence";
+import {
+  WorkbenchMobileChips,
+  type WorkbenchMobileChipItem,
+} from "@/components/workbench/workbench-mobile-chips";
 
 interface ManagerSidebarProps {
   mainSection: ManagerMainSection;
@@ -52,5 +56,28 @@ export function ManagerSidebar({
         </button>
       </div>
     </div>
+  );
+}
+
+export function ManagerMobileNav({
+  mainSection,
+  onMainSectionChange,
+  personalWeeklyOnly = false,
+}: ManagerSidebarProps) {
+  const chips: WorkbenchMobileChipItem[] = [
+    { id: "weekly", label: "本周简报", hint: "本周 · 上周" },
+    ...(personalWeeklyOnly
+      ? []
+      : [{ id: "reports", label: "异常待办", hint: "最新在上" }]),
+    { id: "lookup", label: "订单查询", hint: "状态 · 派单 · 设计师" },
+  ];
+
+  return (
+    <WorkbenchMobileChips
+      items={chips}
+      value={mainSection}
+      onChange={(id) => onMainSectionChange(id as ManagerMainSection)}
+      layout="wrap"
+    />
   );
 }

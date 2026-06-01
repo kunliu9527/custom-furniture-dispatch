@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { RouteGuard } from "@/components/auth/route-guard";
 
 import { DesignerOrderHintLine } from "@/components/designer/designer-order-hint-line";
-import { DesignerWorkbenchSidebar } from "@/components/designer/designer-workbench-sidebar";
+import { DesignerWorkbenchSidebar, DesignerMobileNav } from "@/components/designer/designer-workbench-sidebar";
 import { DesignerPeriodSearchBar } from "@/components/designer/designer-period-search-bar";
 import { DesignerSupplementPanel } from "@/components/designer/designer-supplement-panel";
 import { OrderList } from "@/components/orders/order-list";
@@ -718,6 +718,19 @@ export default function DesignerPage() {
         ) : (
 
           <ModuleWorkbenchLayout
+            mobileTabs={
+              <DesignerMobileNav
+                showSwitcher={showSwitcher}
+                effectiveDesigner={effectiveDesigner}
+                onDesignerChange={setCurrentDesigner}
+                designerLookupStores={designerLookupStores}
+                homeStore={homeStore}
+                myOrderCount={myOrders.length}
+                statusFilter={statusFilter}
+                onStatusFilterChange={handleStatusFilterChange}
+                counts={statusCounts}
+              />
+            }
             periodBar={
               <DesignerPeriodSearchBar
                 headingLabel="查询订单"

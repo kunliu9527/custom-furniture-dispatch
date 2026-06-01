@@ -5,7 +5,7 @@ import { RouteGuard } from "@/components/auth/route-guard";
 import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { AnomalyTodosPanel } from "@/components/manager/anomaly-todos-panel";
 import { WeeklyDigestSummaryCard } from "@/components/manager/weekly-digest-summary-card";
-import { ManagerSidebar } from "@/components/manager/manager-sidebar";
+import { ManagerSidebar, ManagerMobileNav } from "@/components/manager/manager-sidebar";
 import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
 import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
@@ -318,6 +318,13 @@ function ManagerPageContent() {
             </div>
           ) : (
             <ModuleWorkbenchLayout
+              mobileTabs={
+                <ManagerMobileNav
+                  mainSection={mainSection}
+                  onMainSectionChange={setMainSection}
+                  personalWeeklyOnly={personalWeeklyOnly}
+                />
+              }
               periodBar={
                 mainSection === "lookup" ? (
                   <WorkbenchPeriodSearchBar

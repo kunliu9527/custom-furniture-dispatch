@@ -1,6 +1,10 @@
 "use client";
 
 import type { AdminViewMode } from "@/lib/admin-stats";
+import {
+  WorkbenchMobileChips,
+  type WorkbenchMobileChipItem,
+} from "@/components/workbench/workbench-mobile-chips";
 
 const ITEMS: {
   id: AdminViewMode;
@@ -52,5 +56,27 @@ export function AdminSidebar({
         </p>
       ) : null}
     </div>
+  );
+}
+
+export function AdminMobileNav({
+  viewMode,
+  onViewModeChange,
+  allowedModes,
+}: AdminSidebarProps) {
+  const visible = ITEMS.filter((item) => allowedModes.includes(item.id));
+  const chips: WorkbenchMobileChipItem[] = visible.map((item) => ({
+    id: item.id,
+    label: item.title,
+    hint: item.hint,
+  }));
+
+  return (
+    <WorkbenchMobileChips
+      items={chips}
+      value={viewMode}
+      onChange={(id) => onViewModeChange(id as AdminViewMode)}
+      layout="wrap"
+    />
   );
 }

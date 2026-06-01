@@ -518,7 +518,7 @@ export function DispatchForm({
     <form
       onSubmit={handleSubmit}
       className={`flex flex-col overflow-hidden vi-workbench-card shadow-[var(--vi-shadow-sm)] ${
-        fillHeight ? "min-h-0 flex-1" : ""
+        fillHeight ? "min-h-0 flex-1 max-lg:flex-none" : ""
       }`}
     >
       <div className="shrink-0 border-b border-[var(--vi-border)] bg-gradient-to-r from-zinc-50/90 to-indigo-50/30 px-5 py-4">
@@ -556,7 +556,7 @@ export function DispatchForm({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 max-lg:flex-none max-lg:overflow-visible">
         <div className="space-y-5">
           <FormSection title="客户信息">
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

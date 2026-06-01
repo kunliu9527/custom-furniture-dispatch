@@ -3,6 +3,10 @@
 import type { DeliveryViewMode } from "@/lib/delivery-stats";
 import { getVisibleDeliveryViewModes } from "@/lib/lookup-scope";
 import type { SessionUser } from "@/lib/permissions";
+import {
+  WorkbenchMobileChips,
+  type WorkbenchMobileChipItem,
+} from "@/components/workbench/workbench-mobile-chips";
 
 const ITEMS: { id: DeliveryViewMode; title: string; hint: string }[] = [
   { id: "status", title: "按状态查找", hint: "已下单、已安装、已验收" },
@@ -46,5 +50,28 @@ export function DeliverySidebar({
         })}
       </ul>
     </div>
+  );
+}
+
+export function DeliveryMobileNav({
+  viewMode,
+  onViewModeChange,
+  user = null,
+}: DeliverySidebarProps) {
+  const visibleIds = getVisibleDeliveryViewModes(user);
+  const chips: WorkbenchMobileChipItem[] = ITEMS.filter((item) =>
+    visibleIds.includes(item.id),
+  ).map((item) => ({
+    id: item.id,
+    label: item.title,
+    hint: item.hint,
+  }));
+
+  return (
+    <WorkbenchMobileChips
+      items={chips}
+      value={viewMode}
+      onChange={(id) => onViewModeChange(id as DeliveryViewMode)}
+    />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
+import { EVAL_WORKBENCH_FILL_PANE, EVAL_WORKBENCH_SPLIT_DETAIL, EVAL_WORKBENCH_SPLIT_GRID, EVAL_WORKBENCH_SPLIT_LIST } from "@/components/evaluation/sticky-section";
 import { FormEvent, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SupplementInlineForm } from "@/components/orders/supplement-inline-form";
 import { OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
@@ -110,8 +110,8 @@ export function DesignerSupplementPanel({
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
-        <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain border-b border-slate-100 p-2 lg:border-b-0 lg:border-r">
+      <div className={EVAL_WORKBENCH_SPLIT_GRID}>
+        <div className={EVAL_WORKBENCH_SPLIT_LIST}>
           {filtered.length === 0 ? (
             <p className="px-4 py-12 text-center text-sm text-slate-500">
               {eligibleOrders.length === 0
@@ -149,7 +149,7 @@ export function DesignerSupplementPanel({
           )}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain p-2 sm:p-3">
+        <div className={EVAL_WORKBENCH_SPLIT_DETAIL}>
           {selectedOrder ? (
             detailPane ? (
               detailPane(selectedOrder, supplementPane)
@@ -157,8 +157,8 @@ export function DesignerSupplementPanel({
               supplementPane
             )
           ) : (
-            <div className="flex h-full min-h-[280px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-sm text-slate-500">
-              请从左侧选择订单填写增补单
+            <div className="flex min-h-[8rem] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500">
+              请从列表选择订单填写增补单
             </div>
           )}
         </div>

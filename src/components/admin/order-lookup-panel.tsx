@@ -1,6 +1,6 @@
 "use client";
 
-import { EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
+import { EVAL_WORKBENCH_FILL_PANE, EVAL_WORKBENCH_SPLIT_DETAIL, EVAL_WORKBENCH_SPLIT_GRID, EVAL_WORKBENCH_SPLIT_LIST } from "@/components/evaluation/sticky-section";
 import { OrderList } from "@/components/orders/order-list";
 import { OrderAnomalyBadges, OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { OrderSearchBar, type OrderDispatchLookupFilter } from "@/components/manager/order-search-bar";
@@ -252,8 +252,8 @@ export function OrderLookupPanel({
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
-        <div className="min-h-0 space-y-2 overflow-y-auto overscroll-contain border-b border-slate-100 p-2 lg:border-b-0 lg:border-r">
+      <div className={EVAL_WORKBENCH_SPLIT_GRID}>
+        <div className={EVAL_WORKBENCH_SPLIT_LIST}>
             {filtered.length === 0 ? (
               <div className="vi-empty-state py-12 text-sm">
                 {lookupEmptyMessage}
@@ -290,7 +290,7 @@ export function OrderLookupPanel({
             )}
           </div>
 
-          <div className="flex min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain p-2 sm:p-3">
+          <div className={EVAL_WORKBENCH_SPLIT_DETAIL}>
             {selectedOrder ? (
               <OrderList
                 layout="stack"
@@ -361,8 +361,8 @@ export function OrderLookupPanel({
                 }
               />
             ) : (
-              <div className="flex h-full min-h-[280px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 text-sm text-slate-500">
-                请从左侧选择订单查看详情
+              <div className="flex min-h-[12rem] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500 max-lg:min-h-[8rem]">
+                请从列表选择订单查看详情
               </div>
             )}
           </div>

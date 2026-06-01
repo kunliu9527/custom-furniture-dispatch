@@ -1,3 +1,9 @@
+"use client";
+
+import {
+  WorkbenchMobileChips,
+  type WorkbenchMobileChipItem,
+} from "@/components/workbench/workbench-mobile-chips";
 import type { ViewMode } from "@/lib/manager-stats";
 
 const tabs: { id: ViewMode; label: string; description: string }[] = [
@@ -32,36 +38,50 @@ interface ViewTabsProps {
 export function ViewTabs({ value, onChange, modes }: ViewTabsProps) {
   const visible = modes ?? tabs.map((t) => t.id);
   const visibleTabs = tabs.filter((tab) => visible.includes(tab.id));
+  const chips: WorkbenchMobileChipItem[] = visibleTabs.map((tab) => ({
+    id: tab.id,
+    label: tab.label,
+    hint: tab.description,
+  }));
 
   return (
-    <div
-      className={`grid gap-3 sm:grid-cols-2 ${
-        visibleTabs.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
-      }`}
-    >
-      {visibleTabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={`vi-view-tab ${value === tab.id ? "vi-view-tab-active" : ""}`}
-        >
-          <p
-            className={`text-sm font-semibold ${
-              value === tab.id ? "" : "text-zinc-900"
-            }`}
+    <>
+      <div className="lg:hidden">
+        <WorkbenchMobileChips
+          items={chips}
+          value={value}
+          onChange={(id) => onChange(id as ViewMode)}
+        />
+      </div>
+      <div
+        className={`hidden gap-3 lg:grid ${
+          visibleTabs.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
+        }`}
+      >
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            className={`vi-view-tab ${value === tab.id ? "vi-view-tab-active" : ""}`}
           >
-            {tab.label}
-          </p>
-          <p
-            className={`mt-1 text-xs ${
-              value === tab.id ? "" : "text-zinc-500"
-            }`}
-          >
-            {tab.description}
-          </p>
-        </button>
-      ))}
-    </div>
+            <p
+              className={`text-sm font-semibold ${
+                value === tab.id ? "" : "text-zinc-900"
+              }`}
+            >
+              {tab.label}
+            </p>
+            <p
+              className={`mt-1 text-xs ${
+                value === tab.id ? "" : "text-zinc-500"
+              }`}
+            >
+              {tab.description}
+            </p>
+          </button>
+        ))}
+      </div>
+    </>
   );
 }

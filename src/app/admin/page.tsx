@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminSidebar, AdminMobileNav } from "@/components/admin/admin-sidebar";
 import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
 import { EVAL_PAGE_MAIN_CLASS, EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
 import { OrderLookupPanel } from "@/components/admin/order-lookup-panel";
@@ -145,6 +145,13 @@ export default function AdminPage() {
             </div>
           ) : (
             <ModuleWorkbenchLayout
+              mobileTabs={
+                <AdminMobileNav
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  allowedModes={allowedAdminModes}
+                />
+              }
               sidebar={
                 <AdminSidebar
                   viewMode={viewMode}
@@ -179,7 +186,7 @@ export default function AdminPage() {
               {undispatchedOrders.length > 0 ? (
                 <section
                   id="admin-undispatched-section"
-                  className="flex max-h-[min(38%,16rem)] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-24"
+                  className="flex max-h-[min(38%,16rem)] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-24 max-lg:max-h-none max-lg:shrink"
                 >
                   <div className="shrink-0 border-b border-slate-200/80 px-4 py-2.5">
                     <LookupSectionHeading
@@ -191,7 +198,7 @@ export default function AdminPage() {
                       }
                     />
                   </div>
-                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 max-lg:flex-none max-lg:max-h-72 max-lg:overflow-y-auto">
                     <OrderList
                       orders={undispatchedOrders}
                       emptyMessage="暂无未派单客户"
