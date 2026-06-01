@@ -27,6 +27,11 @@
 .DS_Store
 *.pem
 
+# local tooling binaries & one-off import artifacts
+/tools/*.exe
+/pdf-extract.txt
+/import-summary.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*

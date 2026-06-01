@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
+    "clean": "node -e \"const fs=require('fs');for (const p of ['.next','out','build','coverage']) fs.rmSync(p,{recursive:true,force:true});\"",
     "dep": "node scripts/deploy.mjs",
     "sync:pull": "node scripts/pull-cloud-snapshot.mjs",
     "digest:cron": "node scripts/weekly-digest-cron.mjs",

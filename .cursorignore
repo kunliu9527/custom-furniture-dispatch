@@ -1,0 +1,18 @@
+﻿# Build output & dependencies (rebuilt on npm install / next dev)
+.next/
+node_modules/
+out/
+build/
+coverage/
+
+# Local runtime data (large JSON snapshots)
+data/
+
+# Env & secrets
+.env*
+*.pem
+
+# One-off import / tooling artifacts
+pdf-extract.txt
+import-summary.json
+tools/*.exe
