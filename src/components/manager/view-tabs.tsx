@@ -25,7 +25,7 @@ const tabs: { id: ViewMode; label: string; description: string }[] = [
   {
     id: "store",
     label: "按门店汇总",
-    description: "按设计师所在门店汇总订单数与明细",
+    description: "按派单人所属门店汇总（跨店单计入派单人店）",
   },
 ];
 

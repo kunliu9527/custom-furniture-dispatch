@@ -31,7 +31,8 @@ const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 const amountColumns = [
   { key: "notOrdered" as const, label: "未下单数/金额" },
   { key: "ordered" as const, label: "已下单数/金额" },
-  { key: "refunded" as const, label: "已退单数/金额" },
+  { key: "pendingRefund" as const, label: "待退单数/金额" },
+  { key: "confirmedRefund" as const, label: "已退单数/金额" },
 ];
 
 const designerExtraColumns = [
@@ -88,7 +89,7 @@ export function DispatcherEvaluationTable({
     });
   }
 
-  const minWidth = designerExtendedMetrics ? "min-w-[1080px]" : "min-w-[720px]";
+  const minWidth = designerExtendedMetrics ? "min-w-[1200px]" : "min-w-[920px]";
 
   return (
     <EvaluationTableScroll
@@ -107,94 +108,98 @@ export function DispatcherEvaluationTable({
           </TableAlgorithmCaption>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
             <th
-              className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell`}
+              className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
             >
-                {nameColumnLabel}
+              {nameColumnLabel}
+            </th>
+            <th className={`${thClass} text-center`}>合计</th>
+            {amountColumns.map((col) => (
+              <th key={col.key} className={`${thClass} text-center`}>
+                {col.label}
               </th>
-              <th className={`${thClass} text-center`}>合计</th>
-              {amountColumns.map((col) => (
-                <th key={col.key} className={`${thClass} text-center`}>
-                  {col.label}
-                </th>
-              ))}
+            ))}
+            {designerExtendedMetrics
+              ? designerExtraColumns.map((col) => (
+                  <th key={col.key} className={`${thClass} text-center`}>
+                    {col.label}
+                  </th>
+                ))
+              : null}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {dataRows.map((row) => (
+            <tr key={row.key} className="hover:bg-slate-50/50">
+              <td
+                className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
+              >
+                <div>{row.label}</div>
+                {row.subtitle ? (
+                  <div className="text-xs font-normal text-slate-500">
+                    {row.subtitle}
+                  </div>
+                ) : null}
+              </td>
+              <td
+                className={`${tdClass} text-center font-semibold text-indigo-700`}
+              >
+                {formatEvaluationMetric(row.total, row.totalAmount)}
+              </td>
+              {amountColumns.map((col) => {
+                const cell = row[col.key];
+                return (
+                  <td
+                    key={col.key}
+                    className={`${tdClass} text-center text-xs ${
+                      cell.count > 0 || cell.amount > 0
+                        ? col.key === "pendingRefund"
+                          ? "text-amber-800"
+                          : col.key === "confirmedRefund"
+                            ? "text-red-700"
+                            : "text-slate-800"
+                        : "text-slate-300"
+                    }`}
+                  >
+                    {formatEvaluationMetric(cell.count, cell.amount)}
+                  </td>
+                );
+              })}
+              {designerExtendedMetrics ? renderDesignerExtras(row) : null}
+            </tr>
+          ))}
+          {workflowRow ? (
+            <tr className="border-t-2 border-rose-100 bg-rose-50/40">
+              <td
+                className={`${tdClass} sticky left-0 z-[1] bg-rose-50/95 font-semibold text-rose-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
+              >
+                {workflowRow.label}
+              </td>
+              <td
+                className={`${tdClass} text-center font-semibold text-rose-800`}
+              >
+                {formatEvaluationMetric(
+                  workflowRow.total,
+                  workflowRow.totalAmount,
+                )}
+              </td>
+              {amountColumns.map((col) => {
+                const cell = workflowRow[col.key];
+                return (
+                  <td
+                    key={col.key}
+                    className={`${tdClass} text-center text-xs font-medium text-rose-900`}
+                  >
+                    {formatEvaluationMetric(cell.count, cell.amount)}
+                  </td>
+                );
+              })}
               {designerExtendedMetrics
-                ? designerExtraColumns.map((col) => (
-                    <th key={col.key} className={`${thClass} text-center`}>
-                      {col.label}
-                    </th>
-                  ))
+                ? renderDesignerExtras(workflowRow, true)
                 : null}
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {dataRows.map((row) => (
-              <tr key={row.key} className="hover:bg-slate-50/50">
-                <td
-                  className={`${tdClass} sticky left-0 bg-white font-medium text-slate-900`}
-                >
-                  <div>{row.label}</div>
-                  {row.subtitle ? (
-                    <div className="text-xs font-normal text-slate-500">
-                      {row.subtitle}
-                    </div>
-                  ) : null}
-                </td>
-                <td
-                  className={`${tdClass} text-center font-semibold text-indigo-700`}
-                >
-                  {formatEvaluationMetric(row.total, row.totalAmount)}
-                </td>
-                {amountColumns.map((col) => {
-                  const cell = row[col.key];
-                  return (
-                    <td
-                      key={col.key}
-                      className={`${tdClass} text-center text-xs ${
-                        cell.count > 0 || cell.amount > 0
-                          ? "text-slate-800"
-                          : "text-slate-300"
-                      }`}
-                    >
-                      {formatEvaluationMetric(cell.count, cell.amount)}
-                    </td>
-                  );
-                })}
-                {designerExtendedMetrics ? renderDesignerExtras(row) : null}
-              </tr>
-            ))}
-            {workflowRow ? (
-              <tr className="border-t-2 border-rose-100 bg-rose-50/40">
-                <td
-                  className={`${tdClass} sticky left-0 bg-rose-50/95 font-semibold text-rose-900`}
-                >
-                  {workflowRow.label}
-                </td>
-                <td
-                  className={`${tdClass} text-center font-semibold text-rose-800`}
-                >
-                  {formatEvaluationMetric(
-                    workflowRow.total,
-                    workflowRow.totalAmount,
-                  )}
-                </td>
-                {amountColumns.map((col) => {
-                  const cell = workflowRow[col.key];
-                  return (
-                    <td
-                      key={col.key}
-                      className={`${tdClass} text-center text-xs font-medium text-rose-900`}
-                    >
-                      {formatEvaluationMetric(cell.count, cell.amount)}
-                    </td>
-                  );
-                })}
-                {designerExtendedMetrics
-                  ? renderDesignerExtras(workflowRow, true)
-                  : null}
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+          ) : null}
+        </tbody>
+      </table>
     </EvaluationTableScroll>
   );
 }

@@ -35,7 +35,10 @@ const dualRankColumns = [
   { key: "ordered" as const, label: "已下单排名" },
 ] as const;
 
-const refundedColumn = { key: "refunded" as const, label: "已退单" };
+const refundedColumns = [
+  { key: "pendingRefund" as const, label: "待退单" },
+  { key: "confirmedRefund" as const, label: "已退单" },
+] as const;
 
 const designerExtraRankColumns = [
   { key: "conversion" as const, label: "下单转化率排名" },
@@ -135,7 +138,7 @@ export function DispatcherEvaluationRankingTable({
   }
 
   const emptyDual: MetricDualRank = { countPlace: null, amountPlace: null };
-  const minWidth = designerExtendedMetrics ? "min-w-[960px]" : "min-w-[720px]";
+  const minWidth = designerExtendedMetrics ? "min-w-[1040px]" : "min-w-[800px]";
 
   return (
     <EvaluationTableScroll
@@ -154,7 +157,7 @@ export function DispatcherEvaluationRankingTable({
           </TableAlgorithmCaption>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
               <th
-                className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell text-left`}
+                className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell text-left shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
               >
                 {nameColumnLabel}
               </th>
@@ -171,7 +174,11 @@ export function DispatcherEvaluationRankingTable({
                     </th>
                   ))
                 : null}
-              <th className={thClass}>{refundedColumn.label}</th>
+              {refundedColumns.map((col) => (
+                <th key={col.key} className={thClass}>
+                  {col.label}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -181,7 +188,7 @@ export function DispatcherEvaluationRankingTable({
               return (
                 <tr key={row.key} className="hover:bg-slate-50/50">
                   <td
-                    className={`${tdClass} sticky left-0 bg-white font-medium text-slate-900`}
+                    className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
                   >
                     <div>{row.label}</div>
                     {row.subtitle ? (
@@ -206,7 +213,16 @@ export function DispatcherEvaluationRankingTable({
                       />
                     </>
                   ) : null}
-                  <RefundedCell filled={ranks?.refundedFilled ?? false} />
+                  {refundedColumns.map((col) => (
+                    <RefundedCell
+                      key={col.key}
+                      filled={
+                        col.key === "pendingRefund"
+                          ? (ranks?.pendingRefundFilled ?? false)
+                          : (ranks?.confirmedRefundFilled ?? false)
+                      }
+                    />
+                  ))}
                 </tr>
               );
             })}

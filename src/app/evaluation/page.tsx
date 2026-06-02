@@ -148,7 +148,14 @@ import {
 } from "@/lib/strong-pin-order";
 import { sortOrdersNewestFirst } from "@/lib/order-utils";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
+import type { ViewMode } from "@/lib/manager-stats";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+/** 数据 Tab（派单人/设计师/门店）→ 订单查询查找模式 */
+function evaluationViewToLookupMode(mode: EvaluationViewMode): ViewMode {
+  if (mode === "acceptance") return "status";
+  return mode;
+}
 
 const viewConfig: Record<
   EvaluationViewMode,
@@ -246,10 +253,28 @@ export default function EvaluationPage() {
     setAfterSalesAmount,
     setOrderIssueTags,
     sessionResetKey,
+    initialViewMode: evaluationViewToLookupMode(
+      getDefaultEvaluationViewMode(user),
+    ),
     searchHintBase: storeScoped && scopeLabel
       ? `${scopeLabel} · 订单查询按此统计周期`
       : "订单查询按此统计周期",
   });
+
+  /** 订单查询与当前数据 Tab（派单人/设计师/门店）对齐 */
+  useEffect(() => {
+    if (mainSection !== "operations" || operationsSubView !== "lookup") return;
+    const mapped = evaluationViewToLookupMode(viewMode);
+    if (lookup.viewMode !== mapped) {
+      lookup.handleViewModeChange(mapped);
+    }
+  }, [
+    mainSection,
+    operationsSubView,
+    viewMode,
+    lookup.viewMode,
+    lookup.handleViewModeChange,
+  ]);
 
   useEffect(() => {
     if (!user?.username) return;
@@ -1296,9 +1321,9 @@ export default function EvaluationPage() {
                         footnote={
                           rowScope.storeNames && storeScoped
                             ? rowScope.storeNames.length > 1
-                              ? "名次在分管门店内计算 · 按派单人名册所属门店归集"
-                              : "本店数据 · 按派单人名册所属门店归集"
-                            : "按派单人名册所属门店归集 · 单元格为 数量 / 金额"
+                              ? "名次在分管门店内计算 · 按派单人所属门店 · 本店合计=本店派单人之和"
+                              : "本店数据 · 按派单人所属门店 · 跨店单计入派单人店"
+                            : "按派单人所属门店 · 本店合计=本店派单人之和 · 单元格为 数量 / 金额"
                         }
                       />
                     ) : (
@@ -1306,7 +1331,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="门店名称"
                         rows={storeDispatcherAmountRows}
                         emptyMessage="当前权限范围内暂无派单金额数据"
-                        footnote="按派单人名册所属门店归集 · 单元格为 数量 / 金额"
+                        footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单已减已退单"
                       />
                     )}
                   </>
@@ -1347,7 +1372,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="设计师"
                         rows={designerAmountRows}
                         emptyMessage="当前权限范围内暂无设计师排名数据"
-                        footnote="按订单 designer 字段归集 · 单元格为 数量 / 金额"
+                        footnote="按订单 designer 归集 · 副标题为订单派单门店 · 单元格为 数量 / 金额"
                         designerExtendedMetrics
                       />
                     ) : (
@@ -1355,7 +1380,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="设计师"
                         rows={designerAmountRows}
                         emptyMessage="当前权限范围内暂无设计师归总数据"
-                        footnote="按订单 designer 字段归集 · 单元格为 数量 / 金额"
+                        footnote="按订单 designer 归集 · 副标题为订单派单门店 · 单元格为 数量 / 金额"
                         designerExtendedMetrics
                       />
                     )}

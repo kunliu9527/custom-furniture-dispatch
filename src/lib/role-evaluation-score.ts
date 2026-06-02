@@ -6,11 +6,9 @@ import {
 } from "./acceptance-rating";
 import { aggregatePersonRatings, filterDeliveryOrders } from "./customer-ratings";
 import { STORES } from "./designers";
-import { orderBelongsToStoreSummary } from "./dispatchers";
-import {
-  classifyDispatcherOrder,
-  getDispatcherEvaluationRows,
-} from "./evaluation-stats";
+import { classifyOrderAmount } from "./order-amount";
+import { orderBelongsToDispatcherStore } from "./order-store-attribution";
+import { getDispatcherEvaluationRows } from "./evaluation-stats";
 import { getDispatcherPerformanceRows } from "./dispatcher-performance";
 import { getDesignerPerformanceRows,
   type DesignerPerformanceRow,
@@ -108,16 +106,19 @@ function computeComposite(
   );
 }
 
-/** 总订单额：未下单 + 已下单 − 已确定退单 */
+/** 总订单额：未下单 + 已下单 − 待退单 − 已退单 */
 export function computeNetTotalOrderAmount(
   orders: Order[],
   supplements: SupplementOrder[],
 ): number {
   let net = 0;
   for (const order of orders) {
-    const parts = classifyDispatcherOrder(order, supplements);
+    const parts = classifyOrderAmount(order, supplements);
     net +=
-      parts.notOrdered.amount + parts.ordered.amount - parts.refunded.amount;
+      parts.notOrdered.amount +
+      parts.ordered.amount -
+      parts.pendingRefund.amount -
+      parts.confirmedRefund.amount;
   }
   return Math.max(0, net);
 }
@@ -315,21 +316,6 @@ function buildStoreSummary(
   return "经营平稳，建议平衡拓盘、下单与退单售后管控。";
 }
 
-function measurePendingRefundAmount(
-  order: Order,
-  supplements: SupplementOrder[],
-): number {
-  if (order.status !== "待退单") return 0;
-  const supplementTotal = sumSupplementAmount(supplements, order.id);
-  const main =
-    order.orderAmount != null && order.orderAmount > 0
-      ? order.orderAmount
-      : order.budget > 0
-        ? order.budget
-        : 0;
-  return main + supplementTotal;
-}
-
 function computeStoreQualityScore(input: {
   pendingRefundCount: number;
   confirmedRefundCount: number;
@@ -366,13 +352,12 @@ function buildStoreEntries(
 
   for (const store of STORES) {
     const storeOrders = orders.filter((o) =>
-      orderBelongsToStoreSummary(o, store, staffRecords),
+      orderBelongsToDispatcherStore(o, store, staffRecords),
     );
     if (storeOrders.length < MIN_STORE_RANK_ORDERS) continue;
 
     let notOrdered = 0;
     let ordered = 0;
-    let refunded = 0;
     let pendingRefundCount = 0;
     let pendingRefundAmount = 0;
     let confirmedRefundCount = 0;
@@ -380,25 +365,27 @@ function buildStoreEntries(
     let afterSalesAmount = 0;
 
     for (const order of storeOrders) {
-      const parts = classifyDispatcherOrder(order, supplements);
+      const parts = classifyOrderAmount(order, supplements);
       notOrdered += parts.notOrdered.amount;
       ordered += parts.ordered.amount;
-      refunded += parts.refunded.amount;
 
       if (order.status === "待退单") {
         pendingRefundCount += 1;
-        pendingRefundAmount += measurePendingRefundAmount(order, supplements);
+        pendingRefundAmount += parts.pendingRefund.amount;
       }
       if (order.status === "已退单") {
         confirmedRefundCount += 1;
-        confirmedRefundAmount += parts.refunded.amount;
+        confirmedRefundAmount += parts.confirmedRefund.amount;
       }
       if (order.afterSalesAmount != null && order.afterSalesAmount > 0) {
         afterSalesAmount += order.afterSalesAmount;
       }
     }
 
-    const netTotalAmount = Math.max(0, notOrdered + ordered - refunded);
+    const netTotalAmount = Math.max(
+      0,
+      notOrdered + ordered - pendingRefundAmount - confirmedRefundAmount,
+    );
     const qualityScore = computeStoreQualityScore({
       pendingRefundCount,
       confirmedRefundCount,
@@ -527,7 +514,8 @@ function scoreDispatchers(
   if (eligible.length === 0) return [];
 
   const netTotals = eligible.map(
-    (r) => r.notOrdered.amount + r.ordered.amount - r.refunded.amount,
+    (r) =>
+      r.notOrdered.amount + r.ordered.amount - r.pendingRefund.amount,
   );
   const dispatchCounts = eligible.map(
     (r) => perfByName.get(r.label)?.newDispatchCount ?? r.total,
@@ -545,7 +533,10 @@ function scoreDispatchers(
     const perf = perfByName.get(row.label);
     const netTotal = Math.max(0, netTotals[i]!);
     const refundRate =
-      row.total > 0 ? (row.refunded.count / row.total) * 100 : 0;
+      row.total > 0
+        ? ((row.pendingRefund.count + row.confirmedRefund.count) / row.total) *
+          100
+        : 0;
     const signTimeout = perf?.signTimeoutCount ?? 0;
 
     const outputScore = clampScore(

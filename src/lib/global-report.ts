@@ -74,7 +74,10 @@ function sumOrderPortfolioAmount(
 ): number {
   const parts = classifyDispatcherOrder(order, supplements);
   return (
-    parts.notOrdered.amount + parts.ordered.amount + parts.refunded.amount
+    parts.notOrdered.amount +
+    parts.ordered.amount +
+    parts.pendingRefund.amount +
+    parts.confirmedRefund.amount
   );
 }
 
@@ -107,15 +110,14 @@ export function computeGlobalDigestAmounts(
   let refundAmount = 0;
   for (const order of periodOrders) {
     const parts = classifyDispatcherOrder(order, periodSupplements);
-    refundAmount += parts.refunded.amount;
+    refundAmount += parts.confirmedRefund.amount;
   }
 
   let pendingRefundAmount = 0;
   for (const order of orders) {
     if (order.status !== "待退单") continue;
     const parts = classifyDispatcherOrder(order, supplements);
-    pendingRefundAmount +=
-      parts.notOrdered.amount + parts.ordered.amount + parts.refunded.amount;
+    pendingRefundAmount += parts.pendingRefund.amount;
   }
 
   return { newDispatchAmount, refundAmount, pendingRefundAmount };

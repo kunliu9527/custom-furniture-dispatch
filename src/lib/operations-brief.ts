@@ -101,7 +101,10 @@ function orderAmountParts(
 ): number {
   const parts = classifyDispatcherOrder(order, supplements);
   return (
-    parts.notOrdered.amount + parts.ordered.amount + parts.refunded.amount
+    parts.notOrdered.amount +
+    parts.ordered.amount +
+    parts.pendingRefund.amount +
+    parts.confirmedRefund.amount
   );
 }
 
@@ -126,8 +129,8 @@ function aggregateOrderMetrics(
     const parts = classifyDispatcherOrder(order, supplements);
     orderedAmount += parts.ordered.amount;
     orderedCount += parts.ordered.count;
-    refundCount += parts.refunded.count;
-    refundAmount += parts.refunded.amount;
+    refundCount += parts.pendingRefund.count + parts.confirmedRefund.count;
+    refundAmount += parts.pendingRefund.amount + parts.confirmedRefund.amount;
     if (signedInPeriod(order, period)) {
       signedContractAmount += order.contract?.contractAmount ?? 0;
       signedCount += 1;
@@ -239,8 +242,8 @@ function metricsForWeekRef(
     const parts = classifyDispatcherOrder(order, supplements);
     orderedAmount += parts.ordered.amount;
     orderedCount += parts.ordered.count;
-    refundCount += parts.refunded.count;
-    refundAmount += parts.refunded.amount;
+    refundCount += parts.pendingRefund.count + parts.confirmedRefund.count;
+    refundAmount += parts.pendingRefund.amount + parts.confirmedRefund.amount;
     if (signedInBounds(order.contract?.signedAt, bounds)) {
       signedContractAmount += order.contract?.contractAmount ?? 0;
       signedCount += 1;

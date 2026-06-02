@@ -14,6 +14,9 @@ export interface AggregateRowRankNumbers {
   total: MetricDualRank;
   notOrdered: MetricDualRank;
   ordered: MetricDualRank;
+  pendingRefundFilled: boolean;
+  confirmedRefundFilled: boolean;
+  /** @deprecated */
   refundedFilled: boolean;
 }
 
@@ -121,7 +124,8 @@ export function computeAggregateRowRankNumbers(
 
   const marks = new Map<string, AggregateRowRankNumbers>();
   for (const row of dataRows) {
-    const refunded = row.refunded;
+    const pending = row.pendingRefund;
+    const confirmed = row.confirmedRefund;
     marks.set(row.key, {
       total: buildDualRank(totalCountPlaces, totalAmountPlaces, row.key),
       notOrdered: buildDualRank(
@@ -130,7 +134,13 @@ export function computeAggregateRowRankNumbers(
         row.key,
       ),
       ordered: buildDualRank(orderedCountPlaces, orderedAmountPlaces, row.key),
-      refundedFilled: refunded.count > 0 || refunded.amount > 0,
+      pendingRefundFilled: pending.count > 0 || pending.amount > 0,
+      confirmedRefundFilled: confirmed.count > 0 || confirmed.amount > 0,
+      refundedFilled:
+        pending.count > 0 ||
+        pending.amount > 0 ||
+        confirmed.count > 0 ||
+        confirmed.amount > 0,
     });
   }
   return marks;

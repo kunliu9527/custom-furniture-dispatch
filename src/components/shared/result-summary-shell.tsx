@@ -60,7 +60,7 @@ export function ResultSummaryShell({
             <span className="mx-1 text-slate-300">·</span>
             未下单金额{" "}
             <span className="font-medium text-slate-800">
-              {formatDispatchMoney(amounts.notOrderedAmount)}
+              {formatDispatchMoney(amounts.netNotOrderedAmount)}
             </span>
           </p>
           <p className={`mt-1 text-xs font-semibold ${totalAmountClassName}`}>
@@ -74,9 +74,14 @@ export function ResultSummaryShell({
               </span>
             </p>
           ) : null}
-          {amounts.refundAmount > 0 ? (
+          {amounts.pendingRefundAmount > 0 ? (
+            <p className="mt-1 text-xs text-amber-700">
+              待退单金额 {formatDispatchMoney(amounts.pendingRefundAmount)}
+            </p>
+          ) : null}
+          {amounts.confirmedRefundAmount > 0 ? (
             <p className="mt-1 text-xs text-red-600">
-              退单金额 {formatDispatchMoney(amounts.refundAmount)}
+              已退单金额 {formatDispatchMoney(amounts.confirmedRefundAmount)}
             </p>
           ) : null}
           {afterSalesTotal > 0 ? (

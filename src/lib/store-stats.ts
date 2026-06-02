@@ -1,4 +1,4 @@
-import { orderBelongsToStoreSummary } from "./dispatchers";
+import { orderBelongsToDispatcherStore } from "./order-store-attribution";
 import { STORES } from "./designers";
 import { createEmptyStatusCounts } from "./manager-stats";
 import type { Order, OrderStatus, StoreName } from "./types";
@@ -12,7 +12,7 @@ export interface StoreOrderStats {
 export function getStoreStatsByDispatcher(orders: Order[]): StoreOrderStats[] {
   return STORES.map((store) => {
     const storeOrders = orders.filter((o) =>
-      orderBelongsToStoreSummary(o, store),
+      orderBelongsToDispatcherStore(o, store),
     );
     const byStatus = createEmptyStatusCounts();
     for (const order of storeOrders) {
@@ -48,5 +48,5 @@ export function filterOrdersByDispatcherStore(
   store: StoreName | "全部",
 ): Order[] {
   if (store === "全部") return orders;
-  return orders.filter((o) => orderBelongsToStoreSummary(o, store));
+  return orders.filter((o) => orderBelongsToDispatcherStore(o, store));
 }

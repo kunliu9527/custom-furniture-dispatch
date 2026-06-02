@@ -1,5 +1,5 @@
 import { STORES } from "./designers";
-import { orderBelongsToStoreSummary } from "./dispatchers";
+import { orderBelongsToDispatchStore } from "./order-store-attribution";
 import {
   aggregatePersonRatings,
   buildOrderCustomerRatingRecords,
@@ -39,7 +39,7 @@ export function getAcceptanceStoreRows(
 ): AcceptanceStoreRow[] {
   const stores = storeNames?.length ? storeNames : [...STORES];
   return stores.map((store) => {
-    const storeOrders = orders.filter((o) => orderBelongsToStoreSummary(o, store));
+    const storeOrders = orders.filter((o) => orderBelongsToDispatchStore(o, store));
     const summary = summarizeCustomerRatings(storeOrders);
     const pendingCount = storeOrders.filter((o) => o.status === "已安装").length;
     return {

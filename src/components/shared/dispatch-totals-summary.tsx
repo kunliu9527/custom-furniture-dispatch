@@ -25,11 +25,17 @@ export function DispatchTotalsSummary({
       <p className="mt-0.5 text-slate-500">
         已下单 {formatDispatchMoney(totals.orderedAmount)}
         <span className="mx-1">+</span>
-        未下单 {formatDispatchMoney(totals.notOrderedAmount)}
-        {totals.refundAmount > 0 ? (
+        未下单 {formatDispatchMoney(totals.netNotOrderedAmount)}
+        {totals.pendingRefundAmount > 0 ? (
           <>
             <span className="mx-1">·</span>
-            退单 {formatDispatchMoney(totals.refundAmount)}
+            待退单 {formatDispatchMoney(totals.pendingRefundAmount)}
+          </>
+        ) : null}
+        {totals.confirmedRefundAmount > 0 ? (
+          <>
+            <span className="mx-1">·</span>
+            已退单 {formatDispatchMoney(totals.confirmedRefundAmount)}
           </>
         ) : null}
       </p>

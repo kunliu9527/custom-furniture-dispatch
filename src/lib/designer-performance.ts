@@ -142,9 +142,10 @@ export function buildDesignerPerformanceRow(
   for (const order of personOrders) {
     const parts = classifyDispatcherOrder(order, supplements);
     orderedAmount += parts.ordered.amount;
-    if (parts.refunded.count > 0) {
+    if (parts.pendingRefund.count > 0 || parts.confirmedRefund.count > 0) {
       refundCount += 1;
-      refundedAmount += parts.refunded.amount;
+      refundedAmount +=
+        parts.pendingRefund.amount + parts.confirmedRefund.amount;
     }
     if (order.afterSalesAmount != null && order.afterSalesAmount > 0) {
       afterSalesAmount += order.afterSalesAmount;
@@ -168,7 +169,9 @@ export function buildDesignerPerformanceRow(
 
   const inProgressCount = loadOrders.filter(isInProgress).length;
   const orderedCount = personOrders.filter(
-    (o) => !isRefundStatus(o.status) && (o.status === "已下单" || o.status === "已安装"),
+    (o) =>
+      !isRefundStatus(o.status) &&
+      (o.status === "已下单" || o.status === "已安装" || o.status === "已验收"),
   ).length;
 
   const totalAmount =
@@ -235,7 +238,10 @@ function partsSum(orders: Order[], supplements: SupplementOrder[]): number {
   for (const order of orders) {
     const parts = classifyDispatcherOrder(order, supplements);
     total +=
-      parts.notOrdered.amount + parts.ordered.amount + parts.refunded.amount;
+      parts.notOrdered.amount +
+      parts.ordered.amount +
+      parts.pendingRefund.amount +
+      parts.confirmedRefund.amount;
   }
   return total;
 }
@@ -311,7 +317,7 @@ export function getMonthlyReportOverview(
     const parts = classifyDispatcherOrder(order, filteredSupplements);
     orderedCount += parts.ordered.count;
     orderedAmount += parts.ordered.amount;
-    refundCount += parts.refunded.count;
+    refundCount += parts.pendingRefund.count + parts.confirmedRefund.count;
   }
 
   for (const s of filteredSupplements) {

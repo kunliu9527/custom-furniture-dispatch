@@ -1,6 +1,9 @@
 import { normalizeDispatcherName } from "./admin-stats";
 import { filterOrdersByStatus } from "./manager-stats";
-import { orderBelongsToStoreSummary } from "./dispatchers";
+import {
+  getOrderStoreByDispatcherAffiliation,
+  orderBelongsToDispatcherStore,
+} from "./order-store-attribution";
 import { STORES } from "./designers";
 import type { Order, OrderStatus, StoreName } from "./types";
 
@@ -40,7 +43,7 @@ export function applyResultDrillFilters(
   }
   if (drill.store !== "全部") {
     const store = drill.store;
-    list = list.filter((o) => orderBelongsToStoreSummary(o, store));
+    list = list.filter((o) => orderBelongsToDispatcherStore(o, store));
   }
   return list;
 }
@@ -83,11 +86,8 @@ export function countByStore(orders: Order[]): Map<StoreName, number> {
     map.set(store, 0);
   }
   for (const order of orders) {
-    for (const store of STORES) {
-      if (orderBelongsToStoreSummary(order, store)) {
-        map.set(store, (map.get(store) ?? 0) + 1);
-      }
-    }
+    const store = getOrderStoreByDispatcherAffiliation(order);
+    map.set(store, (map.get(store) ?? 0) + 1);
   }
   return map;
 }

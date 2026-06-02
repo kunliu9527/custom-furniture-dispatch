@@ -173,8 +173,8 @@ function aggregateMonthPoint(
     const parts = classifyDispatcherOrder(order, periodSupplements);
     orderedAmount += parts.ordered.amount;
     orderedCount += parts.ordered.count;
-    refundCount += parts.refunded.count;
-    refundAmount += parts.refunded.amount;
+    refundCount += parts.pendingRefund.count + parts.confirmedRefund.count;
+    refundAmount += parts.pendingRefund.amount + parts.confirmedRefund.amount;
     if (signedInPeriod(order, period)) {
       signedContractAmount += order.contract?.contractAmount ?? 0;
     }

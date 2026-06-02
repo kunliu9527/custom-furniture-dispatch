@@ -2,16 +2,22 @@ import { normalizeDispatcherName } from "./admin-stats";
 import { ORDER_STATUSES } from "./constants";
 import { formatDispatchMoney } from "./dispatch-totals";
 import {
+  classifyOrderAmount,
+  netNotOrderedCell,
+  type OrderAmountMetricCell,
+} from "./order-amount";
+import {
   getDispatcherHomeStore,
   getEffectiveDispatcherRoster,
-  orderBelongsToStoreSummary,
 } from "./dispatchers";
+import {
+  orderBelongsToDispatcherStore,
+  resolveDesignerDispatchStoreSubtitle,
+} from "./order-store-attribution";
 import { buildDesignerHomeStoreIndex } from "./designer-staff-store";
 import { buildEffectiveDesignerRoster } from "./personnel-roster";
 import type { StaffRecord } from "./staff-roster";
 import { createEmptyStatusCounts } from "./manager-stats";
-import { isRefundStatus } from "./order-utils";
-import { sumSupplementAmount } from "./supplement-utils";
 import { STORES } from "./designers";
 import type { Order, OrderStatus, StoreName, SupplementOrder } from "./types";
 
@@ -22,6 +28,11 @@ export interface EvaluationMetricCell {
   amount: number;
 }
 
+/** 展示用未下单（已减已退单）；原始桶见 rawNotOrdered */
+export interface NotOrderedDisplayCell extends EvaluationMetricCell {
+  rawNotOrdered: EvaluationMetricCell;
+}
+
 export interface EvaluationTabSummary {
   count: number;
   amount: number;
@@ -30,15 +41,18 @@ export interface EvaluationTabSummary {
   metricHint?: string;
 }
 
-/** 派单人：未下单 / 已下单 / 已退单 三类金额 */
+/** 派单人 / 门店 / 设计师：未下单 / 已下单 / 待退单 / 已退单 */
 export interface DispatcherEvaluationRow {
   key: string;
   label: string;
   subtitle?: string;
   total: number;
   totalAmount: number;
-  notOrdered: EvaluationMetricCell;
+  notOrdered: NotOrderedDisplayCell;
   ordered: EvaluationMetricCell;
+  pendingRefund: EvaluationMetricCell;
+  confirmedRefund: EvaluationMetricCell;
+  /** @deprecated 使用 pendingRefund + confirmedRefund */
   refunded: EvaluationMetricCell;
   /** 已下单金额 ÷ 合计金额（百分比，0–100） */
   orderConversionRate: number | null;
@@ -109,47 +123,41 @@ export function formatAfterSalesTotal(amount: number): string {
   return formatDispatchMoney(amount);
 }
 
-function isOrderReachedPlaced(order: Order): boolean {
-  return order.status === "已下单" || order.status === "已安装";
+function toNotOrderedDisplay(
+  raw: OrderAmountMetricCell,
+  confirmedRefund: OrderAmountMetricCell,
+): NotOrderedDisplayCell {
+  const net = netNotOrderedCell(raw, confirmedRefund);
+  return {
+    count: net.count,
+    amount: net.amount,
+    rawNotOrdered: { ...raw },
+  };
 }
 
-/** 派单人定单三类金额拆分 */
+/** @deprecated 使用 classifyOrderAmount */
 export function classifyDispatcherOrder(
   order: Order,
   supplements: SupplementOrder[],
 ): {
   notOrdered: EvaluationMetricCell;
   ordered: EvaluationMetricCell;
+  pendingRefund: EvaluationMetricCell;
+  confirmedRefund: EvaluationMetricCell;
   refunded: EvaluationMetricCell;
 } {
-  const supplementTotal = sumSupplementAmount(supplements, order.id);
-  const notOrdered = emptyMetricCell();
-  const ordered = emptyMetricCell();
-  const refunded = emptyMetricCell();
-
-  if (order.status === "已退单") {
-    const main =
-      order.orderAmount != null && order.orderAmount > 0
-        ? order.orderAmount
-        : order.budget > 0
-          ? order.budget
-          : 0;
-    addMetricCell(refunded, 1, main + supplementTotal);
-    return { notOrdered, ordered, refunded };
-  }
-
-  if (isOrderReachedPlaced(order)) {
-    const main =
-      order.orderAmount != null && order.orderAmount > 0
-        ? order.orderAmount
-        : 0;
-    addMetricCell(ordered, 1, main + supplementTotal);
-    return { notOrdered, ordered, refunded };
-  }
-
-  const budget = order.budget > 0 ? order.budget : 0;
-  addMetricCell(notOrdered, 1, budget);
-  return { notOrdered, ordered, refunded };
+  const parts = classifyOrderAmount(order, supplements);
+  const refunded: EvaluationMetricCell = {
+    count: parts.pendingRefund.count + parts.confirmedRefund.count,
+    amount: parts.pendingRefund.amount + parts.confirmedRefund.amount,
+  };
+  return {
+    notOrdered: parts.notOrdered,
+    ordered: parts.ordered,
+    pendingRefund: parts.pendingRefund,
+    confirmedRefund: parts.confirmedRefund,
+    refunded,
+  };
 }
 
 function aggregateDispatcherOrders(
@@ -159,27 +167,52 @@ function aggregateDispatcherOrders(
   DispatcherEvaluationRow,
   "key" | "label" | "subtitle" | "isWorkflowSummary"
 > {
-  const notOrdered = emptyMetricCell();
+  const rawNotOrdered = emptyMetricCell();
   const ordered = emptyMetricCell();
-  const refunded = emptyMetricCell();
+  const pendingRefund = emptyMetricCell();
+  const confirmedRefund = emptyMetricCell();
 
   let afterSalesTotal = 0;
 
   for (const order of orders) {
-    const parts = classifyDispatcherOrder(order, supplements);
-    addMetricCell(notOrdered, parts.notOrdered.count, parts.notOrdered.amount);
+    const parts = classifyOrderAmount(order, supplements);
+    addMetricCell(rawNotOrdered, parts.notOrdered.count, parts.notOrdered.amount);
     addMetricCell(ordered, parts.ordered.count, parts.ordered.amount);
-    addMetricCell(refunded, parts.refunded.count, parts.refunded.amount);
+    addMetricCell(
+      pendingRefund,
+      parts.pendingRefund.count,
+      parts.pendingRefund.amount,
+    );
+    addMetricCell(
+      confirmedRefund,
+      parts.confirmedRefund.count,
+      parts.confirmedRefund.amount,
+    );
     if (order.afterSalesAmount != null && order.afterSalesAmount > 0) {
       afterSalesTotal += order.afterSalesAmount;
     }
   }
 
+  const notOrdered = toNotOrderedDisplay(rawNotOrdered, confirmedRefund);
+  const refunded: EvaluationMetricCell = {
+    count: pendingRefund.count + confirmedRefund.count,
+    amount: pendingRefund.amount + confirmedRefund.amount,
+  };
+
   const totalAmount =
-    notOrdered.amount + ordered.amount + refunded.amount;
+    rawNotOrdered.amount +
+    ordered.amount +
+    pendingRefund.amount +
+    confirmedRefund.amount;
+
+  const netPipeline =
+    rawNotOrdered.amount +
+    ordered.amount -
+    pendingRefund.amount -
+    confirmedRefund.amount;
 
   const orderConversionRate =
-    totalAmount > 0 ? (ordered.amount / totalAmount) * 100 : null;
+    netPipeline > 0 ? (ordered.amount / netPipeline) * 100 : null;
   const averageOrderAmount =
     ordered.count > 0 ? ordered.amount / ordered.count : null;
 
@@ -188,6 +221,8 @@ function aggregateDispatcherOrders(
     totalAmount,
     notOrdered,
     ordered,
+    pendingRefund,
+    confirmedRefund,
     refunded,
     orderConversionRate,
     averageOrderAmount,
@@ -348,7 +383,8 @@ export function getDesignerAmountRows(
         profile.name,
         personOrders,
         supplements,
-        resolveSubtitle?.(profile.name) ?? profile.homeStore,
+        resolveSubtitle?.(profile.name) ??
+          resolveDesignerDispatchStoreSubtitle(personOrders),
       ),
     );
   }
@@ -369,6 +405,7 @@ export function getDesignerAmountRows(
         personOrders,
         supplements,
         resolveSubtitle?.(name) ??
+          resolveDesignerDispatchStoreSubtitle(personOrders) ??
           (rosterNames.has(name) ? undefined : "其他"),
       ),
     );
@@ -396,24 +433,13 @@ function getOrderWorkflowAmount(
   order: Order,
   supplements: SupplementOrder[],
 ): number {
-  const supplementTotal = sumSupplementAmount(supplements, order.id);
-  if (isRefundStatus(order.status)) {
-    const main =
-      order.orderAmount != null && order.orderAmount > 0
-        ? order.orderAmount
-        : order.budget > 0
-          ? order.budget
-          : 0;
-    return main + supplementTotal;
-  }
-  if (isOrderReachedPlaced(order)) {
-    const main =
-      order.orderAmount != null && order.orderAmount > 0
-        ? order.orderAmount
-        : 0;
-    return main + supplementTotal;
-  }
-  return order.budget > 0 ? order.budget : 0;
+  const parts = classifyOrderAmount(order, supplements);
+  return (
+    parts.notOrdered.amount +
+    parts.ordered.amount +
+    parts.pendingRefund.amount +
+    parts.confirmedRefund.amount
+  );
 }
 
 function aggregateWorkflowOrders(
@@ -512,6 +538,7 @@ export function getDesignerEvaluationRows(
         personOrders,
         supplements,
         resolveSubtitle?.(name) ??
+          resolveDesignerDispatchStoreSubtitle(personOrders) ??
           rosterProfile?.homeStore ??
           (rosterNames.has(name) ? undefined : "其他"),
       ),
@@ -525,7 +552,7 @@ export function getDesignerEvaluationRows(
   return appendWorkflowSummary(sorted, orders, supplements);
 }
 
-/** 门店：派单门店或派单人所属门店 */
+/** 门店：按派单人所属门店（= 本店派单人之和） */
 export function getStoreEvaluationRows(
   orders: Order[],
   supplements: SupplementOrder[],
@@ -534,7 +561,7 @@ export function getStoreEvaluationRows(
   const stores = storeFilter?.length ? storeFilter : [...STORES];
   const dataRows = stores.map((store) => {
     const storeOrders = orders.filter((o) =>
-      orderBelongsToStoreSummary(o, store),
+      orderBelongsToDispatcherStore(o, store),
     );
     return buildWorkflowRow(store, store, storeOrders, supplements);
   });

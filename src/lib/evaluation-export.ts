@@ -67,6 +67,8 @@ function aggregateCsvSections(
     "未下单金额",
     "已下单数量",
     "已下单金额",
+    "待退单数量",
+    "待退单金额",
     "已退单数量",
     "已退单金额",
     ...(designerExtended
@@ -82,8 +84,10 @@ function aggregateCsvSections(
     String(row.notOrdered.amount),
     String(row.ordered.count),
     String(row.ordered.amount),
-    String(row.refunded.count),
-    String(row.refunded.amount),
+    String(row.pendingRefund.count),
+    String(row.pendingRefund.amount),
+    String(row.confirmedRefund.count),
+    String(row.confirmedRefund.amount),
     ...(designerExtended
       ? [
           formatOrderConversionRate(row.orderConversionRate),
@@ -103,8 +107,10 @@ function aggregateCsvSections(
       String(workflow.notOrdered.amount),
       String(workflow.ordered.count),
       String(workflow.ordered.amount),
-      String(workflow.refunded.count),
-      String(workflow.refunded.amount),
+      String(workflow.pendingRefund.count),
+      String(workflow.pendingRefund.amount),
+      String(workflow.confirmedRefund.count),
+      String(workflow.confirmedRefund.amount),
       ...(designerExtended
         ? [
             formatOrderConversionRate(workflow.orderConversionRate),
@@ -147,6 +153,7 @@ function rankingCsvSection(
     ...(designerExtended
       ? ["下单转化率排名", "平均下单额排名", "售后金额排名"]
       : []),
+    "待退单",
     "已退单",
   ];
 
@@ -177,7 +184,8 @@ function rankingCsvSection(
               : "—",
           ]
         : []),
-      ranks?.refundedFilled ? "●" : "—",
+      ranks?.pendingRefundFilled ? "●" : "—",
+      ranks?.confirmedRefundFilled ? "●" : "—",
     ];
   });
 

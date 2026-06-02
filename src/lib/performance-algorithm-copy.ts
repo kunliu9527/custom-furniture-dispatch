@@ -16,7 +16,7 @@ export const STORE_COMPOSITE_FORMULA =
   "门店综合 = 价值分×68% + 质量分×32%；质量分扣待退单/已退单/售后";
 
 export const EVALUATION_AMOUNT_RULES =
-  "未下单取预算 · 已下单取下单金额+增补 · 已退单仅统计「已退单」状态";
+  "未下单取预算（展示已减已退单）· 已下单含已安装/已验收及增补 · 待退单/已退单分列 · 门店按派单人归属（跨店计入派单人店）";
 
 export const EVALUATION_RANKING_RULES =
   "数量名次/金额名次并列共享；第1名红旗 · 第2名紫旗 · 合计=三类金额之和";

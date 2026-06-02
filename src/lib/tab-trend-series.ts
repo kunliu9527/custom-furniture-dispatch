@@ -103,7 +103,11 @@ export function buildDesignerMiniSeries(
     for (const order of periodOrders) {
       const parts = classifyDispatcherOrder(order, periodSupplements);
       orderedAmount += parts.ordered.amount;
-      totalAmount += parts.ordered.amount + parts.notOrdered.amount + parts.refunded.amount;
+      totalAmount +=
+        parts.ordered.amount +
+        parts.notOrdered.amount +
+        parts.pendingRefund.amount +
+        parts.confirmedRefund.amount;
     }
     return {
       yearMonth: ym,

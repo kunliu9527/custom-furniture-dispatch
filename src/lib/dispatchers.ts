@@ -79,13 +79,12 @@ export function getOrderStoreByDispatcher(
   );
 }
 
-/** 按门店汇总 / 筛选：派单门店一致，或派单人所属门店一致 */
+/** 按门店汇总 / 筛选：派单人所属门店（跨店单计入派单人店） */
 export function orderBelongsToStoreSummary(
   order: Order,
   store: StoreName,
   staffRecords: StaffRecord[] = [],
 ): boolean {
-  if (order.dispatchStore === store) return true;
   return (
     getDispatcherHomeStore(order.dispatcherName, order.dispatchStore, staffRecords) ===
     store
