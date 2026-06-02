@@ -40,6 +40,7 @@ export function exportMonthlyDesignerReport(
   rows: DesignerPerformanceRow[],
   period: PeriodSelection,
   orders: Order[] = [],
+  situationNarrativeText?: string,
 ): void {
   const suffix = periodFilenameSuffix(period);
   const stamp = new Date().toISOString().slice(0, 10);
@@ -116,6 +117,11 @@ export function exportMonthlyDesignerReport(
         ].join("\n")
       : "";
 
+  const narrativeSection =
+    situationNarrativeText?.trim()
+      ? ["", "# 总设计情况评价", situationNarrativeText.trim()].join("\n")
+      : "";
+
   const content = [
     ...overviewLines,
     "",
@@ -123,6 +129,7 @@ export function exportMonthlyDesignerReport(
     rowToCsvLine(headers),
     ...body,
     tagSection,
+    narrativeSection,
   ].join("\n");
 
   downloadCsv(`设计师绩效报告-${suffix}-${stamp}.csv`, content);

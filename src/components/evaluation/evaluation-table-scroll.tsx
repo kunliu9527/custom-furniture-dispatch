@@ -1,6 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { BoardSnapshotToolbar } from "@/components/evaluation/board-snapshot-toolbar";
+import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
 
 interface EvaluationTableScrollProps {
   children: ReactNode;
@@ -10,6 +12,8 @@ interface EvaluationTableScrollProps {
    * 默认不限制，由外层固定容器统一纵向滚动。
    */
   maxHeightClass?: string;
+  /** 启用「版面快照」：截取完整宽表并下载 PNG 至本机 */
+  snapshot?: BoardSnapshotConfig;
 }
 
 /** 明细表：宽表横向滚动；表头在滚动容器内 sticky；移动端避免被底栏遮挡 */
@@ -17,15 +21,28 @@ export function EvaluationTableScroll({
   children,
   footer,
   maxHeightClass,
+  snapshot,
 }: EvaluationTableScrollProps) {
+  const captureRootRef = useRef<HTMLDivElement>(null);
+
   const scrollClass = maxHeightClass
     ? `${maxHeightClass} overflow-auto overscroll-contain [-webkit-overflow-scrolling:touch]`
     : "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] scroll-px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]";
 
   return (
     <div className="vi-panel overflow-hidden">
-      <div className={scrollClass}>{children}</div>
-      {footer}
+      {snapshot ? (
+        <BoardSnapshotToolbar
+          config={snapshot}
+          captureRootRef={captureRootRef}
+        />
+      ) : null}
+      <div ref={captureRootRef} data-board-snapshot-root className="bg-white">
+        <div className={scrollClass} data-board-snapshot-scroll>
+          {children}
+        </div>
+        {footer}
+      </div>
     </div>
   );
 }

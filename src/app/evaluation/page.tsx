@@ -21,6 +21,7 @@ import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { ManagerOrderTable } from "@/components/manager/manager-order-table";
 import { OrderAnomalySummaryLine } from "@/components/orders/order-anomaly-badges";
 import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
+import { DesignerSituationNarrativePanel } from "@/components/evaluation/designer-situation-narrative-panel";
 import { MonthlySnapshotPanel } from "@/components/evaluation/monthly-snapshot-panel";
 import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
 import { AGGREGATE_TABLE_FOOTNOTE } from "@/lib/metric-display-labels";
@@ -90,6 +91,11 @@ import {
   getSubViewTitle,
   setActiveSubView,
 } from "@/lib/evaluation-side-nav";
+import { buildEvaluationBoardSnapshot } from "@/lib/evaluation-board-snapshot";
+import {
+  buildDesignerSituationNarrative,
+  formatDesignerSituationNarrativeText,
+} from "@/lib/designer-situation-narrative";
 import { aggregateIssueTags } from "@/lib/issue-tag-stats";
 import { buildConversionFunnel, buildFunnelCompare } from "@/lib/conversion-funnel";
 import {
@@ -667,14 +673,37 @@ export default function EvaluationPage() {
     [scopedOrdersByView.designer, period],
   );
 
+  const designerSituationNarrative = useMemo(
+    () =>
+      buildDesignerSituationNarrative(
+        designerAmountRows,
+        periodScopedOrdersByView.designer,
+        period,
+        periodLabel,
+      ),
+    [
+      designerAmountRows,
+      periodScopedOrdersByView.designer,
+      period,
+      periodLabel,
+    ],
+  );
+
   const handleExportMonthlyReport = useCallback(() => {
     exportMonthlyDesignerReport(
       monthlyOverview,
       designerPerformanceRows,
       period,
       scopedOrdersByView.designer,
+      formatDesignerSituationNarrativeText(designerSituationNarrative),
     );
-  }, [monthlyOverview, designerPerformanceRows, period, scopedOrdersByView.designer]);
+  }, [
+    monthlyOverview,
+    designerPerformanceRows,
+    period,
+    scopedOrdersByView.designer,
+    designerSituationNarrative,
+  ]);
 
   const storeAggregateSummary = useMemo(
     () => getDispatcherTabSummary(storeDispatcherAmountRows),
@@ -973,6 +1002,17 @@ export default function EvaluationPage() {
     store: storeSubView,
     acceptance: acceptanceSubView,
   });
+
+  const tableBoardSnapshot = useMemo(() => {
+    if (viewMode === "acceptance") return undefined;
+    if (
+      (viewMode === "dispatcher" || viewMode === "designer") &&
+      activeSubView === "performance"
+    ) {
+      return undefined;
+    }
+    return buildEvaluationBoardSnapshot(viewMode, activeSubView);
+  }, [viewMode, activeSubView]);
 
   const sideNavGroups = useMemo(() => {
     const groups = getEvaluationSideNavGroups(viewMode, {
@@ -1312,6 +1352,7 @@ export default function EvaluationPage() {
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={storeRows}
                         emptyMessage={activeConfig.emptyMessage}
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : storeSubView === "ranking" && showStoreRanking ? (
                       <DispatcherEvaluationRankingTable
@@ -1326,6 +1367,7 @@ export default function EvaluationPage() {
                               : "本店数据 · 按派单人所属门店 · 跨店单计入派单人店"
                             : `按派单人所属门店 · 本店合计=本店派单人之和 · ${AGGREGATE_TABLE_FOOTNOTE}`
                         }
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : (
                       <DispatcherEvaluationTable
@@ -1333,6 +1375,7 @@ export default function EvaluationPage() {
                         rows={storeDispatcherAmountRows}
                         emptyMessage="当前权限范围内暂无派单金额数据"
                         footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单量=原始未下单"
+                        snapshot={tableBoardSnapshot}
                       />
                     )}
                   </>
@@ -1367,6 +1410,7 @@ export default function EvaluationPage() {
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={designerRows}
                         emptyMessage={activeConfig.emptyMessage}
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : designerSubView === "ranking" ? (
                       <DispatcherEvaluationRankingTable
@@ -1375,6 +1419,7 @@ export default function EvaluationPage() {
                         emptyMessage="当前权限范围内暂无设计师排名数据"
                         footnote={`按订单 designer 归集 · 副标题为订单派单门店 · ${AGGREGATE_TABLE_FOOTNOTE}`}
                         designerExtendedMetrics
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : (
                       <DispatcherEvaluationTable
@@ -1383,8 +1428,12 @@ export default function EvaluationPage() {
                         emptyMessage="当前权限范围内暂无设计师归总数据"
                         footnote={`按订单 designer 归集 · 副标题为订单派单门店 · ${AGGREGATE_TABLE_FOOTNOTE}`}
                         designerExtendedMetrics
+                        snapshot={tableBoardSnapshot}
                       />
                     )}
+                    <DesignerSituationNarrativePanel
+                      narrative={designerSituationNarrative}
+                    />
                   </>
                 ) : (
                   <>
@@ -1404,18 +1453,21 @@ export default function EvaluationPage() {
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={dispatcherRows}
                         emptyMessage="当前权限范围内暂无派单人排名数据"
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : dispatcherSubView === "workflow" ? (
                       <EvaluationStatsTable
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={dispatcherWorkflowRows}
                         emptyMessage="当前权限范围内暂无派单人个人数据"
+                        snapshot={tableBoardSnapshot}
                       />
                     ) : (
                       <DispatcherEvaluationTable
                         nameColumnLabel={activeConfig.nameColumnLabel}
                         rows={dispatcherRows}
                         emptyMessage={activeConfig.emptyMessage}
+                        snapshot={tableBoardSnapshot}
                       />
                     )}
                   </>

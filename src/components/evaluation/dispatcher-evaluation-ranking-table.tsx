@@ -16,6 +16,7 @@ import {
   type MetricDualRank,
   type RankBadge,
 } from "@/lib/evaluation-ranking";
+import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
 
 interface DispatcherEvaluationRankingTableProps {
   nameColumnLabel: string;
@@ -25,6 +26,7 @@ interface DispatcherEvaluationRankingTableProps {
   emptyMessage?: string;
   footnote?: string;
   designerExtendedMetrics?: boolean;
+  snapshot?: BoardSnapshotConfig;
 }
 
 const thClass = `${TABLE_TH_CLASS} text-center`;
@@ -128,6 +130,7 @@ export function DispatcherEvaluationRankingTable({
   emptyMessage = "暂无数据",
   footnote = EVALUATION_RANKING_RULES,
   designerExtendedMetrics = false,
+  snapshot,
 }: DispatcherEvaluationRankingTableProps) {
   const { rankNumbers, extendedRanks, sortedRows } = buildRankingPresentation(
     rows,
@@ -147,6 +150,7 @@ export function DispatcherEvaluationRankingTable({
 
   return (
     <EvaluationTableScroll
+      snapshot={snapshot}
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
           共 {sortedRows.length} 条 · {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}

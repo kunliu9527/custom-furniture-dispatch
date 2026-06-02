@@ -19,6 +19,7 @@ import {
   formatOrderConversionRate,
   type DispatcherEvaluationRow,
 } from "@/lib/evaluation-stats";
+import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
 
 interface DispatcherEvaluationTableProps {
   nameColumnLabel: string;
@@ -26,6 +27,7 @@ interface DispatcherEvaluationTableProps {
   emptyMessage?: string;
   footnote?: string;
   designerExtendedMetrics?: boolean;
+  snapshot?: BoardSnapshotConfig;
 }
 
 const thClass = TABLE_TH_CLASS;
@@ -50,6 +52,7 @@ export function DispatcherEvaluationTable({
   emptyMessage = "暂无数据",
   footnote = EVALUATION_AMOUNT_RULES,
   designerExtendedMetrics = false,
+  snapshot,
 }: DispatcherEvaluationTableProps) {
   const dataRows = rows.filter((row) => !row.isWorkflowSummary);
   const workflowRow = rows.find((row) => row.isWorkflowSummary);
@@ -102,6 +105,7 @@ export function DispatcherEvaluationTable({
 
   return (
     <EvaluationTableScroll
+      snapshot={snapshot}
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
           共 {dataRows.length} 条 · {footnote}
