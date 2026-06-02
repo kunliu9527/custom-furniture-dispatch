@@ -19,7 +19,7 @@ export const AGGREGATE_LABEL = {
 } as const;
 
 export const AGGREGATE_TABLE_FOOTNOTE =
-  "归总列 = 业绩桶笔数/金额 · 未下单量展示已减已退单 · 退单量=待退单量+已退单量";
+  "归总列 = 业绩桶笔数/金额 · 未下单量=原始未下单（未到已下单） · 退单量=待退单量+已退单量";
 
 export const AGGREGATE_RANK_FOOTNOTE =
   "排名按归总「××量」计算 · 退单不参与排名";

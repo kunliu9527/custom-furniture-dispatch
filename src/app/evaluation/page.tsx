@@ -1332,7 +1332,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="门店名称"
                         rows={storeDispatcherAmountRows}
                         emptyMessage="当前权限范围内暂无派单金额数据"
-                        footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单量展示已减已退单"
+                        footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单量=原始未下单"
                       />
                     )}
                   </>

@@ -27,8 +27,8 @@ export function DispatchTotalsSummary({
         {AGGREGATE_KPI_LABEL.ordered}{" "}
         {formatDispatchMoney(totals.orderedAmount)}
         <span className="mx-1">+</span>
-        {AGGREGATE_KPI_LABEL.notOrdered}{" "}
-        {formatDispatchMoney(totals.netNotOrderedAmount)}
+            {AGGREGATE_KPI_LABEL.notOrdered}{" "}
+            {formatDispatchMoney(totals.notOrderedAmount)}
         {totals.pendingRefundAmount > 0 ? (
           <>
             <span className="mx-1">·</span>

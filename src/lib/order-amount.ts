@@ -78,7 +78,7 @@ export interface AggregatedOrderAmounts {
   confirmedRefund: OrderAmountMetricCell;
   /** 原始未下单金额合计 */
   notOrderedAmount: number;
-  /** 展示用：未下单 − 已退单 */
+  /** @deprecated 与 notOrderedAmount 相同；保留兼容 */
   netNotOrderedAmount: number;
   orderedAmount: number;
   pendingRefundAmount: number;
@@ -114,7 +114,7 @@ export function aggregateOrderAmounts(
   const confirmedRefundAmount = confirmedRefund.amount;
   const pendingRefundAmount = pendingRefund.amount;
   const orderedAmount = ordered.amount;
-  const netNotOrderedAmount = notOrderedAmount - confirmedRefundAmount;
+  const netNotOrderedAmount = notOrderedAmount;
   const refundAmount = pendingRefundAmount + confirmedRefundAmount;
   const totalDispatch =
     notOrderedAmount + orderedAmount - pendingRefundAmount - confirmedRefundAmount;
@@ -134,13 +134,10 @@ export function aggregateOrderAmounts(
   };
 }
 
-/** 行级展示：未下单金额 = 未下单 − 已退单（笔数仍为未下单笔数） */
+/** @deprecated 未下单量不再扣已退单；直接返回原始未下单 */
 export function netNotOrderedCell(
   notOrdered: OrderAmountMetricCell,
-  confirmedRefund: OrderAmountMetricCell,
+  _confirmedRefund?: OrderAmountMetricCell,
 ): OrderAmountMetricCell {
-  return {
-    count: notOrdered.count,
-    amount: notOrdered.amount - confirmedRefund.amount,
-  };
+  return { count: notOrdered.count, amount: notOrdered.amount };
 }

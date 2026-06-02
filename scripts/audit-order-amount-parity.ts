@@ -30,13 +30,13 @@ function boardStoreTotals(allOrders: Order[]) {
   const rows = getStoreDispatcherAmountRows(allOrders, supplements);
   const map = new Map<
     StoreName,
-    { ordered: number; netNotOrdered: number; pending: number; confirmed: number }
+    { ordered: number; notOrdered: number; pending: number; confirmed: number }
   >();
   for (const row of rows) {
     if (row.isWorkflowSummary) continue;
     map.set(row.label as StoreName, {
       ordered: row.ordered.amount,
-      netNotOrdered: row.notOrdered.amount,
+      notOrdered: row.notOrdered.amount,
       pending: row.pendingRefund.amount,
       confirmed: row.confirmedRefund.amount,
     });
@@ -57,8 +57,8 @@ for (const store of STORES) {
   if (Math.abs(m.orderedAmount - b.ordered) > 0.01) {
     diffs.push(`已下单 Δ${m.orderedAmount - b.ordered}`);
   }
-  if (Math.abs(m.netNotOrderedAmount - b.netNotOrdered) > 0.01) {
-    diffs.push(`未下单(净) Δ${m.netNotOrderedAmount - b.netNotOrdered}`);
+  if (Math.abs(m.notOrderedAmount - b.notOrdered) > 0.01) {
+    diffs.push(`未下单 Δ${m.notOrderedAmount - b.notOrdered}`);
   }
   if (Math.abs(m.pendingRefundAmount - b.pending) > 0.01) {
     diffs.push(`待退单 Δ${m.pendingRefundAmount - b.pending}`);
@@ -91,13 +91,13 @@ for (const storeRow of storeRows) {
     (s, d) => s + d.ordered.amount,
     0,
   );
-  const sumNetNot = dispatchersInStore.reduce(
+  const sumNotOrdered = dispatchersInStore.reduce(
     (s, d) => s + d.notOrdered.amount,
     0,
   );
   if (
     Math.abs(sumOrdered - storeRow.ordered.amount) > 0.01 ||
-    Math.abs(sumNetNot - storeRow.notOrdered.amount) > 0.01
+    Math.abs(sumNotOrdered - storeRow.notOrdered.amount) > 0.01
   ) {
     ok = false;
     console.log(`✗ ${store}: 派单人之和 ≠ 门店行`);

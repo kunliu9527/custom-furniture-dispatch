@@ -9,9 +9,9 @@ export {
 } from "./order-amount";
 
 export interface DispatchAmountTotals {
-  /** 原始未下单合计 */
+  /** 原始未下单合计（未下单量） */
   notOrderedAmount: number;
-  /** 展示用：未下单 − 已退单 */
+  /** @deprecated 与 notOrderedAmount 相同 */
   netNotOrderedAmount: number;
   orderedAmount: number;
   pendingRefundAmount: number;
@@ -79,7 +79,7 @@ export function formatDispatchMoney(amount: number): string {
   return `¥${amount.toLocaleString("zh-CN")}`;
 }
 
-/** 展示未下单金额（已减去已退单） */
+/** 展示未下单金额 */
 export function formatNetNotOrderedMoney(amount: number): string {
   return formatDispatchMoney(amount);
 }

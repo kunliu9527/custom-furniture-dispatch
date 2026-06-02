@@ -61,7 +61,7 @@ export function ResultSummaryShell({
             <span className="mx-1 text-slate-300">·</span>
             {AGGREGATE_KPI_LABEL.notOrdered}{" "}
             <span className="font-medium text-slate-800">
-              {formatDispatchMoney(amounts.netNotOrderedAmount)}
+              {formatDispatchMoney(amounts.notOrderedAmount)}
             </span>
           </p>
           <p className={`mt-1 text-xs font-semibold ${totalAmountClassName}`}>

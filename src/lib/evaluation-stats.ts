@@ -3,7 +3,6 @@ import { ORDER_STATUSES } from "./constants";
 import { formatDispatchMoney } from "./dispatch-totals";
 import {
   classifyOrderAmount,
-  netNotOrderedCell,
   type OrderAmountMetricCell,
 } from "./order-amount";
 import {
@@ -28,8 +27,9 @@ export interface EvaluationMetricCell {
   amount: number;
 }
 
-/** 展示用未下单（已减已退单）；原始桶见 rawNotOrdered */
+/** 未下单量 = 原始未下单（未到已下单流程的预算合计） */
 export interface NotOrderedDisplayCell extends EvaluationMetricCell {
+  /** 与 amount 相同；保留字段兼容 */
   rawNotOrdered: EvaluationMetricCell;
 }
 
@@ -125,12 +125,10 @@ export function formatAfterSalesTotal(amount: number): string {
 
 function toNotOrderedDisplay(
   raw: OrderAmountMetricCell,
-  confirmedRefund: OrderAmountMetricCell,
 ): NotOrderedDisplayCell {
-  const net = netNotOrderedCell(raw, confirmedRefund);
   return {
-    count: net.count,
-    amount: net.amount,
+    count: raw.count,
+    amount: raw.amount,
     rawNotOrdered: { ...raw },
   };
 }
@@ -193,7 +191,7 @@ function aggregateDispatcherOrders(
     }
   }
 
-  const notOrdered = toNotOrderedDisplay(rawNotOrdered, confirmedRefund);
+  const notOrdered = toNotOrderedDisplay(rawNotOrdered);
   const refunded: EvaluationMetricCell = {
     count: pendingRefund.count + confirmedRefund.count,
     amount: pendingRefund.amount + confirmedRefund.amount,
