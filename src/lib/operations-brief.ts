@@ -2,6 +2,7 @@ import { countBadAcceptanceReviews } from "./acceptance-rating";
 import { getAcceptanceEvaluationSummary } from "./acceptance-evaluation-stats";
 import { formatDispatchMoney } from "./dispatch-totals";
 import { classifyDispatcherOrder } from "./evaluation-stats";
+import { AGGREGATE_KPI_LABEL } from "./metric-display-labels";
 import { getManagerAlerts } from "./manager-alerts";
 import {
   filterOrdersByPeriod,
@@ -355,7 +356,7 @@ export function buildOperationsBrief(
     ),
     makeMoneyKpi(
       "ordered",
-      "下单额",
+      AGGREGATE_KPI_LABEL.ordered,
       current.orderedAmount,
       current.orderedCount,
       previous?.orderedAmount ?? null,
@@ -363,7 +364,7 @@ export function buildOperationsBrief(
     ),
     makeMoneyKpi(
       "refund",
-      "退单",
+      AGGREGATE_KPI_LABEL.refundTotal,
       current.refundAmount,
       current.refundCount,
       previous?.refundAmount ?? null,
@@ -407,7 +408,7 @@ export function buildOperationsBrief(
     },
     {
       id: "pending-refund",
-      label: "待退单",
+      label: AGGREGATE_KPI_LABEL.pendingRefund,
       count: countPendingRefund(orders),
     },
     {

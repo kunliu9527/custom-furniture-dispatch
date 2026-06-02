@@ -30,8 +30,8 @@ function buildEvaluationSideNavGroups(
           ],
         },
         {
-          label: "流程明细",
-          items: [{ id: "workflow", title: "派单人个人数据" }],
+          label: "流程数据",
+          items: [{ id: "workflow", title: "派单人流程数据" }],
         },
         {
           label: "绩效报告",
@@ -48,8 +48,8 @@ function buildEvaluationSideNavGroups(
           ],
         },
         {
-          label: "流程明细",
-          items: [{ id: "workflow", title: "设计师个人数据" }],
+          label: "流程数据",
+          items: [{ id: "workflow", title: "设计师流程数据" }],
         },
         {
           label: "绩效报告",
@@ -66,8 +66,8 @@ function buildEvaluationSideNavGroups(
           ],
         },
         {
-          label: "流程明细",
-          items: [{ id: "workflow", title: "门店数据" }],
+          label: "流程数据",
+          items: [{ id: "workflow", title: "门店流程数据" }],
         },
       ];
     case "acceptance":

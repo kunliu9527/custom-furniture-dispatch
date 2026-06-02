@@ -30,14 +30,19 @@ interface DispatcherEvaluationRankingTableProps {
 const thClass = `${TABLE_TH_CLASS} text-center`;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
+import {
+  AGGREGATE_KPI_LABEL,
+  AGGREGATE_RANK_FOOTNOTE,
+} from "@/lib/metric-display-labels";
+
 const dualRankColumns = [
-  { key: "notOrdered" as const, label: "未下单排名" },
-  { key: "ordered" as const, label: "已下单排名" },
+  { key: "notOrdered" as const, label: `${AGGREGATE_KPI_LABEL.notOrdered}排名` },
+  { key: "ordered" as const, label: `${AGGREGATE_KPI_LABEL.ordered}排名` },
 ] as const;
 
 const refundedColumns = [
-  { key: "pendingRefund" as const, label: "待退单" },
-  { key: "confirmedRefund" as const, label: "已退单" },
+  { key: "pendingRefund" as const, label: AGGREGATE_KPI_LABEL.pendingRefund },
+  { key: "confirmedRefund" as const, label: AGGREGATE_KPI_LABEL.confirmedRefund },
 ] as const;
 
 const designerExtraRankColumns = [
@@ -144,7 +149,7 @@ export function DispatcherEvaluationRankingTable({
     <EvaluationTableScroll
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-          共 {sortedRows.length} 条 · {EVALUATION_AMOUNT_RULES} · {footnote}
+          共 {sortedRows.length} 条 · {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
           {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
         </p>
       }
@@ -152,7 +157,7 @@ export function DispatcherEvaluationRankingTable({
       <table className={`vi-data-table w-full ${minWidth} border-collapse text-left`}>
         <thead>
           <TableAlgorithmCaption>
-            {EVALUATION_AMOUNT_RULES} · {footnote}
+            {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
             {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
           </TableAlgorithmCaption>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>

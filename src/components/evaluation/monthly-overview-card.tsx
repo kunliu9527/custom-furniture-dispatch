@@ -2,6 +2,7 @@
 
 import type { MonthlyReportOverview } from "@/lib/designer-performance";
 import { formatDispatchMoney } from "@/lib/dispatch-totals";
+import { AGGREGATE_KPI_LABEL } from "@/lib/metric-display-labels";
 import type { OrderIssueTag } from "@/lib/types";
 
 interface MonthlyOverviewCardProps {
@@ -15,12 +16,12 @@ export function MonthlyOverviewCard({
 }: MonthlyOverviewCardProps) {
   const items = [
     { label: "周期订单", value: String(overview.orderCount) },
-    { label: "已下单", value: String(overview.orderedCount) },
+    { label: AGGREGATE_KPI_LABEL.ordered, value: String(overview.orderedCount) },
     {
-      label: "下单金额",
+      label: `${AGGREGATE_KPI_LABEL.ordered}金额`,
       value: formatDispatchMoney(overview.orderedAmount),
     },
-    { label: "退单", value: String(overview.refundCount) },
+    { label: AGGREGATE_KPI_LABEL.refundTotal, value: String(overview.refundCount) },
     {
       label: "增补",
       value: formatDispatchMoney(overview.supplementAmount),

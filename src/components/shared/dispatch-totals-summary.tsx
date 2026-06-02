@@ -2,6 +2,7 @@ import {
   formatDispatchMoney,
   type DispatchAmountTotals,
 } from "@/lib/dispatch-totals";
+import { AGGREGATE_KPI_LABEL } from "@/lib/metric-display-labels";
 
 interface DispatchTotalsSummaryProps {
   totals: DispatchAmountTotals;
@@ -17,25 +18,36 @@ export function DispatchTotalsSummary({
   return (
     <div className={`text-xs ${className}`}>
       <p className={accentClassName}>
-        有效总派单：
+        {AGGREGATE_KPI_LABEL.effectiveDispatch}：
         <span className="ml-1 font-semibold">
           {formatDispatchMoney(totals.totalDispatch)}
         </span>
       </p>
       <p className="mt-0.5 text-slate-500">
-        已下单 {formatDispatchMoney(totals.orderedAmount)}
+        {AGGREGATE_KPI_LABEL.ordered}{" "}
+        {formatDispatchMoney(totals.orderedAmount)}
         <span className="mx-1">+</span>
-        未下单 {formatDispatchMoney(totals.netNotOrderedAmount)}
+        {AGGREGATE_KPI_LABEL.notOrdered}{" "}
+        {formatDispatchMoney(totals.netNotOrderedAmount)}
         {totals.pendingRefundAmount > 0 ? (
           <>
             <span className="mx-1">·</span>
-            待退单 {formatDispatchMoney(totals.pendingRefundAmount)}
+            {AGGREGATE_KPI_LABEL.pendingRefund}{" "}
+            {formatDispatchMoney(totals.pendingRefundAmount)}
           </>
         ) : null}
         {totals.confirmedRefundAmount > 0 ? (
           <>
             <span className="mx-1">·</span>
-            已退单 {formatDispatchMoney(totals.confirmedRefundAmount)}
+            {AGGREGATE_KPI_LABEL.confirmedRefund}{" "}
+            {formatDispatchMoney(totals.confirmedRefundAmount)}
+          </>
+        ) : null}
+        {totals.refundAmount > 0 ? (
+          <>
+            <span className="mx-1">·</span>
+            {AGGREGATE_KPI_LABEL.refundTotal}{" "}
+            {formatDispatchMoney(totals.refundAmount)}
           </>
         ) : null}
       </p>

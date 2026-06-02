@@ -1,5 +1,10 @@
 import { ORDER_STATUSES } from "./constants";
 import {
+  aggregateRefundTotal,
+  AGGREGATE_LABEL,
+  flowStatusColumnLabel,
+} from "./metric-display-labels";
+import {
   buildRankingPresentation,
 } from "./evaluation-ranking";
 import {
@@ -63,14 +68,16 @@ function aggregateCsvSections(
     nameLabel,
     "合计数量",
     "合计金额",
-    "未下单数量",
-    "未下单金额",
-    "已下单数量",
-    "已下单金额",
-    "待退单数量",
-    "待退单金额",
-    "已退单数量",
-    "已退单金额",
+    `${AGGREGATE_LABEL.notOrdered}数量`,
+    `${AGGREGATE_LABEL.notOrdered}金额`,
+    `${AGGREGATE_LABEL.ordered}数量`,
+    `${AGGREGATE_LABEL.ordered}金额`,
+    `${AGGREGATE_LABEL.pendingRefund}数量`,
+    `${AGGREGATE_LABEL.pendingRefund}金额`,
+    `${AGGREGATE_LABEL.confirmedRefund}数量`,
+    `${AGGREGATE_LABEL.confirmedRefund}金额`,
+    `${AGGREGATE_LABEL.refundTotal}数量`,
+    `${AGGREGATE_LABEL.refundTotal}金额`,
     ...(designerExtended
       ? ["下单转化率", "平均下单额", "售后金额"]
       : []),
@@ -88,6 +95,10 @@ function aggregateCsvSections(
     String(row.pendingRefund.amount),
     String(row.confirmedRefund.count),
     String(row.confirmedRefund.amount),
+    ...(() => {
+      const refund = aggregateRefundTotal(row.pendingRefund, row.confirmedRefund);
+      return [String(refund.count), String(refund.amount)];
+    })(),
     ...(designerExtended
       ? [
           formatOrderConversionRate(row.orderConversionRate),
@@ -99,6 +110,10 @@ function aggregateCsvSections(
 
   const workflow = rows.find((row) => row.isWorkflowSummary);
   if (workflow) {
+    const refund = aggregateRefundTotal(
+      workflow.pendingRefund,
+      workflow.confirmedRefund,
+    );
     body.push([
       workflow.label,
       String(workflow.total),
@@ -111,6 +126,8 @@ function aggregateCsvSections(
       String(workflow.pendingRefund.amount),
       String(workflow.confirmedRefund.count),
       String(workflow.confirmedRefund.amount),
+      String(refund.count),
+      String(refund.amount),
       ...(designerExtended
         ? [
             formatOrderConversionRate(workflow.orderConversionRate),
@@ -148,13 +165,13 @@ function rankingCsvSection(
   const headers = [
     nameLabel,
     "合计排名(数量/金额)",
-    "未下单排名(数量/金额)",
-    "已下单排名(数量/金额)",
+    `${AGGREGATE_LABEL.notOrdered}排名(数量/金额)`,
+    `${AGGREGATE_LABEL.ordered}排名(数量/金额)`,
     ...(designerExtended
       ? ["下单转化率排名", "平均下单额排名", "售后金额排名"]
       : []),
-    "待退单",
-    "已退单",
+    AGGREGATE_LABEL.pendingRefund,
+    AGGREGATE_LABEL.confirmedRefund,
   ];
 
   const body = sortedRows.map((row) => {
@@ -209,7 +226,10 @@ function workflowCsvSection(
     nameLabel,
     "合计数量",
     "合计金额",
-    ...columns.flatMap((status) => [`${status}数量`, `${status}金额`]),
+    ...columns.flatMap((status) => [
+      `${flowStatusColumnLabel(status)}数量`,
+      `${flowStatusColumnLabel(status)}金额`,
+    ]),
   ];
 
   const data = rows.filter((row) => !row.isWorkflowSummary);

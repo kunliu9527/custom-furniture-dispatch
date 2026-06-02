@@ -5,6 +5,10 @@ import {
 } from "@/components/evaluation/evaluation-table-scroll";
 import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import {
+  AGGREGATE_LABEL,
+  aggregateRefundTotal,
+} from "@/lib/metric-display-labels";
+import {
   DESIGNER_EXTENDED_RANK_RULES,
   EVALUATION_AMOUNT_RULES,
 } from "@/lib/performance-algorithm-copy";
@@ -21,7 +25,6 @@ interface DispatcherEvaluationTableProps {
   rows: DispatcherEvaluationRow[];
   emptyMessage?: string;
   footnote?: string;
-  /** 设计师归总：显示转化率 / 平均下单额 / 售后金额 */
   designerExtendedMetrics?: boolean;
 }
 
@@ -29,10 +32,10 @@ const thClass = TABLE_TH_CLASS;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
 const amountColumns = [
-  { key: "notOrdered" as const, label: "未下单数/金额" },
-  { key: "ordered" as const, label: "已下单数/金额" },
-  { key: "pendingRefund" as const, label: "待退单数/金额" },
-  { key: "confirmedRefund" as const, label: "已退单数/金额" },
+  { key: "notOrdered" as const, label: AGGREGATE_LABEL.notOrdered },
+  { key: "ordered" as const, label: AGGREGATE_LABEL.ordered },
+  { key: "pendingRefund" as const, label: AGGREGATE_LABEL.pendingRefund },
+  { key: "confirmedRefund" as const, label: AGGREGATE_LABEL.confirmedRefund },
 ];
 
 const designerExtraColumns = [
@@ -50,6 +53,12 @@ export function DispatcherEvaluationTable({
 }: DispatcherEvaluationTableProps) {
   const dataRows = rows.filter((row) => !row.isWorkflowSummary);
   const workflowRow = rows.find((row) => row.isWorkflowSummary);
+  const workflowRefundTotal = workflowRow
+    ? aggregateRefundTotal(
+        workflowRow.pendingRefund,
+        workflowRow.confirmedRefund,
+      )
+    : null;
 
   if (dataRows.length === 0 && !workflowRow) {
     return (
@@ -89,7 +98,7 @@ export function DispatcherEvaluationTable({
     });
   }
 
-  const minWidth = designerExtendedMetrics ? "min-w-[1200px]" : "min-w-[920px]";
+  const minWidth = designerExtendedMetrics ? "min-w-[1280px]" : "min-w-[1000px]";
 
   return (
     <EvaluationTableScroll
@@ -112,12 +121,15 @@ export function DispatcherEvaluationTable({
             >
               {nameColumnLabel}
             </th>
-            <th className={`${thClass} text-center`}>合计</th>
+            <th className={`${thClass} text-center`}>{AGGREGATE_LABEL.total}</th>
             {amountColumns.map((col) => (
               <th key={col.key} className={`${thClass} text-center`}>
                 {col.label}
               </th>
             ))}
+            <th className={`${thClass} text-center`}>
+              {AGGREGATE_LABEL.refundTotal}
+            </th>
             {designerExtendedMetrics
               ? designerExtraColumns.map((col) => (
                   <th key={col.key} className={`${thClass} text-center`}>
@@ -164,6 +176,9 @@ export function DispatcherEvaluationTable({
                   </td>
                 );
               })}
+              <td className={`${tdClass} text-center text-xs text-slate-300`}>
+                —
+              </td>
               {designerExtendedMetrics ? renderDesignerExtras(row) : null}
             </tr>
           ))}
@@ -193,6 +208,16 @@ export function DispatcherEvaluationTable({
                   </td>
                 );
               })}
+              <td
+                className={`${tdClass} text-center text-xs font-medium text-rose-900`}
+              >
+                {workflowRefundTotal
+                  ? formatEvaluationMetric(
+                      workflowRefundTotal.count,
+                      workflowRefundTotal.amount,
+                    )
+                  : "—"}
+              </td>
               {designerExtendedMetrics
                 ? renderDesignerExtras(workflowRow, true)
                 : null}

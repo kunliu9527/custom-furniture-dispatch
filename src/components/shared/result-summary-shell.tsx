@@ -1,4 +1,5 @@
 import { ResultDrillPanel } from "@/components/shared/result-drill-panel";
+import { AGGREGATE_KPI_LABEL } from "@/lib/metric-display-labels";
 import {
   formatDispatchMoney,
   sumDispatchTotals,
@@ -53,18 +54,19 @@ export function ResultSummaryShell({
             共 {baseOrders.length} 笔订单
           </p>
           <p className="mt-1 text-xs text-slate-600">
-            已下单金额{" "}
+            {AGGREGATE_KPI_LABEL.ordered}{" "}
             <span className="font-medium text-slate-800">
               {formatDispatchMoney(amounts.orderedAmount)}
             </span>
             <span className="mx-1 text-slate-300">·</span>
-            未下单金额{" "}
+            {AGGREGATE_KPI_LABEL.notOrdered}{" "}
             <span className="font-medium text-slate-800">
               {formatDispatchMoney(amounts.netNotOrderedAmount)}
             </span>
           </p>
           <p className={`mt-1 text-xs font-semibold ${totalAmountClassName}`}>
-            有效总派单 {effectiveCount} / {formatDispatchMoney(amounts.totalDispatch)}
+            {AGGREGATE_KPI_LABEL.effectiveDispatch} {effectiveCount} /{" "}
+            {formatDispatchMoney(amounts.totalDispatch)}
           </p>
           {effectiveCount > 0 ? (
             <p className="mt-1 text-xs text-slate-600">
@@ -76,12 +78,20 @@ export function ResultSummaryShell({
           ) : null}
           {amounts.pendingRefundAmount > 0 ? (
             <p className="mt-1 text-xs text-amber-700">
-              待退单金额 {formatDispatchMoney(amounts.pendingRefundAmount)}
+              {AGGREGATE_KPI_LABEL.pendingRefund}{" "}
+              {formatDispatchMoney(amounts.pendingRefundAmount)}
             </p>
           ) : null}
           {amounts.confirmedRefundAmount > 0 ? (
             <p className="mt-1 text-xs text-red-600">
-              已退单金额 {formatDispatchMoney(amounts.confirmedRefundAmount)}
+              {AGGREGATE_KPI_LABEL.confirmedRefund}{" "}
+              {formatDispatchMoney(amounts.confirmedRefundAmount)}
+            </p>
+          ) : null}
+          {amounts.refundAmount > 0 ? (
+            <p className="mt-1 text-xs text-red-700">
+              {AGGREGATE_KPI_LABEL.refundTotal}{" "}
+              {formatDispatchMoney(amounts.refundAmount)}
             </p>
           ) : null}
           {afterSalesTotal > 0 ? (

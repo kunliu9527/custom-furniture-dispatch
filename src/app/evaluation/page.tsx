@@ -23,6 +23,7 @@ import { OrderAnomalySummaryLine } from "@/components/orders/order-anomaly-badge
 import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
 import { MonthlySnapshotPanel } from "@/components/evaluation/monthly-snapshot-panel";
 import { EVAL_PAGE_MAIN_CLASS } from "@/components/evaluation/sticky-section";
+import { AGGREGATE_TABLE_FOOTNOTE } from "@/lib/metric-display-labels";
 import { AppShell } from "@/components/layout/app-shell";
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
 import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
@@ -1323,7 +1324,7 @@ export default function EvaluationPage() {
                             ? rowScope.storeNames.length > 1
                               ? "名次在分管门店内计算 · 按派单人所属门店 · 本店合计=本店派单人之和"
                               : "本店数据 · 按派单人所属门店 · 跨店单计入派单人店"
-                            : "按派单人所属门店 · 本店合计=本店派单人之和 · 单元格为 数量 / 金额"
+                            : `按派单人所属门店 · 本店合计=本店派单人之和 · ${AGGREGATE_TABLE_FOOTNOTE}`
                         }
                       />
                     ) : (
@@ -1331,7 +1332,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="门店名称"
                         rows={storeDispatcherAmountRows}
                         emptyMessage="当前权限范围内暂无派单金额数据"
-                        footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单已减已退单"
+                        footnote="按派单人所属门店 · 本店合计=本店派单人之和 · 未下单量展示已减已退单"
                       />
                     )}
                   </>
@@ -1372,7 +1373,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="设计师"
                         rows={designerAmountRows}
                         emptyMessage="当前权限范围内暂无设计师排名数据"
-                        footnote="按订单 designer 归集 · 副标题为订单派单门店 · 单元格为 数量 / 金额"
+                        footnote={`按订单 designer 归集 · 副标题为订单派单门店 · ${AGGREGATE_TABLE_FOOTNOTE}`}
                         designerExtendedMetrics
                       />
                     ) : (
@@ -1380,7 +1381,7 @@ export default function EvaluationPage() {
                         nameColumnLabel="设计师"
                         rows={designerAmountRows}
                         emptyMessage="当前权限范围内暂无设计师归总数据"
-                        footnote="按订单 designer 归集 · 副标题为订单派单门店 · 单元格为 数量 / 金额"
+                        footnote={`按订单 designer 归集 · 副标题为订单派单门店 · ${AGGREGATE_TABLE_FOOTNOTE}`}
                         designerExtendedMetrics
                       />
                     )}

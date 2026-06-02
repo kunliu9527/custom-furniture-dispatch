@@ -28,6 +28,7 @@ import {
   type GlobalMonthlyDigest,
 } from "@/lib/global-report";
 import { computeStorePortfolioMetrics } from "@/lib/store-summary-metrics";
+import { AGGREGATE_KPI_LABEL } from "@/lib/metric-display-labels";
 import { getAllSummaryBriefLabel } from "@/lib/report-hub-config";
 import { SNAPSHOT_REPORT_HINT, FLOW_DISTRIBUTION_HINT } from "@/lib/report-period-sync";
 import { monthlyDigestToHistoryRecord, upsertDigestHistory } from "@/lib/digest-history";
@@ -199,10 +200,10 @@ export function MonthlyDigestPanel({
         : [
             { label: "新派单", value: String(digest.newDispatchCount) },
             {
-              label: "下单",
+              label: AGGREGATE_KPI_LABEL.ordered,
               value: formatMoneyStat(digest.orderedCount, digest.orderedAmount),
             },
-            { label: "退单", value: String(digest.refundCount) },
+            { label: AGGREGATE_KPI_LABEL.refundTotal, value: String(digest.refundCount) },
             { label: "当前超时", value: String(digest.activeTimeoutCount) },
           ];
 

@@ -1,6 +1,7 @@
 import { countLowDimensionReviewsInPeriod, countLowDimensionReviews } from "./acceptance-rating";
 import { getAcceptanceEvaluationSummary } from "./acceptance-evaluation-stats";
 import { formatDispatchMoney } from "./dispatch-totals";
+import { AGGREGATE_KPI_LABEL, FLOW_PIPELINE_LABEL } from "./metric-display-labels";
 import {
   computeStorePortfolioMetrics,
   formatCountAmountStat,
@@ -306,11 +307,11 @@ function formatWorkflowSection(
   if (!options?.skipHeader) {
     lines.push("【全流程 · 交付验收】");
     lines.push(
-      `在途：已下单 ${workflow.pipelineActive.已下单} · 已安装 ${workflow.pipelineActive.已安装} · 已验收 ${workflow.pipelineActive.已验收}`,
+      `在途：${FLOW_PIPELINE_LABEL.ordered} ${workflow.pipelineActive.已下单} · ${FLOW_PIPELINE_LABEL.installed} ${workflow.pipelineActive.已安装} · ${FLOW_PIPELINE_LABEL.accepted} ${workflow.pipelineActive.已验收}`,
     );
   }
   lines.push(
-    `待扫码验收 ${workflow.pendingScanCount} · 待退单 ${formatCountAmountStat(workflow.pendingRefundCount, workflow.pendingRefundAmount)} · 签约超时 ${workflow.signTimeoutCount}${
+    `待扫码验收 ${workflow.pendingScanCount} · ${AGGREGATE_KPI_LABEL.pendingRefund} ${formatCountAmountStat(workflow.pendingRefundCount, workflow.pendingRefundAmount)} · 签约超时 ${workflow.signTimeoutCount}${
       includeEvaluation ? ` · 维度低评 ${workflow.lowDimensionCount}` : ""
     }`,
   );
@@ -387,7 +388,7 @@ export function globalWorkflowStatItems(
   const includeEvaluation = options?.includeEvaluation !== false;
   const items = [
     {
-      label: "在途已下单",
+      label: FLOW_PIPELINE_LABEL.ordered,
       value: String(workflow.pipelineActive.已下单),
     },
     {
@@ -395,7 +396,7 @@ export function globalWorkflowStatItems(
       value: String(workflow.pendingScanCount),
     },
     {
-      label: "待退单",
+      label: AGGREGATE_KPI_LABEL.pendingRefund,
       value: formatCountAmountStat(
         workflow.pendingRefundCount,
         workflow.pendingRefundAmount,
@@ -434,8 +435,12 @@ export function globalPrimaryStatItems(
   options?: { allSummary?: boolean },
 ): { label: string; value: string }[] {
   const dispatchLabel = options?.allSummary ? "累计派单" : "新派单";
-  const orderedLabel = options?.allSummary ? "累计下单" : "下单";
-  const refundLabel = options?.allSummary ? "累计退单" : "退单";
+  const orderedLabel = options?.allSummary
+    ? `累计${AGGREGATE_KPI_LABEL.ordered}`
+    : AGGREGATE_KPI_LABEL.ordered;
+  const refundLabel = options?.allSummary
+    ? `累计${AGGREGATE_KPI_LABEL.refundTotal}`
+    : AGGREGATE_KPI_LABEL.refundTotal;
   return [
     {
       label: dispatchLabel,
@@ -497,14 +502,14 @@ export function globalAllSummaryPrimaryStatItems(
       ),
     },
     {
-      label: "累计下单",
+      label: `累计${AGGREGATE_KPI_LABEL.ordered}`,
       value: formatCountAmountStat(
         dispatchBuckets.ordered.count,
         dispatchBuckets.ordered.amount,
       ),
     },
     {
-      label: "累计退单",
+      label: `累计${AGGREGATE_KPI_LABEL.refundTotal}`,
       value: formatCountAmountStat(
         dispatchBuckets.refund.count,
         dispatchBuckets.refund.amount,
@@ -668,11 +673,11 @@ export function globalMonthlyPrimaryStatItems(
       ),
     },
     {
-      label: "本期下单",
+      label: `本期${AGGREGATE_KPI_LABEL.ordered}`,
       value: formatCountAmountStat(digest.orderedCount, digest.orderedAmount),
     },
     {
-      label: "本期退单",
+      label: `本期${AGGREGATE_KPI_LABEL.refundTotal}`,
       value: formatCountAmountStat(
         digest.refundCount,
         digest.amounts.refundAmount,
@@ -715,14 +720,14 @@ export function globalWeeklyPrimaryStatItems(
       ),
     },
     {
-      label: "本周下单",
+      label: `本周${AGGREGATE_KPI_LABEL.ordered}`,
       value: formatCountAmountStat(
         digest.orderedCount,
         digest.orderedAmount,
       ),
     },
     {
-      label: "本周退单",
+      label: `本周${AGGREGATE_KPI_LABEL.refundTotal}`,
       value: formatCountAmountStat(
         digest.refundCount,
         digest.amounts.refundAmount,
@@ -830,10 +835,10 @@ export function formatGlobalAllSummaryDigestText(
   const lines = [
     `${title} · 全部`,
     "",
-    `累计派单：${formatCountAmountStat(dispatchBuckets.total.count, dispatchBuckets.total.amount)}（= 累计存量 + 累计下单 + 累计退单）`,
+    `累计派单：${formatCountAmountStat(dispatchBuckets.total.count, dispatchBuckets.total.amount)}（= 累计存量 + 累计${AGGREGATE_KPI_LABEL.ordered} + 累计${AGGREGATE_KPI_LABEL.refundTotal}）`,
     `累计存量：${formatCountAmountStat(dispatchBuckets.stock.count, dispatchBuckets.stock.amount)}`,
-    `累计下单：${formatCountAmountStat(dispatchBuckets.ordered.count, dispatchBuckets.ordered.amount)}`,
-    `累计退单：${formatCountAmountStat(dispatchBuckets.refund.count, dispatchBuckets.refund.amount)}`,
+    `累计${AGGREGATE_KPI_LABEL.ordered}：${formatCountAmountStat(dispatchBuckets.ordered.count, dispatchBuckets.ordered.amount)}`,
+    `累计${AGGREGATE_KPI_LABEL.refundTotal}：${formatCountAmountStat(dispatchBuckets.refund.count, dispatchBuckets.refund.amount)}`,
     `累计未完结：${formatCountAmountStat(portfolio.unfinished.count, portfolio.unfinished.amount)}`,
     `累计有效派单：${formatCountAmountStat(portfolio.effective.count, portfolio.effective.amount)}`,
     `累计均单值：${formatDispatchMoney(portfolio.effective.avgPerOrder)}`,
@@ -842,7 +847,7 @@ export function formatGlobalAllSummaryDigestText(
     `维度低评：${digest.lowDimensionCountPeriod} 单（累计）`,
     "",
     "【交付验收 · 当前快照】",
-    `当前状态：已下单 ${digest.workflow.pipelineActive.已下单} · 已安装 ${digest.workflow.pipelineActive.已安装} · 已验收 ${digest.workflow.pipelineActive.已验收}`,
+    `当前状态：${FLOW_PIPELINE_LABEL.ordered} ${digest.workflow.pipelineActive.已下单} · ${FLOW_PIPELINE_LABEL.installed} ${digest.workflow.pipelineActive.已安装} · ${FLOW_PIPELINE_LABEL.accepted} ${digest.workflow.pipelineActive.已验收}`,
     ...formatWorkflowSection(digest.workflow, { skipHeader: true }),
     "",
   ];
