@@ -19,17 +19,26 @@ if [[ ! -d .git ]]; then
   exit 1
 fi
 
+# 国内 ECS 访问 GitHub HTTPS 时 HTTP/2 易失败（curl 16 / timeout）
+export GIT_HTTP_VERSION="${GIT_HTTP_VERSION:-HTTP/1.1}"
+git_fetch() {
+  git -c http.version="$GIT_HTTP_VERSION" -c http.postBuffer=524288000 fetch "$@"
+}
+git_pull() {
+  git -c http.version="$GIT_HTTP_VERSION" pull "$@"
+}
+
 echo "==> 当前版本"
 git log -1 --oneline
 
 echo "==> git fetch origin ${TARGET_BRANCH}..."
-git fetch origin "$TARGET_BRANCH"
+git_fetch origin "$TARGET_BRANCH"
 
 echo "==> git pull (ff-only)..."
-if ! git pull --ff-only origin "$TARGET_BRANCH"; then
+if ! git_pull --ff-only origin "$TARGET_BRANCH"; then
   echo "WARN: 无法 fast-forward，尝试 stash 本地改动后重试..."
   git stash push -m "deploy-auto-stash $(date -Iseconds 2>/dev/null || date)" 2>/dev/null || true
-  git pull --ff-only origin "$TARGET_BRANCH"
+  git_pull --ff-only origin "$TARGET_BRANCH"
 fi
 
 echo "==> 更新后版本"
