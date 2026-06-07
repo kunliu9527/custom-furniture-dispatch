@@ -15,6 +15,7 @@ const ITEMS: {
   { id: "orderLookup", title: "订单状态查询", hint: "全状态检索" },
   { id: "staff", title: "人员管理", hint: "名册与岗位" },
   { id: "branding", title: "公司名修改", hint: "首页文案" },
+  { id: "dataTools", title: "数据工具", hint: "备份·导出·重复检测" },
 ];
 
 interface AdminSidebarProps {

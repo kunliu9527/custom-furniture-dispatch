@@ -4,6 +4,7 @@ import { AdminSidebar, AdminMobileNav } from "@/components/admin/admin-sidebar";
 import { ModuleWorkbenchLayout } from "@/components/workbench/module-workbench-layout";
 import { EVAL_PAGE_MAIN_CLASS, EVAL_WORKBENCH_FILL_PANE } from "@/components/evaluation/sticky-section";
 import { OrderLookupPanel } from "@/components/admin/order-lookup-panel";
+import { DataToolsPanel } from "@/components/admin/data-tools-panel";
 import { SiteBrandingSettings } from "@/components/admin/site-branding-settings";
 import { StaffManagement } from "@/components/admin/staff-management";
 import { AppShell } from "@/components/layout/app-shell";
@@ -224,6 +225,8 @@ export default function AdminPage() {
             <StaffManagement />
           ) : viewMode === "branding" ? (
             <SiteBrandingSettings />
+          ) : viewMode === "dataTools" ? (
+            <DataToolsPanel />
           ) : null}
             </ModuleWorkbenchLayout>
           )}

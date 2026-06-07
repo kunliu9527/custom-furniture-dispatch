@@ -8,7 +8,12 @@ import type { StaffRecord } from "./staff-roster";
 import type { Order, OrderStatus } from "./types";
 
 /** 门店派单页 Tab */
-export type AdminViewMode = "dispatch" | "orderLookup" | "staff" | "branding";
+export type AdminViewMode =
+  | "dispatch"
+  | "orderLookup"
+  | "staff"
+  | "branding"
+  | "dataTools";
 
 export function normalizeDispatcherName(name: string): string {
   const trimmed = name.trim();

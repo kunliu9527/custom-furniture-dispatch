@@ -99,6 +99,8 @@ export function getVisibleAdminViewModes(
 ): AdminViewMode[] {
   if (!user) return ["dispatch"];
   const modes: AdminViewMode[] = ["dispatch", "orderLookup"];
-  if (canManageStaff(user)) modes.push("staff", "branding");
+  if (canManageStaff(user)) {
+    modes.push("staff", "branding", "dataTools");
+  }
   return modes;
 }

@@ -40,6 +40,7 @@ import {
   loadWorkbenchPeriod,
   saveWorkbenchPeriod,
 } from "@/lib/workbench-period-persistence";
+import { exportOrdersToCsv } from "@/lib/order-list-export";
 import type { Order } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -240,16 +241,27 @@ export function OrderLookupPanel({
       </div>
 
       <div className="shrink-0 border-b border-slate-100 px-4 py-3">
-        <LookupSectionHeading
-          title="订单状态查询"
-          suffix={
-            <span className="ml-2 text-xs font-normal text-slate-500">
-              {query.trim()
-                ? lookupSearchHint
-                : `共 ${filtered.length} 笔 · 点击订单查看详情与操作`}
-            </span>
-          }
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <LookupSectionHeading
+            title="订单状态查询"
+            suffix={
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                {query.trim()
+                  ? lookupSearchHint
+                  : `共 ${filtered.length} 笔 · 点击订单查看详情与操作`}
+              </span>
+            }
+          />
+          {filtered.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => exportOrdersToCsv(filtered, "订单查询结果")}
+              className="vi-btn vi-btn-secondary shrink-0 text-xs"
+            >
+              导出当前结果 CSV（{filtered.length}）
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className={EVAL_WORKBENCH_SPLIT_GRID}>
