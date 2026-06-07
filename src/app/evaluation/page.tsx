@@ -131,6 +131,7 @@ import {
   type TrendMonthPoint,
   type TrendMonthSpan,
 } from "@/lib/trend-series";
+import { exportCommissionDraftCsv } from "@/lib/commission-export";
 import { exportMonthlyDesignerReport } from "@/lib/monthly-report-export";
 import {
   DEFAULT_PERIOD,
@@ -704,6 +705,15 @@ export default function EvaluationPage() {
     scopedOrdersByView.designer,
     designerSituationNarrative,
   ]);
+
+  const handleExportCommissionDraft = useCallback(() => {
+    exportCommissionDraftCsv(
+      orders,
+      supplements,
+      staffRecords,
+      period,
+    );
+  }, [orders, supplements, staffRecords, period]);
 
   const storeAggregateSummary = useMemo(
     () => getDispatcherTabSummary(storeDispatcherAmountRows),
@@ -1394,10 +1404,21 @@ export default function EvaluationPage() {
                             savedBy={user?.displayName}
                           />
                         ) : null}
-                        <MonthlyOverviewCard
-                          overview={monthlyOverview}
-                          issueTagStats={issueTagStats}
-                        />
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <MonthlyOverviewCard
+                            overview={monthlyOverview}
+                            issueTagStats={issueTagStats}
+                          />
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={handleExportCommissionDraft}
+                            className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100"
+                          >
+                            导出{periodLabel}提成底稿 CSV
+                          </button>
+                        </div>
                         <DesignerPerformanceTable
                           rows={designerPerformanceRows}
                           emptyMessage="当前周期与权限范围内暂无设计师数据"

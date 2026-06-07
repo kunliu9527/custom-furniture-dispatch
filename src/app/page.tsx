@@ -4,6 +4,7 @@ import { HomeBoardCards } from "@/components/home/home-board-cards";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeRedirect } from "@/components/home/home-redirect";
+import { TodayTodosPanel } from "@/components/home/today-todos-panel";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <HomeRedirect />
       <div className="relative mx-auto flex w-full max-w-4xl flex-col px-4 pt-6 pb-14 sm:px-6 sm:pt-8 sm:pb-16">
         <HomeHero />
+        <TodayTodosPanel />
         <HomeBoardCards />
       </div>
       <SyncFooterStatus />
