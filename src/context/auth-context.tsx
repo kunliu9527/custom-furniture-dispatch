@@ -106,6 +106,13 @@ import { resolveLiveSessionUser, sessionUsersEqual } from "@/lib/session-user";
 import { showStatusToast } from "@/lib/status-toast";
 import { isHeadquartersStore } from "@/lib/stores";
 import {
+  commissionSettingsEqual,
+  DEFAULT_COMMISSION_SETTINGS,
+  normalizeCommissionSettings,
+  type CommissionSettings,
+} from "@/lib/commission-settings";
+import { saveCommissionSettings } from "@/lib/commission-settings-storage";
+import {
   DEFAULT_SITE_BRANDING,
   normalizeSiteBranding,
   type SiteBranding,
@@ -184,6 +191,11 @@ interface AuthContextValue {
     ok: boolean;
     error?: string;
   };
+  commissionSettings: CommissionSettings;
+  updateCommissionSettings: (patch: Partial<CommissionSettings>) => {
+    ok: boolean;
+    error?: string;
+  };
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -217,6 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [siteBranding, setSiteBranding] = useState<SiteBranding>({
     ...DEFAULT_SITE_BRANDING,
   });
+  const [commissionSettings, setCommissionSettings] =
+    useState<CommissionSettings>({
+      rates: { ...DEFAULT_COMMISSION_SETTINGS.rates },
+      visibleFor: { ...DEFAULT_COMMISSION_SETTINGS.visibleFor },
+    });
   const [isHydrated, setIsHydrated] = useState(false);
   const staffApplyingRemoteRef = useRef(false);
   const staffRemoteReadyRef = useRef(false);
@@ -254,6 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phoneOverrides: StaffPhoneOverrides;
       removedStaffIds: RemovedStaffIds;
       siteBranding: SiteBranding;
+      commissionSettings: CommissionSettings;
     }) => {
       patchRemoteStaffConfigIfSynced(buildStaffConfigSnapshot(sources));
     },
@@ -269,6 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPhoneOverrides(config.phoneOverrides);
     setRemovedStaffIds(config.removedStaffIds);
     setSiteBranding(normalizeSiteBranding(config.siteBranding));
+    setCommissionSettings(normalizeCommissionSettings(config.commissionSettings));
     persistStaffConfigToLocalStorage(config);
   }, []);
 
@@ -382,6 +401,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...config,
               ...snap.staffConfig,
               siteBranding: snap.staffConfig.siteBranding ?? config.siteBranding,
+              commissionSettings:
+                snap.staffConfig.commissionSettings ?? config.commissionSettings,
             };
             persistStaffConfigToLocalStorage(config);
           }
@@ -453,6 +474,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phoneOverrides,
       removedStaffIds,
       siteBranding,
+      commissionSettings,
     });
   }, [
     isHydrated,
@@ -464,6 +486,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phoneOverrides,
     removedStaffIds,
     siteBranding,
+    commissionSettings,
     syncStaffConfigToRemote,
   ]);
 
@@ -637,6 +660,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phoneOverrides,
         removedStaffIds,
         siteBranding,
+        commissionSettings,
       });
       return { ok: true };
     },
@@ -649,6 +673,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phoneOverrides,
       removedStaffIds,
       siteBranding,
+      commissionSettings,
       liveUser,
       syncStaffConfigToRemote,
     ],
@@ -845,6 +870,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phoneOverrides: nextPhones,
         removedStaffIds,
         siteBranding,
+        commissionSettings,
       });
 
       return { ok: true };
@@ -860,6 +886,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       removedStaffIds,
       siteBranding,
+      commissionSettings,
       syncStaffConfigToRemote,
     ],
   );
@@ -951,6 +978,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phoneOverrides: cleared.phoneOverrides,
         removedStaffIds: nextRemoved,
         siteBranding,
+        commissionSettings,
       });
 
       return { ok: true };
@@ -966,6 +994,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phoneOverrides,
       removedStaffIds,
       siteBranding,
+      commissionSettings,
       syncStaffConfigToRemote,
     ],
   );
@@ -994,6 +1023,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phoneOverrides,
         removedStaffIds,
         siteBranding: next,
+        commissionSettings,
       });
       return { ok: true as const };
     },
@@ -1007,6 +1037,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      commissionSettings,
+      syncStaffConfigToRemote,
+    ],
+  );
+
+  const updateCommissionSettings = useCallback(
+    (patch: Partial<CommissionSettings>) => {
+      if (!isAdminAccess(liveUser)) {
+        return { ok: false as const, error: "仅管理员可修改提成设置" };
+      }
+      const next = normalizeCommissionSettings({
+        ...commissionSettings,
+        ...patch,
+        rates: patch.rates
+          ? { ...commissionSettings.rates, ...patch.rates }
+          : commissionSettings.rates,
+        visibleFor: patch.visibleFor
+          ? { ...commissionSettings.visibleFor, ...patch.visibleFor }
+          : commissionSettings.visibleFor,
+      });
+      if (commissionSettingsEqual(next, commissionSettings)) {
+        return { ok: true as const };
+      }
+      setCommissionSettings(next);
+      saveCommissionSettings(next);
+      syncStaffConfigToRemote({
+        customStaff,
+        accessOverrides,
+        passwordOverrides,
+        homeStoreOverrides,
+        extraStoreOverrides,
+        phoneOverrides,
+        removedStaffIds,
+        siteBranding,
+        commissionSettings: next,
+      });
+      return { ok: true as const };
+    },
+    [
+      liveUser,
+      commissionSettings,
+      customStaff,
+      accessOverrides,
+      passwordOverrides,
+      homeStoreOverrides,
+      extraStoreOverrides,
+      phoneOverrides,
+      removedStaffIds,
+      siteBranding,
       syncStaffConfigToRemote,
     ],
   );
@@ -1019,6 +1098,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isHydrated,
       staffRecords,
       siteBranding,
+      commissionSettings,
       login,
       logout,
       touchAuthSession,
@@ -1032,6 +1112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetStaffPassword,
       deleteStaffMember,
       updateSiteBranding,
+      updateCommissionSettings,
     }),
     [
       liveUserStable,
@@ -1039,6 +1120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isHydrated,
       staffRecords,
       siteBranding,
+      commissionSettings,
       login,
       logout,
       touchAuthSession,
@@ -1052,6 +1134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetStaffPassword,
       deleteStaffMember,
       updateSiteBranding,
+      updateCommissionSettings,
     ],
   );
 

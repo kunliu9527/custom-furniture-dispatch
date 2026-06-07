@@ -132,6 +132,7 @@ import {
   type TrendMonthSpan,
 } from "@/lib/trend-series";
 import { exportCommissionDraftCsv } from "@/lib/commission-export";
+import { canViewCommissionExport } from "@/lib/commission-settings";
 import { exportMonthlyDesignerReport } from "@/lib/monthly-report-export";
 import {
   DEFAULT_PERIOD,
@@ -192,7 +193,9 @@ const viewConfig: Record<
 };
 
 export default function EvaluationPage() {
-  const { user, staffRecords, designerHomeStoreIndex } = useAuth();
+  const { user, staffRecords, designerHomeStoreIndex, commissionSettings } =
+    useAuth();
+  const canExportCommission = canViewCommissionExport(user, commissionSettings);
   const { orders, supplements, isHydrated, reassignOrder, setAfterSalesAmount, setOrderIssueTags } = useOrders();
   const allowedModes = useMemo(
     () => getVisibleEvaluationViewModes(user),
@@ -712,8 +715,9 @@ export default function EvaluationPage() {
       supplements,
       staffRecords,
       period,
+      commissionSettings,
     );
-  }, [orders, supplements, staffRecords, period]);
+  }, [orders, supplements, staffRecords, period, commissionSettings]);
 
   const storeAggregateSummary = useMemo(
     () => getDispatcherTabSummary(storeDispatcherAmountRows),
@@ -1410,15 +1414,17 @@ export default function EvaluationPage() {
                             issueTagStats={issueTagStats}
                           />
                         </div>
-                        <div className="flex flex-wrap justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={handleExportCommissionDraft}
-                            className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100"
-                          >
-                            导出{periodLabel}提成底稿 CSV
-                          </button>
-                        </div>
+                        {canExportCommission ? (
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={handleExportCommissionDraft}
+                              className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100"
+                            >
+                              导出{periodLabel}提成底稿 CSV
+                            </button>
+                          </div>
+                        ) : null}
                         <DesignerPerformanceTable
                           rows={designerPerformanceRows}
                           emptyMessage="当前周期与权限范围内暂无设计师数据"

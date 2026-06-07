@@ -55,6 +55,14 @@ import {
   normalizeSiteBranding,
   type SiteBranding,
 } from "./site-branding";
+import {
+  normalizeCommissionSettings,
+  type CommissionSettings,
+} from "./commission-settings";
+import {
+  loadCommissionSettings,
+  saveCommissionSettings,
+} from "./commission-settings-storage";
 import { saveSiteBranding } from "./site-branding-storage";
 import { loadSiteBranding } from "./site-branding-storage";
 
@@ -67,6 +75,7 @@ export interface StaffConfigSources {
   phoneOverrides: StaffPhoneOverrides;
   removedStaffIds: RemovedStaffIds;
   siteBranding: SiteBranding;
+  commissionSettings: CommissionSettings;
 }
 
 export function buildMergedStaffRecords(
@@ -146,6 +155,7 @@ export function buildStaffConfigSnapshot(
     customPositions: loadCustomPositionDefinitions(),
     customStores: loadCustomStoreNames(),
     siteBranding: normalizeSiteBranding(sources.siteBranding),
+    commissionSettings: normalizeCommissionSettings(sources.commissionSettings),
   };
 }
 
@@ -159,6 +169,7 @@ export function loadStaffConfigFromBrowser(): StaffConfigSnapshot {
     phoneOverrides: loadStaffPhoneOverrides(),
     removedStaffIds: loadRemovedStaffIds(),
     siteBranding: loadSiteBranding(),
+    commissionSettings: loadCommissionSettings(),
   });
 }
 
@@ -175,6 +186,7 @@ export function persistStaffConfigToLocalStorage(
   saveCustomPositionDefinitions(config.customPositions);
   saveCustomStoreNames(config.customStores);
   saveSiteBranding(normalizeSiteBranding(config.siteBranding));
+  saveCommissionSettings(normalizeCommissionSettings(config.commissionSettings));
 }
 
 export function patchRemoteStaffConfigIfSynced(

@@ -1,5 +1,6 @@
 import { INITIAL_DATA } from "@/lib/initial-data";
 import { buildFreshPersistedOrders, buildFreshPersistedSupplements } from "@/lib/fresh-app-data";
+import { normalizeCommissionSettings } from "@/lib/commission-settings";
 import { normalizeSiteBranding } from "@/lib/site-branding";
 import {
   EMPTY_STAFF_CONFIG,
@@ -49,6 +50,7 @@ export function normalizeStaffConfig(
     customPositions: Array.isArray(raw.customPositions) ? raw.customPositions : [],
     customStores: Array.isArray(raw.customStores) ? raw.customStores : [],
     siteBranding: normalizeSiteBranding(raw.siteBranding),
+    commissionSettings: normalizeCommissionSettings(raw.commissionSettings),
   };
 }
 

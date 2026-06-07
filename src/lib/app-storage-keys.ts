@@ -23,7 +23,10 @@ export const LEGACY_ORDERS_STORAGE_KEYS = [
   `${APP_STORAGE_PREFIX}data-v11`,
 ] as const;
 
+export const COMMISSION_SETTINGS_STORAGE_KEY = `${APP_STORAGE_PREFIX}commission-settings-v1`;
+
 export const STAFF_CONFIG_STORAGE_KEYS = [
+  COMMISSION_SETTINGS_STORAGE_KEY,
   `${APP_STORAGE_PREFIX}site-branding-v1`,
   `${APP_STORAGE_PREFIX}staff-v1`,
   `${APP_STORAGE_PREFIX}staff-access-v1`,

@@ -1,9 +1,11 @@
 "use client";
 
+import { CommissionSettingsPanel } from "@/components/admin/commission-settings-panel";
 import { useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import { exportCommissionDraftCsv } from "@/lib/commission-export";
+import { canViewCommissionExport } from "@/lib/commission-settings";
 import { formatPeriodLabel, getCurrentYearMonth, type PeriodSelection } from "@/lib/period-filter";
 import {
   exportAppBackup,
@@ -19,7 +21,7 @@ import { exportOrdersToCsv } from "@/lib/order-list-export";
 import { resolveOrderCustomerName } from "@/lib/order-remark";
 
 export function DataToolsPanel() {
-  const { staffRecords } = useAuth();
+  const { user, staffRecords, commissionSettings } = useAuth();
   const { orders, supplements } = useOrders();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -28,6 +30,8 @@ export function DataToolsPanel() {
     preset: "custom",
     yearMonth: getCurrentYearMonth(),
   });
+
+  const canExportCommission = canViewCommissionExport(user, commissionSettings);
 
   const duplicateGroups = useMemo(
     () => findDuplicateAddressGroups(orders),
@@ -85,6 +89,48 @@ export function DataToolsPanel() {
 
   return (
     <div className="space-y-4">
+      <CommissionSettingsPanel />
+
+      {canExportCommission ? (
+        <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">提成核算底稿</h2>
+          <p className="mt-1 text-xs leading-relaxed text-slate-600">
+            按上方保存的比例导出派单人 + 设计师绩效与建议提成基数。
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-xs text-slate-600">
+              统计月份
+              <input
+                type="month"
+                value={commissionPeriod.yearMonth ?? getCurrentYearMonth()}
+                onChange={(event) =>
+                  setCommissionPeriod({
+                    preset: "custom",
+                    yearMonth: event.target.value,
+                  })
+                }
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                exportCommissionDraftCsv(
+                  orders,
+                  supplements,
+                  staffRecords,
+                  commissionPeriod,
+                  commissionSettings,
+                )
+              }
+              className="vi-btn vi-btn-primary text-sm"
+            >
+              导出{formatPeriodLabel(commissionPeriod)}提成底稿 CSV
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">数据备份与恢复</h2>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -124,43 +170,6 @@ export function DataToolsPanel() {
         <p className="mt-3 text-[11px] text-slate-400">
           当前：{orders.length} 笔订单 · {supplements.length} 笔增补单
         </p>
-      </section>
-
-      <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">提成核算底稿</h2>
-        <p className="mt-1 text-xs leading-relaxed text-slate-600">
-          导出派单人 + 设计师绩效与建议提成基数，供财务在 Excel 中核算。比例可在导出后调整。
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-xs text-slate-600">
-            统计月份
-            <input
-              type="month"
-              value={commissionPeriod.yearMonth ?? getCurrentYearMonth()}
-              onChange={(event) =>
-                setCommissionPeriod({
-                  preset: "custom",
-                  yearMonth: event.target.value,
-                })
-              }
-              className="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() =>
-              exportCommissionDraftCsv(
-                orders,
-                supplements,
-                staffRecords,
-                commissionPeriod,
-              )
-            }
-            className="vi-btn vi-btn-primary text-sm"
-          >
-            导出{formatPeriodLabel(commissionPeriod)}提成底稿 CSV
-          </button>
-        </div>
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

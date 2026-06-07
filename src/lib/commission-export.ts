@@ -14,17 +14,16 @@ import {
   periodFilenameSuffix,
   type PeriodSelection,
 } from "./period-filter";
+import {
+  computeDesignerCommissionBase,
+  computeDispatcherCommissionBase,
+  DEFAULT_COMMISSION_SETTINGS,
+  formatCommissionRatesSummary,
+  normalizeCommissionSettings,
+  type CommissionSettings,
+} from "./commission-settings";
 import type { StaffRecord } from "./staff-roster";
 import type { Order, SupplementOrder } from "./types";
-
-/** 提成底稿：派单人建议基数 = 签约额×0.3% + 定金×0.5% + 量尺前补定×200（可调） */
-function dispatcherCommissionBase(row: DispatcherPerformanceRow): number {
-  return Math.round(
-    row.signedContractAmount * 0.003 +
-      row.depositTotal * 0.005 +
-      row.preMeasureDepositCount * 200,
-  );
-}
 
 function designerSupplementAmount(
   row: DesignerPerformanceRow,
@@ -48,7 +47,10 @@ export function exportCommissionDraftCsv(
   supplements: SupplementOrder[],
   staffRecords: StaffRecord[],
   period: PeriodSelection,
+  settings: CommissionSettings = DEFAULT_COMMISSION_SETTINGS,
 ): void {
+  const commission = normalizeCommissionSettings(settings);
+  const rates = commission.rates;
   const periodLabel = formatPeriodLabel(period);
   const suffix = periodFilenameSuffix(period);
   const stamp = stampForFilename();
@@ -72,7 +74,8 @@ export function exportCommissionDraftCsv(
   const lines: string[] = [
     `# 提成核算底稿 · ${periodLabel}`,
     `# 生成时间 ${new Date().toLocaleString("zh-CN")}`,
-    `# 说明：建议提成基数为系统估算，实际比例请财务在 Excel 中调整`,
+    `# 核算比例：${formatCommissionRatesSummary(rates)}`,
+    `# 说明：建议提成基数按管理员设置比例估算，财务可在 Excel 中微调`,
     "",
     "# 派单人",
     rowToCsvLine([
@@ -98,7 +101,7 @@ export function exportCommissionDraftCsv(
         String(row.preMeasureDepositCount),
         String(row.signTimeoutCount),
         String(row.contributionScore),
-        String(dispatcherCommissionBase(row)),
+        String(computeDispatcherCommissionBase(row, rates)),
       ]),
     ),
     "",
@@ -133,9 +136,10 @@ export function exportCommissionDraftCsv(
         String(row.refundCount),
         formatContributionScore(row.contributionScore),
         String(
-          Math.round(
-            row.orderedAmount * 0.0015 +
-              designerSupplementAmount(row, orders, supplements) * 0.0012,
+          computeDesignerCommissionBase(
+            row,
+            designerSupplementAmount(row, orders, supplements),
+            rates,
           ),
         ),
       ]),
