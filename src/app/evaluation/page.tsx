@@ -96,6 +96,8 @@ import {
   buildDesignerSituationNarrative,
   formatDesignerSituationNarrativeText,
 } from "@/lib/designer-situation-narrative";
+import { buildDispatcherSituationNarrative } from "@/lib/dispatcher-situation-narrative";
+import { buildStoreSituationNarrative } from "@/lib/store-situation-narrative";
 import { aggregateIssueTags } from "@/lib/issue-tag-stats";
 import { buildConversionFunnel, buildFunnelCompare } from "@/lib/conversion-funnel";
 import {
@@ -684,12 +686,52 @@ export default function EvaluationPage() {
         periodScopedOrdersByView.designer,
         period,
         periodLabel,
+        scopeLabel ?? undefined,
       ),
     [
       designerAmountRows,
       periodScopedOrdersByView.designer,
       period,
       periodLabel,
+      scopeLabel,
+    ],
+  );
+
+  const storeSituationNarrative = useMemo(
+    () =>
+      buildStoreSituationNarrative(
+        storeDispatcherAmountRows,
+        periodScopedOrdersByView.dispatcher,
+        period,
+        periodLabel,
+        scopeLabel ?? undefined,
+        staffRecords,
+      ),
+    [
+      storeDispatcherAmountRows,
+      periodScopedOrdersByView.dispatcher,
+      period,
+      periodLabel,
+      scopeLabel,
+      staffRecords,
+    ],
+  );
+
+  const dispatcherSituationNarrative = useMemo(
+    () =>
+      buildDispatcherSituationNarrative(
+        dispatcherRows,
+        periodScopedOrdersByView.dispatcher,
+        period,
+        periodLabel,
+        scopeLabel ?? undefined,
+      ),
+    [
+      dispatcherRows,
+      periodScopedOrdersByView.dispatcher,
+      period,
+      periodLabel,
+      scopeLabel,
     ],
   );
 
@@ -1392,6 +1434,12 @@ export default function EvaluationPage() {
                         snapshot={tableBoardSnapshot}
                       />
                     )}
+                    {storeSubView === "aggregate" ||
+                    (storeSubView === "ranking" && !showStoreRanking) ? (
+                      <DesignerSituationNarrativePanel
+                        narrative={storeSituationNarrative}
+                      />
+                    ) : null}
                   </>
                 ) : viewMode === "designer" ? (
                   <>
@@ -1458,9 +1506,11 @@ export default function EvaluationPage() {
                         snapshot={tableBoardSnapshot}
                       />
                     )}
-                    <DesignerSituationNarrativePanel
-                      narrative={designerSituationNarrative}
-                    />
+                    {designerSubView === "aggregate" ? (
+                      <DesignerSituationNarrativePanel
+                        narrative={designerSituationNarrative}
+                      />
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -1497,6 +1547,11 @@ export default function EvaluationPage() {
                         snapshot={tableBoardSnapshot}
                       />
                     )}
+                    {dispatcherSubView === "aggregate" ? (
+                      <DesignerSituationNarrativePanel
+                        narrative={dispatcherSituationNarrative}
+                      />
+                    ) : null}
                   </>
                 )}
                 </>

@@ -1,9 +1,9 @@
 "use client";
 
-import type { DesignerSituationNarrative } from "@/lib/designer-situation-narrative";
+import type { PerformanceSituationNarrative } from "@/lib/performance-narrative-core";
 
 interface DesignerSituationNarrativePanelProps {
-  narrative: DesignerSituationNarrative;
+  narrative: PerformanceSituationNarrative;
 }
 
 export function DesignerSituationNarrativePanel({
@@ -19,6 +19,10 @@ export function DesignerSituationNarrativePanel({
         </h3>
         <p className="mt-0.5 text-xs text-indigo-700/80">
           统计周期：{narrative.periodHint}
+          {narrative.scopeHint ? ` · 所属：${narrative.scopeHint}` : null}
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+          {narrative.intro}
         </p>
       </header>
 
@@ -50,7 +54,7 @@ export function DesignerSituationNarrativePanel({
       </div>
 
       <p className="mt-3 border-t border-indigo-100/80 pt-2 text-[11px] leading-relaxed text-indigo-700/75">
-        {narrative.footnote}
+        数据口径说明：{narrative.footnote}
       </p>
     </section>
   );
