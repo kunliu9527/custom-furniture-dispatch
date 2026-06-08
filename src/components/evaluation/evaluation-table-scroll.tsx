@@ -52,4 +52,11 @@ export const TABLE_HEAD_STICKY_CLASS =
 
 /** 各板块明细表表头单元格 */
 export const TABLE_TH_CLASS =
-  "px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-slate-600 whitespace-nowrap";
+  "px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 whitespace-nowrap leading-tight";
+
+/** 各板块明细表数据单元格（紧凑，便于一屏多看行） */
+export const TABLE_TD_CLASS =
+  "px-2.5 py-1 text-xs text-slate-700 whitespace-nowrap leading-tight";
+
+export const TABLE_FOOTER_CLASS =
+  "border-t border-slate-100 px-2.5 py-1 text-[11px] leading-snug text-slate-400";

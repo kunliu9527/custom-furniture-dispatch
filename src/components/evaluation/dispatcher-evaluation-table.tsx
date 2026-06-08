@@ -2,7 +2,9 @@
 
 import {
   EvaluationTableScroll,
+  TABLE_FOOTER_CLASS,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_TD_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
 import { SortableTh } from "@/components/shared/sortable-table-header";
@@ -41,7 +43,7 @@ interface DispatcherEvaluationTableProps {
 }
 
 const thClass = TABLE_TH_CLASS;
-const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
+const tdClass = TABLE_TD_CLASS;
 
 const amountColumns: {
   key: "notOrdered" | "ordered" | "pendingRefund" | "confirmedRefund";
@@ -136,7 +138,7 @@ export function DispatcherEvaluationTable({
     <EvaluationTableScroll
       snapshot={snapshot}
       footer={
-        <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
+        <p className={TABLE_FOOTER_CLASS}>
           共 {dataRows.length} 条 · 点击列标题排序（优先金额） · {footnote}
           {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
         </p>
@@ -203,7 +205,7 @@ export function DispatcherEvaluationTable({
               >
                 <div>{row.label}</div>
                 {row.subtitle ? (
-                  <div className="text-xs font-normal text-slate-500">
+                  <div className="text-[11px] font-normal leading-tight text-slate-500">
                     {row.subtitle}
                   </div>
                 ) : null}

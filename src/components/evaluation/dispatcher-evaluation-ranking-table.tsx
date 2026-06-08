@@ -2,7 +2,9 @@
 
 import {
   EvaluationTableScroll,
+  TABLE_FOOTER_CLASS,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_TD_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
 import { SortableTh } from "@/components/shared/sortable-table-header";
@@ -40,7 +42,7 @@ interface DispatcherEvaluationRankingTableProps {
 }
 
 const thClass = `${TABLE_TH_CLASS} text-center`;
-const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
+const tdClass = TABLE_TD_CLASS;
 
 import {
   AGGREGATE_KPI_LABEL,
@@ -84,7 +86,7 @@ function RankSlot({ place }: { place: number | null }) {
   return (
     <span className="inline-grid grid-cols-[1.25rem_1em] items-center gap-x-0.5">
       <span
-        className={`text-right text-sm font-semibold tabular-nums leading-none ${
+        className={`text-right text-xs font-semibold tabular-nums leading-none ${
           isEmpty ? "font-normal text-slate-300" : "text-slate-800"
         }`}
       >
@@ -100,7 +102,7 @@ function RankSlot({ place }: { place: number | null }) {
 function DualRankCell({ dual }: { dual: MetricDualRank }) {
   return (
     <td className={`${tdClass} text-center align-middle`}>
-      <div className="mx-auto inline-flex items-center justify-center gap-1 whitespace-nowrap py-0.5">
+      <div className="mx-auto inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
         <RankSlot place={dual.countPlace} />
         <span className="shrink-0 text-slate-300">/</span>
         <RankSlot place={dual.amountPlace} />
@@ -112,7 +114,7 @@ function DualRankCell({ dual }: { dual: MetricDualRank }) {
 function SingleRankCell({ place }: { place: number | null }) {
   return (
     <td className={`${tdClass} text-center align-middle`}>
-      <div className="flex justify-center py-0.5">
+      <div className="flex justify-center">
         <RankSlot place={place} />
       </div>
     </td>
@@ -191,7 +193,7 @@ export function DispatcherEvaluationRankingTable({
     <EvaluationTableScroll
       snapshot={snapshot}
       footer={
-        <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
+        <p className={TABLE_FOOTER_CLASS}>
           共 {sortedRows.length} 条 · 点击列标题排序（排名优先金额名次） · {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
           {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
         </p>
@@ -269,7 +271,7 @@ export function DispatcherEvaluationRankingTable({
                   >
                     <div>{row.label}</div>
                     {row.subtitle ? (
-                      <div className="text-xs font-normal text-slate-500">
+                      <div className="text-[11px] font-normal leading-tight text-slate-500">
                         {row.subtitle}
                       </div>
                     ) : null}

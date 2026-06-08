@@ -6,7 +6,7 @@ export const EVAL_WORKBENCH_PANE_SCROLL =
 
 /** 工作台正文内层：撑满滚动区高度，便于 fill 型面板（订单查询/增补单/派单）内部滚动 */
 export const EVAL_WORKBENCH_PANE_INNER =
-  "flex min-h-full flex-col gap-4 pb-[var(--eval-scroll-bottom-pad)] pr-0.5";
+  "flex min-h-full flex-col gap-2 pb-[var(--eval-scroll-bottom-pad)] pr-0.5";
 
 /** 填满工作台剩余高度的面板（左右分栏、表单等）；移动端随页面滚动自然撑开 */
 export const EVAL_WORKBENCH_FILL_PANE =
@@ -39,7 +39,7 @@ export const EVAL_PAGE_MAIN_CLASS =
   "vi-workbench-page mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col overflow-hidden px-4 pt-[var(--eval-workbench-nav-gap)] sm:px-6";
 
 /** 侧栏内边距 */
-export const EVAL_SIDEBAR_INNER_PAD = "p-2.5";
+export const EVAL_SIDEBAR_INNER_PAD = "p-2";
 
 /** 统计周期栏与正文间距 */
-export const EVAL_WORKBENCH_CONTENT_OFFSET = "mb-3 shrink-0";
+export const EVAL_WORKBENCH_CONTENT_OFFSET = "mb-2 shrink-0";
