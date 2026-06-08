@@ -9,7 +9,12 @@ import {
   EVAL_WORKBENCH_PANE_SCROLL,
   EVAL_WORKBENCH_SIDEBAR_WIDTH,
 } from "@/components/evaluation/sticky-section";
-import { useLayoutEffect, useRef, type ReactNode } from "react";
+import { WorkbenchSidebarToggle } from "@/components/workbench/workbench-sidebar-toggle";
+import {
+  loadWorkbenchSidebarCollapsed,
+  saveWorkbenchSidebarCollapsed,
+} from "@/lib/workbench-sidebar-persistence";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 export interface ModuleWorkbenchLayoutProps {
   sidebar: ReactNode;
@@ -82,6 +87,33 @@ export function ModuleWorkbenchLayout({
   mobileTabs,
   children,
 }: ModuleWorkbenchLayoutProps) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarUiHydrated, setSidebarUiHydrated] = useState(false);
+
+  useLayoutEffect(() => {
+    setSidebarCollapsed(loadWorkbenchSidebarCollapsed());
+    setSidebarUiHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarUiHydrated) return;
+    document.documentElement.toggleAttribute(
+      "data-workbench-sidebar-collapsed",
+      sidebarCollapsed,
+    );
+    return () => {
+      document.documentElement.removeAttribute("data-workbench-sidebar-collapsed");
+    };
+  }, [sidebarCollapsed, sidebarUiHydrated]);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      saveWorkbenchSidebarCollapsed(next);
+      return next;
+    });
+  }, []);
+
   const periodBlock = periodBar ? (
     <div className={EVAL_WORKBENCH_CONTENT_OFFSET}>
       <div className={EVAL_WORKBENCH_NAV_CARD}>
@@ -94,24 +126,53 @@ export function ModuleWorkbenchLayout({
     <NoPeriodNavHeight />
   );
 
+  const sidebarWidthClass = sidebarCollapsed
+    ? "w-0"
+    : EVAL_WORKBENCH_SIDEBAR_WIDTH;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div
-        className={`hidden min-h-0 flex-1 lg:flex ${EVAL_WORKBENCH_COL_GAP}`}
+        className={`hidden min-h-0 flex-1 lg:flex ${
+          sidebarCollapsed ? "gap-x-0" : EVAL_WORKBENCH_COL_GAP
+        }`}
       >
-        <aside
-          className={`flex min-h-0 flex-col overflow-hidden ${EVAL_WORKBENCH_SIDEBAR_WIDTH}`}
+        <div
+          className={`relative shrink-0 overflow-visible transition-[width] duration-200 ease-out motion-reduce:transition-none ${sidebarWidthClass}`}
         >
-          <div
-            className={`${EVAL_WORKBENCH_NAV_CARD} flex min-h-0 flex-1 flex-col overflow-hidden`}
+          <aside
+            className={`flex min-h-0 flex-col overflow-hidden transition-opacity duration-150 ease-out motion-reduce:transition-none ${
+              sidebarCollapsed
+                ? "pointer-events-none opacity-0"
+                : "opacity-100"
+            } ${sidebarCollapsed ? "w-0" : "w-full"}`}
+            aria-hidden={sidebarCollapsed}
           >
-            <div className={`${EVAL_SIDEBAR_INNER_PAD} ${EVAL_WORKBENCH_PANE_SCROLL}`}>
-              {sidebar}
+            <div
+              className={`${EVAL_WORKBENCH_NAV_CARD} flex min-h-0 flex-1 flex-col overflow-hidden`}
+            >
+              <div className={`${EVAL_SIDEBAR_INNER_PAD} ${EVAL_WORKBENCH_PANE_SCROLL}`}>
+                {sidebar}
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+          {!sidebarCollapsed ? (
+            <WorkbenchSidebarToggle
+              collapsed={sidebarCollapsed}
+              onToggle={toggleSidebar}
+              variant="collapse"
+            />
+          ) : null}
+        </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          {sidebarUiHydrated && sidebarCollapsed ? (
+            <WorkbenchSidebarToggle
+              collapsed={sidebarCollapsed}
+              onToggle={toggleSidebar}
+              variant="expand"
+            />
+          ) : null}
           {periodBlock}
           <div className={EVAL_WORKBENCH_PANE_SCROLL}>
             <div className={EVAL_WORKBENCH_PANE_INNER}>{children}</div>

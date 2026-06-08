@@ -36,7 +36,7 @@ export const EVAL_WORKBENCH_NAV_CARD = "vi-workbench-card";
 
 /** 综合看板页 main：在 AppShell 内 flex 占满剩余高度，禁止整页滚动 */
 export const EVAL_PAGE_MAIN_CLASS =
-  "mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col overflow-hidden px-4 pt-[var(--eval-workbench-nav-gap)] sm:px-6";
+  "vi-workbench-page mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col overflow-hidden px-4 pt-[var(--eval-workbench-nav-gap)] sm:px-6";
 
 /** 侧栏内边距 */
 export const EVAL_SIDEBAR_INNER_PAD = "p-2.5";

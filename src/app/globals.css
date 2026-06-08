@@ -171,6 +171,49 @@ body {
   box-shadow: var(--vi-shadow-sm);
 }
 
+.vi-workbench-sidebar-toggle {
+  position: absolute;
+  top: 0.75rem;
+  right: -0.75rem;
+  z-index: 30;
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--vi-border-strong);
+  border-radius: 9999px;
+  background: var(--vi-surface-elevated);
+  color: var(--vi-ink-secondary);
+  box-shadow: var(--vi-shadow-xs);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vi-workbench-sidebar-toggle:hover {
+  border-color: var(--vi-border-accent);
+  background: var(--vi-brand-soft);
+  color: var(--vi-brand-deep);
+  box-shadow: var(--vi-shadow-sm);
+}
+
+.vi-workbench-sidebar-toggle-expand {
+  top: 50%;
+  right: auto;
+  left: -0.35rem;
+  transform: translateY(-50%);
+}
+
+@media (min-width: 1024px) {
+  html[data-workbench-sidebar-collapsed] .vi-workbench-page,
+  html[data-workbench-sidebar-collapsed] .vi-shell-inner {
+    max-width: 80rem;
+  }
+}
+
 .vi-label-caps {
   font-size: 0.6875rem;
   font-weight: 600;
