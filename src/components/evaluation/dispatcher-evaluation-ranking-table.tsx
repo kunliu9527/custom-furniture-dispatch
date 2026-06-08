@@ -2,8 +2,11 @@
 
 import {
   EvaluationTableScroll,
+  EVAL_DATA_TABLE_CLASS,
   TABLE_FOOTER_CLASS,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_NAME_TD_CLASS,
+  TABLE_NAME_TH_CLASS,
   TABLE_TD_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
@@ -86,7 +89,7 @@ function RankSlot({ place }: { place: number | null }) {
   return (
     <span className="inline-grid grid-cols-[1.25rem_1em] items-center gap-x-0.5">
       <span
-        className={`text-right text-xs font-semibold tabular-nums leading-none ${
+        className={`text-right text-sm font-semibold tabular-nums leading-none ${
           isEmpty ? "font-normal text-slate-300" : "text-slate-800"
         }`}
       >
@@ -102,7 +105,7 @@ function RankSlot({ place }: { place: number | null }) {
 function DualRankCell({ dual }: { dual: MetricDualRank }) {
   return (
     <td className={`${tdClass} text-center align-middle`}>
-      <div className="mx-auto inline-flex items-center justify-center gap-0.5 whitespace-nowrap">
+      <div className="mx-auto inline-flex items-center justify-center gap-1 whitespace-nowrap py-0.5">
         <RankSlot place={dual.countPlace} />
         <span className="shrink-0 text-slate-300">/</span>
         <RankSlot place={dual.amountPlace} />
@@ -114,7 +117,7 @@ function DualRankCell({ dual }: { dual: MetricDualRank }) {
 function SingleRankCell({ place }: { place: number | null }) {
   return (
     <td className={`${tdClass} text-center align-middle`}>
-      <div className="flex justify-center">
+      <div className="flex justify-center py-0.5">
         <RankSlot place={place} />
       </div>
     </td>
@@ -187,7 +190,6 @@ export function DispatcherEvaluationRankingTable({
   }
 
   const emptyDual: MetricDualRank = { countPlace: null, amountPlace: null };
-  const minWidth = designerExtendedMetrics ? "min-w-[1040px]" : "min-w-[800px]";
 
   return (
     <EvaluationTableScroll
@@ -199,7 +201,7 @@ export function DispatcherEvaluationRankingTable({
         </p>
       }
     >
-      <table className={`vi-data-table w-full ${minWidth} border-collapse text-left`}>
+      <table className={EVAL_DATA_TABLE_CLASS}>
         <thead>
           <TableAlgorithmCaption>
             {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
@@ -213,7 +215,7 @@ export function DispatcherEvaluationRankingTable({
                 direction={sort.direction}
                 onSort={handleSort}
                 align="left"
-                className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell text-left shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
+                className={`${TABLE_NAME_TH_CLASS} sticky left-0 z-20 vi-table-head-cell text-left shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
               />
               <SortableTh
                 label="合计排名"
@@ -267,11 +269,11 @@ export function DispatcherEvaluationRankingTable({
               return (
                 <tr key={row.key} className="hover:bg-slate-50/50">
                   <td
-                    className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
+                    className={`${TABLE_NAME_TD_CLASS} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
                   >
                     <div>{row.label}</div>
                     {row.subtitle ? (
-                      <div className="text-[11px] font-normal leading-tight text-slate-500">
+                      <div className="text-xs font-normal text-slate-500">
                         {row.subtitle}
                       </div>
                     ) : null}

@@ -3,8 +3,11 @@
 import { ORDER_STATUSES } from "@/lib/constants";
 import {
   EvaluationTableScroll,
+  EVAL_DATA_TABLE_CLASS,
   TABLE_FOOTER_CLASS,
   TABLE_HEAD_STICKY_CLASS,
+  TABLE_NAME_TD_CLASS,
+  TABLE_NAME_TH_CLASS,
   TABLE_TD_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
@@ -83,7 +86,7 @@ export function EvaluationStatsTable({
         </p>
       }
     >
-      <table className="vi-data-table w-full min-w-[840px] border-collapse text-left">
+      <table className={EVAL_DATA_TABLE_CLASS}>
         <thead>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
             <SortableTh
@@ -93,7 +96,7 @@ export function EvaluationStatsTable({
               direction={sort.direction}
               onSort={handleSort}
               align="left"
-              className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
+              className={`${TABLE_NAME_TH_CLASS} sticky left-0 z-20 vi-table-head-cell shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
             />
             <SortableTh
               label="合计"
@@ -120,11 +123,11 @@ export function EvaluationStatsTable({
           {sortedDataRows.map((row) => (
             <tr key={row.key} className="hover:bg-slate-50/50">
               <td
-                className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
+                className={`${TABLE_NAME_TD_CLASS} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
               >
                 <div>{row.label}</div>
                 {row.subtitle ? (
-                  <div className="text-[11px] font-normal leading-tight text-slate-500">
+                  <div className="text-xs font-normal text-slate-500">
                     {row.subtitle}
                   </div>
                 ) : null}
@@ -154,7 +157,7 @@ export function EvaluationStatsTable({
           {workflowRow ? (
             <tr className="border-t-2 border-rose-100 bg-rose-50/40">
               <td
-                className={`${tdClass} sticky left-0 z-[1] bg-rose-50/95 font-semibold text-rose-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
+                className={`${TABLE_NAME_TD_CLASS} sticky left-0 z-[1] bg-rose-50/95 font-semibold text-rose-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}
               >
                 {workflowRow.label}
               </td>

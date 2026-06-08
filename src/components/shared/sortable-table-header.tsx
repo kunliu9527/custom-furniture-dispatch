@@ -58,7 +58,7 @@ export function SortableTh({
         type="button"
         onClick={() => onSort(column)}
         title={title ?? `按${label}排序`}
-        className={`inline-flex w-full items-center gap-0.5 font-bold uppercase tracking-wide text-slate-600 transition-colors hover:text-slate-900 ${alignClass} ${
+        className={`inline-flex items-center gap-0.5 font-bold uppercase tracking-wide text-slate-600 transition-colors hover:text-slate-900 ${alignClass} ${
           align === "center" ? "justify-center" : "justify-start"
         } ${active ? "text-indigo-700" : ""}`}
       >

@@ -14,7 +14,7 @@ export function TableAlgorithmCaption({
     <tr className={`bg-slate-50/95 ${className}`}>
       <th
         colSpan={100}
-        className="px-2.5 py-1 text-left text-[10px] font-normal leading-snug text-slate-500"
+        className="px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-slate-500"
       >
         {children}
       </th>

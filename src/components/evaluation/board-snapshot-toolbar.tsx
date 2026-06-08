@@ -42,7 +42,7 @@ export function BoardSnapshotToolbar({
   }, [captureRootRef, config.label]);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-2.5 py-1">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2">
       <p className="text-xs text-slate-500">
         宽表可横向滑动 · 快照将截取完整版面（含脚注）并下载 PNG
       </p>

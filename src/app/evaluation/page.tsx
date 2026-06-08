@@ -1341,11 +1341,11 @@ export default function EvaluationPage() {
                     </section>
                   ) : (
                     <>
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-1.5">
-                    <h2 className="text-sm font-semibold leading-tight text-slate-900">
+                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+                    <h2 className="text-sm font-semibold text-slate-900">
                       {getSubViewTitle(viewMode, activeSubView)}
                     </h2>
-                    <p className="text-[11px] leading-tight text-slate-500">
+                    <p className="mt-0.5 text-xs text-slate-500">
                       {periodLabel}
                       {scopeLabel ? ` · ${scopeLabel}` : ""}
                     </p>

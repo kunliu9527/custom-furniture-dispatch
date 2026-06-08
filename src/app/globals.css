@@ -37,7 +37,7 @@
   /* 综合看板布局 */
   --eval-site-nav-h: 5rem;
   --eval-workbench-nav-h: 4.75rem;
-  --eval-workbench-nav-gap: 0.75rem;
+  --eval-workbench-nav-gap: 1rem;
   --eval-scroll-bottom-pad: 1rem;
   --eval-sidebar-w: 13rem;
   --eval-sidebar-w-xl: 14rem;
@@ -632,18 +632,16 @@ body {
   color: #4338ca;
 }
 
-/* ── 各板块数据表（紧凑行高，一屏多看数据） ── */
+/* ── 各板块数据表表头 ── */
 .vi-data-table thead th {
   font-weight: 700;
   color: var(--vi-ink-secondary);
 }
 
-.vi-data-table tbody td {
-  vertical-align: middle;
-}
-
-.vi-data-table tbody tr {
-  line-height: 1.25;
+/** 看板归总/排名表：列宽随内容，不撑满容器 */
+.vi-eval-data-table {
+  width: max-content;
+  max-width: none;
 }
 
 .vi-badge {

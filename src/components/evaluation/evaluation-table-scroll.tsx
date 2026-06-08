@@ -52,11 +52,20 @@ export const TABLE_HEAD_STICKY_CLASS =
 
 /** 各板块明细表表头单元格 */
 export const TABLE_TH_CLASS =
-  "px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-600 whitespace-nowrap leading-tight";
+  "px-1.5 py-2.5 text-xs font-bold uppercase tracking-wide text-slate-600 whitespace-nowrap";
 
-/** 各板块明细表数据单元格（紧凑，便于一屏多看行） */
+/** 数据列单元格（横向紧凑，行高保持原样） */
 export const TABLE_TD_CLASS =
-  "px-2.5 py-1 text-xs text-slate-700 whitespace-nowrap leading-tight";
+  "px-1.5 py-2 text-sm text-slate-700 whitespace-nowrap tabular-nums";
+
+/** 首列（姓名/门店）略宽一点，不用等宽数字字体 */
+export const TABLE_NAME_TH_CLASS = `${TABLE_TH_CLASS} px-2.5`;
+export const TABLE_NAME_TD_CLASS =
+  "px-2.5 py-2 text-sm text-slate-700 whitespace-nowrap";
+
+/** 看板数据表：按内容列宽，避免 w-full 把空白摊进各列 */
+export const EVAL_DATA_TABLE_CLASS =
+  "vi-data-table vi-eval-data-table w-max border-collapse text-left";
 
 export const TABLE_FOOTER_CLASS =
-  "border-t border-slate-100 px-2.5 py-1 text-[11px] leading-snug text-slate-400";
+  "border-t border-slate-100 px-3 py-2 text-xs text-slate-400";
