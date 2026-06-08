@@ -2,15 +2,23 @@
 
 import { CustomerRatingTable } from "@/components/shared/customer-rating-table";
 import { PersonRatingLeaderboard } from "@/components/shared/person-rating-leaderboard";
+import { SortableTh } from "@/components/shared/sortable-table-header";
 import { EvaluationSectionToggle } from "@/components/evaluation/evaluation-section-toggle";
+import {
+  defaultAcceptanceStoreSortDirection,
+  sortAcceptanceStoreRows,
+  type AcceptanceStoreSortColumn,
+} from "@/lib/evaluation-table-sort";
 import {
   getAcceptanceEvaluationSummary,
   getAcceptancePersonRanking,
   getAcceptanceRatingRecords,
   getAcceptanceStoreRows,
 } from "@/lib/acceptance-evaluation-stats";
+import { nextTableSortState, type TableSortState } from "@/lib/table-sort";
 import type { EvaluationSubView } from "@/lib/evaluation-ui-persistence";
 import type { Order, StoreName } from "@/lib/types";
+import { useMemo, useState } from "react";
 
 interface AcceptanceEvaluationSectionProps {
   orders: Order[];
@@ -34,6 +42,22 @@ export function AcceptanceEvaluationSection({
   const ranking = getAcceptancePersonRanking(orders);
   const records = getAcceptanceRatingRecords(orders);
   const entries = records.flatMap((r) => r.entries);
+
+  const [storeSort, setStoreSort] = useState<
+    TableSortState<AcceptanceStoreSortColumn>
+  >({ column: null, direction: "desc" });
+
+  const sortedStoreRows = useMemo(
+    () => sortAcceptanceStoreRows(storeRows, storeSort),
+    [storeRows, storeSort],
+  );
+
+  const handleStoreSort = (column: string) => {
+    const col = column as AcceptanceStoreSortColumn;
+    setStoreSort((current) =>
+      nextTableSortState(current, col, defaultAcceptanceStoreSortDirection(col)),
+    );
+  };
 
   return (
     <section className="space-y-4">
@@ -80,15 +104,51 @@ export function AcceptanceEvaluationSection({
           <table className="vi-data-table min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs text-slate-500">
               <tr>
-                <th className="px-3 py-2">门店</th>
-                <th className="px-3 py-2">已评价</th>
-                <th className="px-3 py-2">待扫码</th>
-                <th className="px-3 py-2">均分</th>
-                <th className="px-3 py-2">电子验收率</th>
+                <SortableTh
+                  label="门店"
+                  column="label"
+                  activeColumn={storeSort.column}
+                  direction={storeSort.direction}
+                  onSort={handleStoreSort}
+                  align="left"
+                  className="px-3 py-2"
+                />
+                <SortableTh
+                  label="已评价"
+                  column="ratedCount"
+                  activeColumn={storeSort.column}
+                  direction={storeSort.direction}
+                  onSort={handleStoreSort}
+                  className="px-3 py-2"
+                />
+                <SortableTh
+                  label="待扫码"
+                  column="pendingCount"
+                  activeColumn={storeSort.column}
+                  direction={storeSort.direction}
+                  onSort={handleStoreSort}
+                  className="px-3 py-2"
+                />
+                <SortableTh
+                  label="均分"
+                  column="avgOverall"
+                  activeColumn={storeSort.column}
+                  direction={storeSort.direction}
+                  onSort={handleStoreSort}
+                  className="px-3 py-2"
+                />
+                <SortableTh
+                  label="电子验收率"
+                  column="electronicRate"
+                  activeColumn={storeSort.column}
+                  direction={storeSort.direction}
+                  onSort={handleStoreSort}
+                  className="px-3 py-2"
+                />
               </tr>
             </thead>
             <tbody>
-              {storeRows.map((row) => (
+              {sortedStoreRows.map((row) => (
                 <tr key={row.key} className="border-t border-slate-100">
                   <td className="px-3 py-2 font-medium">{row.label}</td>
                   <td className="px-3 py-2">{row.ratedCount}</td>

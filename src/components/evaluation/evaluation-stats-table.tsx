@@ -1,15 +1,25 @@
+"use client";
+
 import { ORDER_STATUSES } from "@/lib/constants";
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
+import { SortableTh } from "@/components/shared/sortable-table-header";
 import { FLOW_TABLE_FOOTNOTE, flowStatusColumnLabel } from "@/lib/metric-display-labels";
+import {
+  defaultWorkflowSortDirection,
+  sortWorkflowDataRows,
+  type WorkflowSortColumn,
+} from "@/lib/evaluation-table-sort";
 import {
   formatEvaluationMetric,
   type WorkflowEvaluationRow,
 } from "@/lib/evaluation-stats";
+import { nextTableSortState, type TableSortState } from "@/lib/table-sort";
 import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
+import { useMemo, useState } from "react";
 
 interface EvaluationStatsTableProps {
   nameColumnLabel: string;
@@ -27,8 +37,17 @@ export function EvaluationStatsTable({
   emptyMessage = "暂无数据",
   snapshot,
 }: EvaluationStatsTableProps) {
+  const [sort, setSort] = useState<TableSortState<WorkflowSortColumn>>({
+    column: null,
+    direction: "desc",
+  });
+
   const dataRows = rows.filter((row) => !row.isWorkflowSummary);
   const workflowRow = rows.find((row) => row.isWorkflowSummary);
+  const sortedDataRows = useMemo(
+    () => sortWorkflowDataRows(dataRows, sort),
+    [dataRows, sort],
+  );
 
   const visibleStatuses = ORDER_STATUSES.filter(
     (status) =>
@@ -37,6 +56,13 @@ export function EvaluationStatsTable({
   );
   const columns =
     visibleStatuses.length > 0 ? visibleStatuses : [...ORDER_STATUSES];
+
+  const handleSort = (column: string) => {
+    const col = column as WorkflowSortColumn;
+    setSort((current) =>
+      nextTableSortState(current, col, defaultWorkflowSortDirection(col)),
+    );
+  };
 
   if (dataRows.length === 0 && !workflowRow) {
     return (
@@ -51,28 +77,45 @@ export function EvaluationStatsTable({
       snapshot={snapshot}
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-          共 {dataRows.length} 条 · {FLOW_TABLE_FOOTNOTE}
+          共 {dataRows.length} 条 · 点击列标题排序（优先金额） · {FLOW_TABLE_FOOTNOTE}
         </p>
       }
     >
       <table className="vi-data-table w-full min-w-[840px] border-collapse text-left">
         <thead>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
-            <th
+            <SortableTh
+              label={nameColumnLabel}
+              column="label"
+              activeColumn={sort.column}
+              direction={sort.direction}
+              onSort={handleSort}
+              align="left"
               className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
-            >
-              {nameColumnLabel}
-            </th>
-            <th className={`${thClass} text-center`}>合计</th>
+            />
+            <SortableTh
+              label="合计"
+              column="total"
+              activeColumn={sort.column}
+              direction={sort.direction}
+              onSort={handleSort}
+              className={thClass}
+            />
             {columns.map((status) => (
-              <th key={status} className={`${thClass} text-center`}>
-                {flowStatusColumnLabel(status)}
-              </th>
+              <SortableTh
+                key={status}
+                label={flowStatusColumnLabel(status)}
+                column={status}
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className={thClass}
+              />
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {dataRows.map((row) => (
+          {sortedDataRows.map((row) => (
             <tr key={row.key} className="hover:bg-slate-50/50">
               <td
                 className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}

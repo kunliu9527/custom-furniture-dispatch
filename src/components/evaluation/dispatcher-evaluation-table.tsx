@@ -1,13 +1,21 @@
+"use client";
+
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
+import { SortableTh } from "@/components/shared/sortable-table-header";
 import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import {
   AGGREGATE_LABEL,
   aggregateRefundTotal,
 } from "@/lib/metric-display-labels";
+import {
+  defaultAggregateSortDirection,
+  sortDispatcherEvaluationDataRows,
+  type AggregateSortColumn,
+} from "@/lib/evaluation-table-sort";
 import {
   DESIGNER_EXTENDED_RANK_RULES,
   EVALUATION_AMOUNT_RULES,
@@ -19,7 +27,9 @@ import {
   formatOrderConversionRate,
   type DispatcherEvaluationRow,
 } from "@/lib/evaluation-stats";
+import { nextTableSortState, type TableSortState } from "@/lib/table-sort";
 import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
+import { useMemo, useState } from "react";
 
 interface DispatcherEvaluationTableProps {
   nameColumnLabel: string;
@@ -33,18 +43,21 @@ interface DispatcherEvaluationTableProps {
 const thClass = TABLE_TH_CLASS;
 const tdClass = "px-3 py-2 text-sm text-slate-700 whitespace-nowrap";
 
-const amountColumns = [
-  { key: "notOrdered" as const, label: AGGREGATE_LABEL.notOrdered },
-  { key: "ordered" as const, label: AGGREGATE_LABEL.ordered },
-  { key: "pendingRefund" as const, label: AGGREGATE_LABEL.pendingRefund },
-  { key: "confirmedRefund" as const, label: AGGREGATE_LABEL.confirmedRefund },
+const amountColumns: {
+  key: "notOrdered" | "ordered" | "pendingRefund" | "confirmedRefund";
+  label: string;
+}[] = [
+  { key: "notOrdered", label: AGGREGATE_LABEL.notOrdered },
+  { key: "ordered", label: AGGREGATE_LABEL.ordered },
+  { key: "pendingRefund", label: AGGREGATE_LABEL.pendingRefund },
+  { key: "confirmedRefund", label: AGGREGATE_LABEL.confirmedRefund },
 ];
 
-const designerExtraColumns = [
-  { key: "conversion" as const, label: "下单转化率" },
-  { key: "average" as const, label: "平均下单额" },
-  { key: "afterSales" as const, label: "售后金额" },
-] as const;
+const designerExtraColumns: { key: AggregateSortColumn; label: string }[] = [
+  { key: "conversion", label: "下单转化率" },
+  { key: "average", label: "平均下单额" },
+  { key: "afterSales", label: "售后金额" },
+];
 
 export function DispatcherEvaluationTable({
   nameColumnLabel,
@@ -54,14 +67,30 @@ export function DispatcherEvaluationTable({
   designerExtendedMetrics = false,
   snapshot,
 }: DispatcherEvaluationTableProps) {
+  const [sort, setSort] = useState<TableSortState<AggregateSortColumn>>({
+    column: null,
+    direction: "desc",
+  });
+
   const dataRows = rows.filter((row) => !row.isWorkflowSummary);
   const workflowRow = rows.find((row) => row.isWorkflowSummary);
+  const sortedDataRows = useMemo(
+    () => sortDispatcherEvaluationDataRows(dataRows, sort),
+    [dataRows, sort],
+  );
   const workflowRefundTotal = workflowRow
     ? aggregateRefundTotal(
         workflowRow.pendingRefund,
         workflowRow.confirmedRefund,
       )
     : null;
+
+  const handleSort = (column: string) => {
+    const col = column as AggregateSortColumn;
+    setSort((current) =>
+      nextTableSortState(current, col, defaultAggregateSortDirection(col)),
+    );
+  };
 
   if (dataRows.length === 0 && !workflowRow) {
     return (
@@ -108,7 +137,7 @@ export function DispatcherEvaluationTable({
       snapshot={snapshot}
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-          共 {dataRows.length} 条 · {footnote}
+          共 {dataRows.length} 条 · 点击列标题排序（优先金额） · {footnote}
           {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
         </p>
       }
@@ -120,31 +149,54 @@ export function DispatcherEvaluationTable({
             {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
           </TableAlgorithmCaption>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
-            <th
+            <SortableTh
+              label={nameColumnLabel}
+              column="label"
+              activeColumn={sort.column}
+              direction={sort.direction}
+              onSort={handleSort}
+              align="left"
               className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
-            >
-              {nameColumnLabel}
-            </th>
-            <th className={`${thClass} text-center`}>{AGGREGATE_LABEL.total}</th>
+            />
+            <SortableTh
+              label={AGGREGATE_LABEL.total}
+              column="total"
+              activeColumn={sort.column}
+              direction={sort.direction}
+              onSort={handleSort}
+              className={thClass}
+            />
             {amountColumns.map((col) => (
-              <th key={col.key} className={`${thClass} text-center`}>
-                {col.label}
-              </th>
+              <SortableTh
+                key={col.key}
+                label={col.label}
+                column={col.key}
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className={thClass}
+              />
             ))}
             <th className={`${thClass} text-center`}>
               {AGGREGATE_LABEL.refundTotal}
             </th>
             {designerExtendedMetrics
               ? designerExtraColumns.map((col) => (
-                  <th key={col.key} className={`${thClass} text-center`}>
-                    {col.label}
-                  </th>
+                  <SortableTh
+                    key={col.key}
+                    label={col.label}
+                    column={col.key}
+                    activeColumn={sort.column}
+                    direction={sort.direction}
+                    onSort={handleSort}
+                    className={thClass}
+                  />
                 ))
               : null}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {dataRows.map((row) => (
+          {sortedDataRows.map((row) => (
             <tr key={row.key} className="hover:bg-slate-50/50">
               <td
                 className={`${tdClass} sticky left-0 z-[1] bg-white font-medium text-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.04)]`}

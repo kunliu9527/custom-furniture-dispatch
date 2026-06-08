@@ -1,10 +1,18 @@
+"use client";
+
 import {
   EvaluationTableScroll,
   TABLE_HEAD_STICKY_CLASS,
   TABLE_TH_CLASS,
 } from "@/components/evaluation/evaluation-table-scroll";
+import { SortableTh } from "@/components/shared/sortable-table-header";
 import { TableAlgorithmCaption } from "@/components/shared/table-algorithm-caption";
 import type { DispatcherEvaluationRow } from "@/lib/evaluation-stats";
+import {
+  defaultRankingSortDirection,
+  sortRankingDisplayRows,
+  type RankingSortColumn,
+} from "@/lib/evaluation-table-sort";
 import {
   DESIGNER_EXTENDED_RANK_RULES,
   EVALUATION_AMOUNT_RULES,
@@ -16,7 +24,9 @@ import {
   type MetricDualRank,
   type RankBadge,
 } from "@/lib/evaluation-ranking";
+import { nextTableSortState, type TableSortState } from "@/lib/table-sort";
 import type { BoardSnapshotConfig } from "@/lib/board-snapshot-types";
+import { useMemo, useState } from "react";
 
 interface DispatcherEvaluationRankingTableProps {
   nameColumnLabel: string;
@@ -37,21 +47,21 @@ import {
   AGGREGATE_RANK_FOOTNOTE,
 } from "@/lib/metric-display-labels";
 
-const dualRankColumns = [
-  { key: "notOrdered" as const, label: `${AGGREGATE_KPI_LABEL.notOrdered}排名` },
-  { key: "ordered" as const, label: `${AGGREGATE_KPI_LABEL.ordered}排名` },
-] as const;
+const dualRankColumns: { key: RankingSortColumn; label: string }[] = [
+  { key: "notOrderedRank", label: `${AGGREGATE_KPI_LABEL.notOrdered}排名` },
+  { key: "orderedRank", label: `${AGGREGATE_KPI_LABEL.ordered}排名` },
+];
 
-const refundedColumns = [
-  { key: "pendingRefund" as const, label: AGGREGATE_KPI_LABEL.pendingRefund },
-  { key: "confirmedRefund" as const, label: AGGREGATE_KPI_LABEL.confirmedRefund },
-] as const;
+const refundedColumns: { key: RankingSortColumn; label: string }[] = [
+  { key: "pendingRefund", label: AGGREGATE_KPI_LABEL.pendingRefund },
+  { key: "confirmedRefund", label: AGGREGATE_KPI_LABEL.confirmedRefund },
+];
 
-const designerExtraRankColumns = [
-  { key: "conversion" as const, label: "下单转化率排名" },
-  { key: "average" as const, label: "平均下单额排名" },
-  { key: "afterSales" as const, label: "售后金额排名" },
-] as const;
+const designerExtraRankColumns: { key: RankingSortColumn; label: string }[] = [
+  { key: "conversionRank", label: "下单转化率排名" },
+  { key: "averageRank", label: "平均下单额排名" },
+  { key: "afterSalesRank", label: "售后金额排名" },
+];
 
 function RankFlag({ badge }: { badge: RankBadge }) {
   const fill = badge === "red" ? "#dc2626" : "#9333ea";
@@ -132,10 +142,39 @@ export function DispatcherEvaluationRankingTable({
   designerExtendedMetrics = false,
   snapshot,
 }: DispatcherEvaluationRankingTableProps) {
-  const { rankNumbers, extendedRanks, sortedRows } = buildRankingPresentation(
-    rows,
-    { rankAgainstRows, designerExtended: designerExtendedMetrics },
-  );
+  const [sort, setSort] = useState<TableSortState<RankingSortColumn>>({
+    column: "totalRank",
+    direction: "asc",
+  });
+
+  const { rankNumbers, extendedRanks, sortedRows: defaultSortedRows } =
+    useMemo(
+      () =>
+        buildRankingPresentation(rows, {
+          rankAgainstRows,
+          designerExtended: designerExtendedMetrics,
+        }),
+      [rows, rankAgainstRows, designerExtendedMetrics],
+    );
+
+  const sortedRows = useMemo(() => {
+    if (sort.column === "totalRank" && sort.direction === "asc") {
+      return defaultSortedRows;
+    }
+    return sortRankingDisplayRows(
+      rows.filter((row) => !row.isWorkflowSummary),
+      sort,
+      rankNumbers,
+      extendedRanks,
+    );
+  }, [defaultSortedRows, rows, sort, rankNumbers, extendedRanks]);
+
+  const handleSort = (column: string) => {
+    const col = column as RankingSortColumn;
+    setSort((current) =>
+      nextTableSortState(current, col, defaultRankingSortDirection(col)),
+    );
+  };
 
   if (sortedRows.length === 0) {
     return (
@@ -153,7 +192,7 @@ export function DispatcherEvaluationRankingTable({
       snapshot={snapshot}
       footer={
         <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-400">
-          共 {sortedRows.length} 条 · {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
+          共 {sortedRows.length} 条 · 点击列标题排序（排名优先金额名次） · {EVALUATION_AMOUNT_RULES} · {AGGREGATE_RANK_FOOTNOTE} · {footnote}
           {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
         </p>
       }
@@ -165,28 +204,57 @@ export function DispatcherEvaluationRankingTable({
             {designerExtendedMetrics ? ` · ${DESIGNER_EXTENDED_RANK_RULES}` : ""}
           </TableAlgorithmCaption>
           <tr className={`vi-table-head-row ${TABLE_HEAD_STICKY_CLASS}`}>
-              <th
+              <SortableTh
+                label={nameColumnLabel}
+                column="label"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                align="left"
                 className={`${thClass} min-w-[120px] sticky left-0 z-20 vi-table-head-cell text-left shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)]`}
-              >
-                {nameColumnLabel}
-              </th>
-              <th className={thClass}>合计排名</th>
+              />
+              <SortableTh
+                label="合计排名"
+                column="totalRank"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className={thClass}
+              />
               {dualRankColumns.map((col) => (
-                <th key={col.key} className={thClass}>
-                  {col.label}
-                </th>
+                <SortableTh
+                  key={col.key}
+                  label={col.label}
+                  column={col.key}
+                  activeColumn={sort.column}
+                  direction={sort.direction}
+                  onSort={handleSort}
+                  className={thClass}
+                />
               ))}
               {designerExtendedMetrics
                 ? designerExtraRankColumns.map((col) => (
-                    <th key={col.key} className={thClass}>
-                      {col.label}
-                    </th>
+                    <SortableTh
+                      key={col.key}
+                      label={col.label}
+                      column={col.key}
+                      activeColumn={sort.column}
+                      direction={sort.direction}
+                      onSort={handleSort}
+                      className={thClass}
+                    />
                   ))
                 : null}
               {refundedColumns.map((col) => (
-                <th key={col.key} className={thClass}>
-                  {col.label}
-                </th>
+                <SortableTh
+                  key={col.key}
+                  label={col.label}
+                  column={col.key}
+                  activeColumn={sort.column}
+                  direction={sort.direction}
+                  onSort={handleSort}
+                  className={thClass}
+                />
               ))}
             </tr>
           </thead>

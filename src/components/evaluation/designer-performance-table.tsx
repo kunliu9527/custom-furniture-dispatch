@@ -1,26 +1,24 @@
 "use client";
 
+import { SortableTh } from "@/components/shared/sortable-table-header";
 import {
   formatAvgDays,
   formatContributionScore,
   formatPerformanceConversion,
-  sortPerformanceRows,
   type DesignerPerformanceRow,
-  type PerformanceRankKind,
 } from "@/lib/designer-performance";
+import {
+  defaultDesignerPerformanceSortDirection,
+  sortDesignerPerformanceRowsByColumn,
+  type DesignerPerformanceSortColumn,
+} from "@/lib/evaluation-table-sort";
 import { formatDispatchMoney } from "@/lib/dispatch-totals";
 import {
   DESIGNER_CONTRIBUTION_FORMULA,
   DESIGNER_PERFORMANCE_RANK_TABS,
 } from "@/lib/performance-algorithm-copy";
+import { nextTableSortState, type TableSortState } from "@/lib/table-sort";
 import { useMemo, useState } from "react";
-
-const rankTabs: { id: PerformanceRankKind; label: string }[] = [
-  { id: "contribution", label: "贡献分" },
-  { id: "orderedAmount", label: "下单金额" },
-  { id: "efficiency", label: "周期效率" },
-  { id: "quality", label: "质量（超时/退单）" },
-];
 
 interface DesignerPerformanceTableProps {
   rows: DesignerPerformanceRow[];
@@ -35,12 +33,26 @@ export function DesignerPerformanceTable({
   periodLabel,
   onExportReport,
 }: DesignerPerformanceTableProps) {
-  const [rankKind, setRankKind] = useState<PerformanceRankKind>("contribution");
+  const [sort, setSort] = useState<TableSortState<DesignerPerformanceSortColumn>>({
+    column: "contributionScore",
+    direction: "desc",
+  });
 
   const sorted = useMemo(
-    () => sortPerformanceRows(rows, rankKind),
-    [rows, rankKind],
+    () => sortDesignerPerformanceRowsByColumn(rows, sort),
+    [rows, sort],
   );
+
+  const handleSort = (column: string) => {
+    const col = column as DesignerPerformanceSortColumn;
+    setSort((current) =>
+      nextTableSortState(
+        current,
+        col,
+        defaultDesignerPerformanceSortDirection(col),
+      ),
+    );
+  };
 
   if (rows.length === 0) {
     return (
@@ -52,21 +64,7 @@ export function DesignerPerformanceTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="vi-segmented flex-wrap">
-          {rankTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setRankKind(tab.id)}
-              className={`vi-segmented-item px-2.5 py-1 text-xs ${
-                rankKind === tab.id ? "vi-segmented-item-active" : ""
-              }`}
-            >
-              按{tab.label}排序
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {onExportReport ? (
           <button
             type="button"
@@ -86,28 +84,109 @@ export function DesignerPerformanceTable({
                 colSpan={13}
                 className="px-3 py-2 text-left text-[11px] font-normal leading-relaxed text-slate-500"
               >
-                {DESIGNER_PERFORMANCE_RANK_TABS} · {DESIGNER_CONTRIBUTION_FORMULA}
+                {DESIGNER_PERFORMANCE_RANK_TABS} · 点击列标题排序（笔数/金额列优先金额） · {DESIGNER_CONTRIBUTION_FORMULA}
               </th>
             </tr>
             <tr className="vi-table-head-row">
               <th className="px-3 py-2.5 font-bold">#</th>
-              <th className="px-3 py-2.5 font-bold">设计师</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">在途</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">下单数</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">下单额</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">转化率</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">均出图</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">均总周期</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">超时</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">转派出/入</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">月操作</th>
-              <th className="px-3 py-2.5 font-bold tabular-nums">月推进</th>
-              <th
-                className="px-3 py-2.5 font-semibold tabular-nums"
+              <SortableTh
+                label="设计师"
+                column="label"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                align="left"
+                className="px-3 py-2.5"
+              />
+              <SortableTh
+                label="在途"
+                column="inProgressCount"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="下单数"
+                column="orderedCount"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="下单额"
+                column="orderedAmount"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="转化率"
+                column="orderConversionRate"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="均出图"
+                column="avgDrawDays"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="均总周期"
+                column="avgTotalDays"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="超时"
+                column="timeoutCount"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="转派出/入"
+                column="transfer"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="月操作"
+                column="activityTotal"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="月推进"
+                column="activityAdvances"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
+              />
+              <SortableTh
+                label="贡献分"
+                column="contributionScore"
+                activeColumn={sort.column}
+                direction={sort.direction}
+                onSort={handleSort}
+                className="px-3 py-2.5 tabular-nums"
                 title={DESIGNER_CONTRIBUTION_FORMULA}
-              >
-                贡献分
-              </th>
+              />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-slate-800">
