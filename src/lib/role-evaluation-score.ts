@@ -6,6 +6,7 @@ import {
 } from "./acceptance-rating";
 import { aggregatePersonRatings, filterDeliveryOrders } from "./customer-ratings";
 import { STORES } from "./designers";
+import { computeAggregateTotalAmount, computeOrderAmountConversionRate } from "./aggregate-metric-rates";
 import { classifyOrderAmount } from "./order-amount";
 import { orderBelongsToDispatcherStore } from "./order-store-attribution";
 import { getDispatcherEvaluationRows } from "./evaluation-stats";
@@ -48,6 +49,8 @@ export interface RoleScoreEntry {
 
 export interface StoreScoreEntry {
   store: StoreName;
+  /** 四桶金额合计（与看板「合计」列一致） */
+  grossTotalAmount: number;
   netTotalAmount: number;
   orderedAmount: number;
   pendingRefundCount: number;
@@ -282,11 +285,9 @@ function buildStoreSummary(
   rank: number,
 ): string {
   const grossBase =
-    entry.netTotalAmount +
-    entry.confirmedRefundAmount +
-    entry.pendingRefundAmount;
+    entry.grossTotalAmount > 0 ? entry.grossTotalAmount : entry.netTotalAmount;
   const conversion =
-    grossBase > 0 ? (entry.orderedAmount / grossBase) * 100 : 0;
+    computeOrderAmountConversionRate(entry.orderedAmount, grossBase) ?? 0;
   const riskParts: string[] = [];
   if (entry.pendingRefundCount > 0) {
     riskParts.push(`待退单 ${entry.pendingRefundCount} 单`);
@@ -323,13 +324,9 @@ function computeStoreQualityScore(input: {
   confirmedRefundAmount: number;
   afterSalesAmount: number;
   netTotalAmount: number;
+  grossTotalAmount: number;
 }): number {
-  const grossBase = Math.max(
-    input.netTotalAmount +
-      input.confirmedRefundAmount +
-      input.pendingRefundAmount,
-    1,
-  );
+  const grossBase = Math.max(input.grossTotalAmount, 1);
   const refundExposure =
     ((input.pendingRefundAmount + input.confirmedRefundAmount) / grossBase) * 100;
   const afterSalesPenalty = input.afterSalesAmount / 10000;
@@ -382,6 +379,12 @@ function buildStoreEntries(
       }
     }
 
+    const grossTotalAmount = computeAggregateTotalAmount({
+      notOrderedAmount: notOrdered,
+      orderedAmount: ordered,
+      pendingRefundAmount,
+      confirmedRefundAmount,
+    });
     const netTotalAmount = Math.max(
       0,
       notOrdered + ordered - pendingRefundAmount - confirmedRefundAmount,
@@ -393,10 +396,12 @@ function buildStoreEntries(
       confirmedRefundAmount,
       afterSalesAmount,
       netTotalAmount,
+      grossTotalAmount,
     });
 
     entries.push({
       store,
+      grossTotalAmount,
       netTotalAmount,
       orderedAmount: ordered,
       pendingRefundCount,
@@ -413,12 +418,12 @@ function buildStoreEntries(
 
   if (entries.length === 0) return [];
 
-  const netTotals = entries.map((e) => e.netTotalAmount);
+  const grossTotals = entries.map((e) => e.grossTotalAmount);
   const orderedAmounts = entries.map((e) => e.orderedAmount);
 
   return entries.map((entry) => {
     const valueScore = clampScore(
-      normMinMax(netTotals, entry.netTotalAmount) *
+      normMinMax(grossTotals, entry.grossTotalAmount) *
         STORE_VALUE_WEIGHTS.totalAmount +
         normMinMax(orderedAmounts, entry.orderedAmount) *
           STORE_VALUE_WEIGHTS.orderedAmount,
@@ -840,7 +845,7 @@ export function buildSmartLeaderboards(
   );
 
   const storeTotalAmountTop5 = [...storeEntries]
-    .sort((a, b) => b.netTotalAmount - a.netTotalAmount)
+    .sort((a, b) => b.grossTotalAmount - a.grossTotalAmount)
     .slice(0, 5)
     .map((entry, i) => ({
       ...entry,

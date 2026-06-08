@@ -1,4 +1,9 @@
 import { normalizeDispatcherName } from "./admin-stats";
+import {
+  computeAggregateTotalAmount,
+  computeAverageOrderAmount,
+  computeOrderAmountConversionRate,
+} from "./aggregate-metric-rates";
 import { ORDER_STATUSES } from "./constants";
 import { formatDispatchMoney } from "./dispatch-totals";
 import {
@@ -197,22 +202,21 @@ function aggregateDispatcherOrders(
     amount: pendingRefund.amount + confirmedRefund.amount,
   };
 
-  const totalAmount =
-    rawNotOrdered.amount +
-    ordered.amount +
-    pendingRefund.amount +
-    confirmedRefund.amount;
+  const totalAmount = computeAggregateTotalAmount({
+    notOrderedAmount: rawNotOrdered.amount,
+    orderedAmount: ordered.amount,
+    pendingRefundAmount: pendingRefund.amount,
+    confirmedRefundAmount: confirmedRefund.amount,
+  });
 
-  const netPipeline =
-    rawNotOrdered.amount +
-    ordered.amount -
-    pendingRefund.amount -
-    confirmedRefund.amount;
-
-  const orderConversionRate =
-    netPipeline > 0 ? (ordered.amount / netPipeline) * 100 : null;
-  const averageOrderAmount =
-    ordered.count > 0 ? ordered.amount / ordered.count : null;
+  const orderConversionRate = computeOrderAmountConversionRate(
+    ordered.amount,
+    totalAmount,
+  );
+  const averageOrderAmount = computeAverageOrderAmount(
+    ordered.amount,
+    ordered.count,
+  );
 
   return {
     total: orders.length,

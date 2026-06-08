@@ -4,6 +4,7 @@ import {
   getStoreDispatcherAmountRows,
   classifyDispatcherOrder,
 } from "./evaluation-stats";
+import { computeOrderAmountConversionRate } from "./aggregate-metric-rates";
 import {
   filterOrdersByPeriod,
   filterSupplementsByPeriod,
@@ -113,10 +114,10 @@ export function buildDesignerMiniSeries(
       yearMonth: ym,
       label: monthLabel(ym),
       orderedAmount,
-      avgConversion:
-        totalAmount > 0
-          ? Math.round((orderedAmount / totalAmount) * 1000) / 10
-          : null,
+      avgConversion: computeOrderAmountConversionRate(
+        orderedAmount,
+        totalAmount,
+      ),
     };
   });
 }

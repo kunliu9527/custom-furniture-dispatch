@@ -15,7 +15,7 @@ export const ROLE_COMPOSITE_WEIGHTS =
   "综合分 = 产值×权重 + 效率×权重 + 质量×权重；派单人 80/15/5 · 设计师 65/15/20 · 安装师 0/30/70";
 
 export const STORE_VALUE_FORMULA =
-  "价值分 = 总订单额与已下单量在样本内归一化后按 55/45 加权";
+  "价值分 = 合计金额与已下单金额在样本内归一化后按 55/45 加权";
 
 export const STORE_COMPOSITE_FORMULA =
   "门店综合 = 价值分×68% + 质量分×32%；质量分扣待退单量/已退单量/售后";
@@ -26,7 +26,7 @@ export const EVALUATION_RANKING_RULES =
   "数量名次/金额名次并列共享；第1名红旗 · 第2名紫旗 · 退单量不参与排名";
 
 export const DESIGNER_EXTENDED_RANK_RULES =
-  "转化率 = 已下单量÷合计 · 平均下单额 = 已下单量÷已下单笔数 · 扩展指标按数值从高到低排名";
+  "转化率 = 已下单金额÷合计金额 · 平均下单额 = 已下单金额÷已下单笔数 · 扩展指标按数值从高到低排名";
 
 export const FLOW_EVALUATION_RULES = FLOW_TABLE_FOOTNOTE;
 

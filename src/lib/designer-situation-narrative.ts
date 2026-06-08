@@ -57,9 +57,9 @@ function refundRatePercent(row: DispatcherEvaluationRow): number {
   return (refundCount(row) / row.total) * 100;
 }
 
-function countConversionRate(row: DispatcherEvaluationRow): number | null {
-  if (row.total < MIN_CONVERSION_SAMPLE || row.ordered.count <= 0) return null;
-  return (row.ordered.count / row.total) * 100;
+function amountConversionRate(row: DispatcherEvaluationRow): number | null {
+  if (row.total < MIN_CONVERSION_SAMPLE) return null;
+  return row.orderConversionRate;
 }
 
 function rankDescending(
@@ -153,7 +153,7 @@ export function buildDesignerSituationNarrative(
         },
       ],
       footnote:
-        "按订单 designer 归集 · 总订单金额=合计金额 · 转化率=已下单笔数÷总单数 · 退单率含待退单与已退单",
+        "按订单 designer 归集 · 合计金额=四桶之和 · 转化率=已下单金额÷合计金额 · 退单率含待退单与已退单",
     };
   }
 
@@ -182,7 +182,7 @@ export function buildDesignerSituationNarrative(
   }
 
   const conversionCandidates = data
-    .map((row) => ({ row, rate: countConversionRate(row) }))
+    .map((row) => ({ row, rate: amountConversionRate(row) }))
     .filter((x): x is { row: DispatcherEvaluationRow; rate: number } =>
       x.rate != null,
     )
@@ -192,7 +192,7 @@ export function buildDesignerSituationNarrative(
     const best = conversionCandidates[0];
     const lowVolume = best.row.total < 10;
     overview.push(
-      `${best.row.label}的下单转化率最高，达 ${best.rate.toFixed(2)}%（${best.row.total} 单中 ${best.row.ordered.count} 单已下单）${lowVolume ? "，但存量订单偏少" : ""}。`,
+      `${best.row.label}的下单转化率最高，达 ${best.rate.toFixed(1)}%（已下单 ${formatMoneyBrief(best.row.ordered.amount)} ÷ 合计 ${formatMoneyBrief(best.row.totalAmount)}）${lowVolume ? "，但存量订单偏少" : ""}。`,
     );
   }
 
@@ -301,7 +301,7 @@ export function buildDesignerSituationNarrative(
     periodHint: periodLabel,
     sections,
     footnote:
-      "按订单 designer 归集 · 总订单金额=合计金额 · 未下单量=原始未下单 · 转化率=已下单笔数÷总单数（≥5单） · 退单率=（待退单+已退单）笔数÷总单数（≥3单）",
+      "按订单 designer 归集 · 合计金额=四桶之和 · 未下单量=原始未下单 · 转化率=已下单金额÷合计金额（≥5单） · 退单率=（待退单+已退单）笔数÷总单数（≥3单）",
   };
 }
 

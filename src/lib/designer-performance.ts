@@ -1,3 +1,7 @@
+import {
+  computeAggregateTotalAmount,
+  computeOrderAmountConversionRate,
+} from "./aggregate-metric-rates";
 import { computePreMeasureDepositBonus } from "./deposit-contribution";
 import { buildDesignerHomeStoreIndex } from "./designer-staff-store";
 import {
@@ -174,10 +178,11 @@ export function buildDesignerPerformanceRow(
       (o.status === "已下单" || o.status === "已安装" || o.status === "已验收"),
   ).length;
 
-  const totalAmount =
-    partsSum(personOrders, supplements) || 0;
-  const orderConversionRate =
-    totalAmount > 0 ? (orderedAmount / totalAmount) * 100 : null;
+  const totalAmount = partsSum(personOrders, supplements) || 0;
+  const orderConversionRate = computeOrderAmountConversionRate(
+    orderedAmount,
+    totalAmount,
+  );
 
   const transferSource = allOrdersForLoad ?? periodOrders;
   const transfers = transferSource.reduce(
@@ -237,11 +242,12 @@ function partsSum(orders: Order[], supplements: SupplementOrder[]): number {
   let total = 0;
   for (const order of orders) {
     const parts = classifyDispatcherOrder(order, supplements);
-    total +=
-      parts.notOrdered.amount +
-      parts.ordered.amount +
-      parts.pendingRefund.amount +
-      parts.confirmedRefund.amount;
+    total += computeAggregateTotalAmount({
+      notOrderedAmount: parts.notOrdered.amount,
+      orderedAmount: parts.ordered.amount,
+      pendingRefundAmount: parts.pendingRefund.amount,
+      confirmedRefundAmount: parts.confirmedRefund.amount,
+    });
   }
   return total;
 }

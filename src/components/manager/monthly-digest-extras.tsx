@@ -258,7 +258,7 @@ function StoreRankList({
     metric === "ordered"
       ? "按当期下单额降序"
       : metric === "total"
-        ? "按总订单额（未下单+已下单−退单）降序"
+        ? "按合计金额（四桶之和）降序"
         : null;
 
   return (
@@ -283,8 +283,8 @@ function StoreRankList({
               {metric === "ordered"
                 ? formatDispatchMoney(entry.orderedAmount)
                 : metric === "total"
-                  ? formatDispatchMoney(entry.netTotalAmount)
-                  : `${formatDispatchMoney(entry.netTotalAmount)} · 下单 ${formatDispatchMoney(entry.orderedAmount)}`}
+                  ? formatDispatchMoney(entry.grossTotalAmount)
+                  : `${formatDispatchMoney(entry.grossTotalAmount)} · 下单 ${formatDispatchMoney(entry.orderedAmount)}`}
             </p>
             {(entry.pendingRefundCount > 0 ||
               entry.confirmedRefundCount > 0 ||
