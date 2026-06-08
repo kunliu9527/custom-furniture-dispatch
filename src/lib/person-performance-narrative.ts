@@ -60,7 +60,7 @@ export function buildPersonPerformanceNarrative(
       scopeHint,
       intro: PERSON_NARRATIVE_INTRO,
       sections: [
-        { heading: "团队概览", items: [config.emptyDataMessage] },
+        { heading: "整体情况", items: [config.emptyDataMessage] },
       ],
       footnote: config.footnote,
     };

@@ -19,11 +19,9 @@ export const REFUND_WARNING_THRESHOLD = 30;
 export const AFTER_SALES_RATIO_THRESHOLD = 5;
 export const RANK_TOP_SIZE = 3;
 
-export const PERSON_NARRATIVE_INTRO =
-  "本报告对同一对象综合合计业绩、转化率、存量订单与均单值进行评价；转化率 = 已下单金额 ÷ 合计金额。";
+export const PERSON_NARRATIVE_INTRO = "";
 
-export const STORE_NARRATIVE_INTRO =
-  "店面数据按派单人所属门店汇总（跨店单计入派单人店），评价口径同个人版。";
+export const STORE_NARRATIVE_INTRO = "";
 
 export const PERSON_NARRATIVE_FOOTNOTE =
   "转化率 = 已下单金额 ÷ 合计金额 · 平均下单值 = 已下单金额 ÷ 已下单数量 · 存量订单 = 未下单金额 + 待退单金额 · 退单率 = 退单金额 ÷ 合计金额 · 排名已剔除合计为 0 · 转化评价需 ≥5 单";
@@ -140,23 +138,6 @@ function totalTier(rank: number, count: number): TotalTier {
   return "mid";
 }
 
-function levelLabel(level: LevelTag): string {
-  switch (level) {
-    case "high":
-      return "偏高";
-    case "mid":
-      return "中等";
-    case "low":
-      return "偏低";
-    case "none":
-      return "暂无";
-    case "insufficient":
-      return "样本不足";
-    default:
-      return "";
-  }
-}
-
 export function computeEntityMetrics(
   data: DispatcherEvaluationRow[],
 ): EntityEvaluationMetrics[] {
@@ -257,94 +238,244 @@ export function teamConversionPercent(
   return (orderedAmount / totalAmount) * 100;
 }
 
-function conversionLevelText(level: LevelTag, rate: number | null): string {
-  if (rate != null) {
-    return `转化率 ${rate.toFixed(1)}%（${levelLabel(level)}）`;
-  }
-  return "转化率样本不足（＜5 单）";
+function formatWanPlain(amount: number): string {
+  return formatWanYuanPlain(amount);
 }
 
-export function synthesizeEntityConclusion(
-  metrics: EntityEvaluationMetrics,
-  context: { isTopSection: boolean; isStore: boolean },
-): string {
-  const { totalTier, conversionLevel, pipelineLevel, avgOrderLevel } = metrics;
-  const intakeWord = context.isStore ? "派单" : "派单";
+interface EntityAnalysisSnapshot {
+  orderedShare: number;
+  pipelineShare: number;
+  notOrderedShare: number;
+  pendingShare: number;
+  refundShare: number;
+  teamConversion: number | null;
+}
 
-  if (
-    totalTier === "bottom" &&
-    conversionLevel === "high" &&
-    (pipelineLevel === "low" || pipelineLevel === "none") &&
-    (avgOrderLevel === "low" || avgOrderLevel === "none")
+function buildAnalysisSnapshot(
+  m: EntityEvaluationMetrics,
+  teamConversion: number | null,
+): EntityAnalysisSnapshot {
+  const total = m.row.totalAmount || 1;
+  return {
+    orderedShare: m.row.ordered.amount / total,
+    pipelineShare: m.pipeline / total,
+    notOrderedShare: m.row.notOrdered.amount / total,
+    pendingShare: m.row.pendingRefund.amount / total,
+    refundShare: refundAmount(m.row) / total,
+    teamConversion,
+  };
+}
+
+function pctText(ratio: number): string {
+  return `${(ratio * 100).toFixed(0)}%`;
+}
+
+function formatFactsBrief(m: EntityEvaluationMetrics): string {
+  const conv =
+    m.conversionRate != null ? `${m.conversionRate.toFixed(1)}%` : "样本不足";
+  return (
+    `总单额 ${formatWanPlain(m.row.totalAmount)} 万、成交 ${formatWanPlain(m.row.ordered.amount)} 万（转化率 ${conv}），` +
+    `存量 ${formatWanPlain(m.pipeline)} 万`
+  );
+}
+
+function analyzeTopPerformer(
+  m: EntityEvaluationMetrics,
+  all: EntityEvaluationMetrics[],
+  isStore: boolean,
+): string {
+  const snap = buildAnalysisSnapshot(m, teamConversionPercent(all.map((x) => x.row)));
+  const leader = all[0];
+  const subject = isStore ? "店面" : "设计师";
+  const clauses: string[] = [];
+
+  const convBelowTeam =
+    m.conversionRate != null &&
+    snap.teamConversion != null &&
+    m.conversionRate < snap.teamConversion - 2;
+  const convAboveTeam =
+    m.conversionRate != null &&
+    snap.teamConversion != null &&
+    m.conversionRate > snap.teamConversion + 2;
+
+  if (m.totalRank === 1) {
+    if (m.conversionLevel === "low" || convBelowTeam) {
+      clauses.push(
+        `总量第一，但转化率${m.conversionLevel === "low" ? "明显偏弱" : "未跑赢团队均值"}，排名靠前更多来自接单规模而非落地效率`,
+      );
+    } else if (m.conversionLevel === "high" && snap.pipelineShare < 0.35) {
+      clauses.push("总量与转化同步领先，属于真正能打的前排");
+    } else {
+      clauses.push("总量领先，转化处于可接受区间，是本期业绩支柱");
+    }
+  } else if (m.totalRank === 2) {
+    if (leader && m.row.totalAmount < leader.row.totalAmount * 0.75) {
+      clauses.push(`与榜首差距较大，需扩大${isStore ? "门店" : "个人"}接单盘子`);
+    } else if (convAboveTeam) {
+      clauses.push("转化优于团队均值，跟单质量较好");
+    } else {
+      clauses.push("体量处第二梯队，整体贡献稳定");
+    }
+  } else {
+    if (m.conversionLevel === "low") {
+      clauses.push(
+        `虽进前三，但转化率仅 ${m.conversionRate?.toFixed(1) ?? "—"}%，更多靠总单额堆积进前排，落地能力偏弱`,
+      );
+    } else if (convAboveTeam) {
+      clauses.push("转化优于多数同事，具备可复制的跟单经验");
+    } else {
+      clauses.push("贡献位居前列，但与前两名相比仍有追赶空间");
+    }
+  }
+
+  if (m.conversionLevel === "low") {
+    clauses.push(
+      `未成交约占 ${pctText(snap.notOrderedShare)}，客户多停在方案或报价阶段，应逐单排查卡点`,
+    );
+  } else if (snap.pipelineShare >= 0.45) {
+    if (m.avgOrderLevel === "high") {
+      clauses.push(
+        `未成交与待退单合计占 ${pctText(snap.pipelineShare)}，且客单不低，单笔推进慢会直接拖慢回款`,
+      );
+    } else {
+      clauses.push(
+        `未成交存量占 ${pctText(snap.notOrderedShare)}，接单不少但落地偏慢，需提高跟进频次`,
+      );
+    }
+  } else if (snap.pipelineShare >= 0.3 && m.conversionLevel !== "high") {
+    clauses.push(
+      `仍有约 ${pctText(snap.pipelineShare)} 预算在途，要把"接单优势"尽快兑现为成交`,
+    );
+  }
+
+  if (snap.refundShare >= 0.15) {
+    clauses.push(
+      `退单占总量 ${pctText(snap.refundShare)}，需同步关注报价与沟通，避免前排业绩被退单侵蚀`,
+    );
+  }
+
+  if (m.conversionLevel === "high" && snap.pipelineShare < 0.25 && m.totalRank <= 2) {
+    clauses.push(`建议提炼${subject}跟单方法，在团队内部分享`);
+  } else if (m.conversionLevel === "low") {
+    clauses.push("宜由管理层介入辅导谈单与方案节奏");
+  } else if (snap.pipelineShare >= 0.35) {
+    clauses.push("优先推动高意向客户落单，缩短存量周转");
+  } else if (clauses.length <= 2) {
+    clauses.push("保持现有节奏，同时关注新增客源与存量平衡");
+  }
+
+  return `${m.row.label}（第 ${m.totalRank}）：${formatFactsBrief(m)}。${clauses.join("；")}。`;
+}
+
+function analyzeWatchPerformer(
+  m: EntityEvaluationMetrics,
+  all: EntityEvaluationMetrics[],
+  isStore: boolean,
+): string {
+  const snap = buildAnalysisSnapshot(m, teamConversionPercent(all.map((x) => x.row)));
+  const clauses: string[] = [];
+  const intakeWord = isStore ? "派单" : "派单";
+
+  const onWatchReasons: string[] = [];
+  if (m.totalTier === "bottom") onWatchReasons.push("业绩排名后段");
+  if (m.conversionLevel === "low") onWatchReasons.push("转化率不达标");
+  const reasonIntro =
+    onWatchReasons.length > 0
+      ? `列入跟进因${onWatchReasons.join("、")}。`
+      : "";
+
+  if (m.conversionLevel === "low" && snap.pipelineShare >= 0.5) {
+    clauses.push(
+      `转化率仅 ${m.conversionRate?.toFixed(1) ?? "—"}%，却积累了 ${formatWanPlain(m.pipeline)} 万存量，典型"只进不出"——接单不算少，但几乎未转化为成交`,
+    );
+    clauses.push(`除逐单跟进外，需复盘${intakeWord}质量与客资匹配，必要时调整派单或加强帮扶`);
+  } else if (m.conversionLevel === "low" && snap.notOrderedShare >= 0.5) {
+    clauses.push(
+      `超半数预算仍处未成交，说明客户意向或方案推进受阻，并非单纯"单少"`,
+    );
+    clauses.push("应重点梳理报价、方案与客户决策链，逐一推动落单");
+  } else if (m.conversionLevel === "low") {
+    clauses.push(
+      `转化率 ${m.conversionRate?.toFixed(1) ?? "—"}% 低于 30% 警戒线，在手订单推进效率不足`,
+    );
+    if (snap.refundShare >= 0.1) {
+      clauses.push(`同时退单占 ${pctText(snap.refundShare)}，报价或沟通环节可能存在问题`);
+    }
+    clauses.push(isStore ? "需区域介入，持续盯紧在手订单" : "需持续盯紧在手订单直至落单或明确流失");
+  } else if (
+    m.conversionLevel === "high" &&
+    m.totalTier === "bottom" &&
+    snap.orderedShare < 0.45
   ) {
-    return `能转化但总量、均单与存量均偏低，主要问题在订单承接不足，建议加强${intakeWord}与客源匹配。`;
+    clauses.push(
+      `转化率达 ${m.conversionRate?.toFixed(1) ?? "—"}%，说明"卖得动"，但总单额与成交仅 ${formatWanPlain(m.row.ordered.amount)} 万，问题在${intakeWord}不足而非转化`,
+    );
+    clauses.push(`应加大${intakeWord}力度、拓展客源，把转化优势转化为业绩增量`);
+  } else if (
+    m.conversionLevel === "high" &&
+    m.totalTier !== "top" &&
+    snap.pipelineShare < 0.35
+  ) {
+    clauses.push(
+      `转化表现 ${m.conversionRate?.toFixed(1) ?? "—"}% 优于多数同事，但总量与成交体量一般，存量不多`,
+    );
+    clauses.push("短板在接单规模——建议挖掘客源、提高派单饱和度，现有订单继续保持高转化");
+  } else if (
+    m.totalTier === "bottom" &&
+    m.conversionLevel === "mid" &&
+    (m.avgOrderLevel === "low" || m.avgOrderLevel === "none")
+  ) {
+    clauses.push(
+      `业绩垫底，总单量 ${m.row.total} 单、客单偏低，${intakeWord}与成交规模均不足`,
+    );
+    clauses.push(
+      `转化 ${m.conversionRate?.toFixed(1) ?? "—"}% 尚可，说明并非完全"不会卖"，关键是缺单、缺大单`,
+    );
+    clauses.push(`需从${intakeWord}与客源两端同时发力`);
+  } else if (m.totalTier === "bottom" && m.conversionLevel === "mid") {
+    clauses.push(
+      `排名后段，转化 ${m.conversionRate?.toFixed(1) ?? "—"}% 中等，但总量有限`,
+    );
+    if (snap.pipelineShare >= 0.3) {
+      clauses.push(`存量 ${formatWanPlain(m.pipeline)} 万尚未释放，跟单提速可直接改善业绩`);
+    } else {
+      clauses.push(`需同步提升${intakeWord}与跟单深度`);
+    }
+  } else if (m.totalTier === "bottom") {
+    clauses.push(`综合表现处团队后 1/3，总量与转化均未形成有效支撑`);
+    clauses.push(`需明确是${intakeWord}不足、转化偏弱还是两者兼有，对症制定改进计划`);
+  } else if (m.conversionLevel === "mid" && snap.pipelineShare >= 0.4) {
+    clauses.push(
+      `转化率尚可但存量 ${formatWanPlain(m.pipeline)} 万偏高，存在"有单难落"风险`,
+    );
+    clauses.push("宜逐单锁定高意向客户，避免存量长期沉淀");
+  } else {
+    clauses.push("指标呈现结构性短板，需结合存量与转化制定专项跟进计划");
   }
 
-  if (totalTier === "bottom" && conversionLevel === "low") {
-    return `接单与转化均偏弱，需重点关注手上订单进度，并综合评估${intakeWord}与跟单支持。`;
-  }
-
-  if (conversionLevel === "low") {
-    if (pipelineLevel === "high" || pipelineLevel === "mid") {
-      return "转化偏弱且存量不低，需重点关注手上订单进度情况，并排查报价、方案或客户意向卡点。";
-    }
-    if (context.isStore) {
-      return "需区域经理介入，重点关注手上订单进度情况。";
-    }
-    return "需重点关注手上订单进度情况。";
-  }
-
-  if (context.isTopSection) {
-    if (totalTier === "top" && pipelineLevel === "high") {
-      return "业绩总量领先，但未下单与待退单存量偏大，需在保持质量的同时加快手上订单推进。";
-    }
-    if (
-      totalTier === "top" &&
-      conversionLevel === "high" &&
-      (pipelineLevel === "low" || pipelineLevel === "none")
-    ) {
-      return "业绩与转化表现均衡，可作内部标杆。";
-    }
-    if (conversionLevel === "mid" && pipelineLevel !== "high") {
-      return "接单量与转化较均衡，可重点复制其跟单节奏。";
-    }
-    if (conversionLevel === "mid" && pipelineLevel === "high") {
-      return "订单池较大，需重点关注手上订单进度，加快存量消化。";
-    }
-    return "整体表现位于前列，请继续保持并关注存量订单消化。";
-  }
-
-  if (totalTier === "bottom" && conversionLevel === "mid") {
-    return "业绩排名后段，需重点关注手上订单进度并加强跟单推进。";
-  }
-
-  return "建议结合存量与转化情况，重点关注手上订单进度。";
+  return `${m.row.label}（第 ${m.totalRank}）：${formatFactsBrief(m)}。${reasonIntro}${clauses.join("；")}。`;
 }
 
-export function formatEntityEvaluationParagraph(
+function formatTopEntityBrief(
   metrics: EntityEvaluationMetrics,
-  options: { isTopSection: boolean; isStore: boolean },
+  all: EntityEvaluationMetrics[],
+  isStore: boolean,
 ): string {
-  const { row } = metrics;
-  const rankWord = options.isStore ? "店面" : "";
-  const intro = `${row.label}（合计排名第 ${metrics.totalRank}${rankWord ? "" : ""}）`;
+  return analyzeTopPerformer(metrics, all, isStore);
+}
 
-  const body =
-    `合计 ${formatWanYuan(row.totalAmount)} / ${row.total} 单，` +
-    `已下单 ${formatWanYuanPlain(row.ordered.amount)} 万元，` +
-    `${conversionLevelText(metrics.conversionLevel, metrics.conversionRate)}；` +
-    `存量 ${formatWanYuan(metrics.pipeline)}（未下单 ${formatWanYuanPlain(row.notOrdered.amount)} 万元，` +
-    `待退单 ${formatWanYuanPlain(row.pendingRefund.amount)} 万元，${levelLabel(metrics.pipelineLevel)}），` +
-    `均单 ${formatAverageOrderWanPerUnit(row)}（${levelLabel(metrics.avgOrderLevel)}）。` +
-    `综合评价：${synthesizeEntityConclusion(metrics, options)}`;
-
-  return `${intro}：${body}`;
+function formatWatchEntityBrief(
+  metrics: EntityEvaluationMetrics,
+  all: EntityEvaluationMetrics[],
+  isStore: boolean,
+): string {
+  return analyzeWatchPerformer(metrics, all, isStore);
 }
 
 export function buildTeamOverviewItem(
   data: DispatcherEvaluationRow[],
   entityLabel: string,
-  teamScope: string,
+  _teamScope: string,
   isStore: boolean,
 ): string {
   const teamTotal = data.reduce((sum, r) => sum + r.totalAmount, 0);
@@ -356,20 +487,24 @@ export function buildTeamOverviewItem(
     .filter((m) => m.conversionLevel === "low")
     .map((m) => m.row.label);
 
+  const scopeWord = isStore ? "全部门店" : "团队";
   let line =
-    `统计周期内，${teamScope}合计总订单金额 ${formatWanYuanPlain(teamTotal)} 万元，` +
-    `合计已下单 ${formatWanYuanPlain(teamOrdered)} 万元`;
+    `本期${scopeWord}总订单额 ${formatWanPlain(teamTotal)} 万，` +
+    `已成交 ${formatWanPlain(teamOrdered)} 万`;
   if (teamRate != null) {
-    line += `，整体下单转化率 ${teamRate.toFixed(1)}%`;
+    line += `，整体转化率 ${teamRate.toFixed(1)}%`;
   }
-  line += `。共 ${data.length} ${isStore ? "家店面" : `个${entityLabel}`}有有效数据`;
+  line += `。${data.length} ${isStore ? "家店面" : `名${entityLabel}`}有有效数据`;
 
   if (lowConversion.length > 0) {
-    const unit = isStore ? "家" : "人";
-    line += `，其中转化率低于 ${CONVERSION_WARNING_THRESHOLD}% 的有 ${formatNameList(lowConversion)} 等 ${lowConversion.length} ${unit}`;
+    line += `，${formatNameList(lowConversion)} ${lowConversion.length} ${isStore ? "家" : "人"}转化率不足 ${CONVERSION_WARNING_THRESHOLD}%`;
     line += isStore
-      ? "，需区域经理介入并重点关注手上订单进度情况"
-      : "，需重点关注手上订单进度情况";
+      ? "，需区域介入、紧盯订单推进"
+      : "，说明部分设计师接单多但落地慢，需紧盯订单推进";
+  } else if (teamRate != null && teamRate < CONVERSION_WARNING_THRESHOLD) {
+    line += "，整体转化偏弱，团队需同步提升跟单效率";
+  } else if (teamRate != null && teamRate >= 50) {
+    line += "，整体转化较好，后续重点在存量消化与客源拓展";
   }
   line += "。";
   return line;
@@ -420,14 +555,14 @@ export function inferRefundReasonHintForPerson(
   return null;
 }
 
-export function buildOtherSituationsItems(
+export function buildRefundAfterSalesItem(
   data: DispatcherEvaluationRow[],
   orders: Order[],
   entityLabel: string,
   matchPerson?: (order: Order, name: string) => boolean,
   isStore = false,
-): string[] {
-  const items: string[] = [];
+): string {
+  const parts: string[] = [];
 
   const totalRefund = data.reduce((sum, r) => sum + refundAmount(r), 0);
   const refundEntities = data.filter((r) => refundAmount(r) > 0);
@@ -441,51 +576,68 @@ export function buildOtherSituationsItems(
     );
 
   if (totalRefund > 0 || refundEntities.length > 0) {
-    let refundLine = `期间内退单总金额 ${formatMoneyBrief(totalRefund)}，涉及退单的${entityLabel}共 ${refundEntities.length} 个`;
+    const unit = isStore ? "家店面" : `名${entityLabel}`;
+    let refundLine = `本期总退单 ${formatWanPlain(totalRefund)} 万，涉及 ${refundEntities.length} ${unit}`;
     if (topRefundAmount && refundAmount(topRefundAmount) > 0) {
-      refundLine += `。退单金额最高的为 ${topRefundAmount.label}（${formatMoneyBrief(refundAmount(topRefundAmount))}）`;
-    }
-    if (refundRateRows.length > 0) {
-      const topRate = refundRateRows[0];
-      refundLine += `，退单率最高的为 ${topRate.label}（退单率 ${refundRatePercent(topRate).toFixed(1)}% = 退单金额 ÷ 合计金额 × 100%）`;
-      if (matchPerson) {
-        const hint = inferRefundReasonHintForPerson(
-          orders,
-          topRate.label,
-          matchPerson,
-        );
-        if (hint) refundLine += `，${hint}`;
+      const topRateRow = refundRateRows[0];
+      const isBothTop =
+        topRateRow && topRateRow.key === topRefundAmount.key;
+      if (isBothTop) {
+        let hint = "";
+        if (matchPerson) {
+          const raw = inferRefundReasonHintForPerson(
+            orders,
+            topRefundAmount.label,
+            matchPerson,
+          );
+          if (raw === "多为价格问题") hint = "，问题多集中在价格方面";
+          else if (raw === "含价格因素") hint = "，问题含价格因素";
+        }
+        const scope = isStore ? "各店面" : "团队";
+        refundLine += `。${topRefundAmount.label} 的退单金额、退单率均为${scope}最高${hint}，需优化报价、方案与客户沟通`;
+      } else {
+        refundLine += `。${topRefundAmount.label} 退单金额最高（${formatWanPlain(refundAmount(topRefundAmount))} 万）`;
+        if (topRateRow) {
+          refundLine += `，${topRateRow.label} 退单率最高（${refundRatePercent(topRateRow).toFixed(1)}%）`;
+        }
+        refundLine += "，需关注价格、方案与沟通环节";
       }
     }
-    refundLine += "。请重点关注价格、方案或沟通环节。";
-    items.push(refundLine);
+    refundLine += "。";
+    parts.push(refundLine);
   } else {
-    items.push(`期间内暂无${entityLabel}退单金额记录。`);
+    parts.push(`本期暂无${entityLabel}退单记录。`);
   }
 
-  const withAfterSales = data
-    .filter((r) => r.afterSalesAmount > 0)
-    .sort((a, b) => b.afterSalesAmount - a.afterSalesAmount);
+  const withAfterSales = data.filter((r) => r.afterSalesAmount > 0);
   const totalAfterSales = data.reduce((sum, r) => sum + r.afterSalesAmount, 0);
 
   if (withAfterSales.length === 0) {
-    items.push(
-      `有售后记录的${entityLabel}共 0 个，售后总金额 0 元。交付质量良好；若个别${isStore ? "店面" : "门店"}未录入售后，请后续补充。`,
-    );
+    parts.push("整体交付质量良好，后续补全相关数据即可。");
   } else {
-    const topAfterSales = withAfterSales[0];
-    let afterLine = `有售后记录的${entityLabel}共 ${withAfterSales.length} 个，售后总金额 ${formatDispatchMoney(totalAfterSales)}`;
-    afterLine += `。售后金额最高的为 ${topAfterSales.label}（${formatDispatchMoney(topAfterSales.afterSalesAmount)}）`;
+    const unit = isStore ? "家店面" : "人";
+    let afterLine = `仅 ${withAfterSales.length} ${unit}产生售后，总金额 ${formatDispatchMoney(totalAfterSales)}`;
     if (totalAfterSales <= 500) {
-      afterLine += "。整体售后金额极低，交付质量良好；若数据不全，请后续补充";
+      afterLine += "，整体交付质量良好，后续补全相关数据即可。";
     } else {
-      afterLine += "。若数据不全，请后续补充";
+      afterLine += "，请后续补全相关数据。";
     }
-    afterLine += "。";
-    items.push(afterLine);
+    parts.push(afterLine);
   }
 
-  return items;
+  return parts.join("");
+}
+
+export function buildOtherSituationsItems(
+  data: DispatcherEvaluationRow[],
+  orders: Order[],
+  entityLabel: string,
+  matchPerson?: (order: Order, name: string) => boolean,
+  isStore = false,
+): string[] {
+  return [
+    buildRefundAfterSalesItem(data, orders, entityLabel, matchPerson, isStore),
+  ];
 }
 
 export function formatPerformanceSituationNarrativeText(
@@ -529,7 +681,7 @@ export function buildEntityCentricSections(
 
   const sections: { heading: string; items: string[] }[] = [
     {
-      heading: "团队概览",
+      heading: "整体情况",
       items: [
         buildTeamOverviewItem(
           data,
@@ -540,14 +692,9 @@ export function buildEntityCentricSections(
       ],
     },
     {
-      heading: options.isStore
-        ? "业绩前列店面综合评价"
-        : `业绩前列${options.entityLabel}综合评价`,
+      heading: options.isStore ? "业绩靠前店面" : "业绩靠前人员",
       items: topMetrics.map((m) =>
-        formatEntityEvaluationParagraph(m, {
-          isTopSection: true,
-          isStore: options.isStore,
-        }),
+        formatTopEntityBrief(m, metrics, options.isStore),
       ),
     },
   ];
@@ -555,27 +702,26 @@ export function buildEntityCentricSections(
   if (watchMetrics.length > 0) {
     sections.push({
       heading: options.isStore
-        ? "需重点关注店面综合评价"
-        : `需重点关注${options.entityLabel}综合评价`,
+        ? "重点跟进店面（附排名）"
+        : "重点跟进人员（附排名）",
       items: watchMetrics.map((m) =>
-        formatEntityEvaluationParagraph(m, {
-          isTopSection: false,
-          isStore: options.isStore,
-        }),
+        formatWatchEntityBrief(m, metrics, options.isStore),
       ),
     });
   }
 
-  const otherItems = buildOtherSituationsItems(
-    data,
-    orders,
-    options.entityLabel,
-    options.matchPerson,
-    options.isStore,
-  );
-  if (otherItems.length > 0) {
-    sections.push({ heading: "其他情况", items: otherItems });
-  }
+  sections.push({
+    heading: "退单 & 售后",
+    items: [
+      buildRefundAfterSalesItem(
+        data,
+        orders,
+        options.entityLabel,
+        options.matchPerson,
+        options.isStore,
+      ),
+    ],
+  });
 
   return sections;
 }

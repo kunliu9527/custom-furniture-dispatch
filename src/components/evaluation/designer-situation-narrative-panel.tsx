@@ -21,9 +21,11 @@ export function DesignerSituationNarrativePanel({
           统计周期：{narrative.periodHint}
           {narrative.scopeHint ? ` · 所属：${narrative.scopeHint}` : null}
         </p>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-          {narrative.intro}
-        </p>
+        {narrative.intro ? (
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+            {narrative.intro}
+          </p>
+        ) : null}
       </header>
 
       <div className="mt-3 space-y-4">

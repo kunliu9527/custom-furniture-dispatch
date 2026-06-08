@@ -66,7 +66,7 @@ export function buildStoreSituationNarrative(
       scopeHint,
       intro: STORE_NARRATIVE_INTRO,
       sections: [
-        { heading: "团队概览", items: ["当前周期与权限范围内暂无店面订单数据。"] },
+        { heading: "整体情况", items: ["当前周期与权限范围内暂无店面订单数据。"] },
       ],
       footnote,
     };
