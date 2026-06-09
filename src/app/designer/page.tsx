@@ -67,7 +67,7 @@ import {
 
   canUserRevertOrderStatus,
 
-  isDesignManagerAccess,
+  canOfflineSignContract,
 
   isPageReadOnly,
 
@@ -630,22 +630,26 @@ export default function DesignerPage() {
         onUpdateDeposit={canEditOwn ? updateOrderDeposit : undefined}
 
         onOfflineSign={
-
-          isDesignManagerAccess(user) ? offlineSignContract : undefined
-
+          canEditOwn && canOfflineSignContract(user)
+            ? offlineSignContract
+            : undefined
         }
 
         onSkipElectronicSign={
-          isDesignManagerAccess(user) ? skipElectronicSign : undefined
+          canEditOwn && canOfflineSignContract(user)
+            ? skipElectronicSign
+            : undefined
         }
 
         onConfirmContractOffline={
-
-          isDesignManagerAccess(user) ? confirmContractOffline : undefined
-
+          canEditOwn && canOfflineSignContract(user)
+            ? confirmContractOffline
+            : undefined
         }
 
-        canConfirmContractOffline={isDesignManagerAccess(user)}
+        canConfirmContractOffline={
+          canEditOwn && canOfflineSignContract(user)
+        }
 
         onInitiateAcceptance={canEditOwn ? initiateAcceptance : undefined}
 
@@ -908,22 +912,26 @@ export default function DesignerPage() {
                     onUpdateDeposit={canEditOwn ? updateOrderDeposit : undefined}
 
                     onOfflineSign={
-
-                      isDesignManagerAccess(user) ? offlineSignContract : undefined
-
+                      canEditOwn && canOfflineSignContract(user)
+                        ? offlineSignContract
+                        : undefined
                     }
 
                     onSkipElectronicSign={
-                      isDesignManagerAccess(user) ? skipElectronicSign : undefined
+                      canEditOwn && canOfflineSignContract(user)
+                        ? skipElectronicSign
+                        : undefined
                     }
 
                     onConfirmContractOffline={
-
-                      isDesignManagerAccess(user) ? confirmContractOffline : undefined
-
+                      canEditOwn && canOfflineSignContract(user)
+                        ? confirmContractOffline
+                        : undefined
                     }
 
-                    canConfirmContractOffline={isDesignManagerAccess(user)}
+                    canConfirmContractOffline={
+                      canEditOwn && canOfflineSignContract(user)
+                    }
 
                     onInitiateAcceptance={
 

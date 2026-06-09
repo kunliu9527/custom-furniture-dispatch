@@ -33,7 +33,7 @@ export const ACCESS_LEVEL_LABELS: Record<StaffAccessLevel, string> = {
 
 export const ACCESS_LEVEL_DESCRIPTIONS: Record<StaffAccessLevel, string> = {
   personal:
-    "派单人：项目进程管理仅本人单查询，设计师为同店+本人订单关联；设计师：仅本人与关联派单人；均无门店汇总。安装师：仅交付本人单",
+    "派单人：项目进程管理仅本人单查询，设计师为同店+本人订单关联；设计师：本人订单可操作（含线下签约）；均无门店汇总。安装师：仅交付本人单",
   store_manager:
     "店长看板本店；项目进程管理只读 + 验收与交付本店；新客户开发与设计师工作台",
   design_manager:

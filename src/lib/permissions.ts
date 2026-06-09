@@ -179,6 +179,13 @@ export function canEditOrderOnDesignerPage(
   return canDesignerModifyOrder(user, order);
 }
 
+/** 设计师页 / 本人订单：待签约时可线下签约（与发起电子签约权限一致） */
+export function canOfflineSignContract(user: SessionUser | null): boolean {
+  if (!user) return false;
+  if (isDesignManagerAccess(user)) return true;
+  return user.role === "designer";
+}
+
 export function canCreateDispatch(user: SessionUser | null): boolean {
   if (!user) return false;
   if (isDesignManagerAccess(user)) return true;
