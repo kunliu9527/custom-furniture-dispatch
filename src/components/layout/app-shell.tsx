@@ -33,7 +33,7 @@ export function AppShell({
       {...(boardKey ? { "data-board": boardKey } : {})}
     >
       <header className="vi-glass-header">
-        <div className="vi-shell-inner mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+        <div className="vi-shell-inner mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
@@ -56,7 +56,7 @@ export function AppShell({
               ) : null}
             </div>
           </div>
-          <div className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:max-w-full sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <AppNav />
             {actions}
           </div>

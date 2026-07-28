@@ -125,7 +125,7 @@ export function LoginPanel({
             : "relative flex flex-wrap items-center gap-2"
         }
       >
-        <div className="text-right text-sm">
+        <div className="hidden text-right text-sm min-[480px]:block sm:block">
           <p
             className="font-medium"
             style={{ color: "var(--label-primary)" }}
@@ -149,22 +149,29 @@ export function LoginPanel({
             </p>
           ) : null}
         </div>
+        <p
+          className="max-w-[5.5rem] truncate text-sm font-medium min-[480px]:hidden"
+          style={{ color: "var(--label-primary)" }}
+          title={user.displayName}
+        >
+          {user.displayName}
+        </p>
         <Button
           type="button"
           variant="ghost"
-          className="text-xs"
+          className="hidden text-xs min-[480px]:inline-flex"
           onClick={() => setPasswordOpen((v) => !v)}
         >
           改密
         </Button>
-        <Button type="button" variant="secondary" onClick={handleLogout}>
+        <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
           退出
         </Button>
         {isAdminAccess(user) ? (
           <Button
             type="button"
             variant="ghost"
-            className="text-xs"
+            className="hidden text-xs lg:inline-flex"
             style={{ color: "var(--system-red)" }}
             onClick={handleReinitializeLocal}
           >

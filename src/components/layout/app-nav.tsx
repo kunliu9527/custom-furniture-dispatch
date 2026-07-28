@@ -18,8 +18,9 @@ export function AppNav({ showAuth = true }: AppNavProps) {
   const links = getVisibleNavLinks(user);
 
   return (
-    <nav className="flex max-w-full flex-wrap items-center gap-2 text-sm">
-      <div className="vi-nav-segment max-w-full">
+    <nav className="flex w-full min-w-0 flex-col gap-2 sm:max-w-full sm:flex-row sm:flex-wrap sm:items-center">
+      {/* 多角色导航项多：小屏横向滑动，避免把整页撑破 */}
+      <div className="vi-nav-segment w-max max-w-full flex-nowrap overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
         {links.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -35,10 +36,12 @@ export function AppNav({ showAuth = true }: AppNavProps) {
           );
         })}
       </div>
-      <ManagerNotificationBell />
-      {showAuth ? (
-        <LoginPanel variant="inline" redirectOnLogin={false} />
-      ) : null}
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <ManagerNotificationBell />
+        {showAuth ? (
+          <LoginPanel variant="inline" redirectOnLogin={false} />
+        ) : null}
+      </div>
     </nav>
   );
 }

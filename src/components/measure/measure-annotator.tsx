@@ -84,7 +84,6 @@ export function MeasureAnnotator({
   const [ready, setReady] = useState(false)
   const [naturalSize, setNaturalSize] = useState({ w: 1, h: 1 })
   const [dirty, setDirty] = useState(false)
-  const [savedFlash, setSavedFlash] = useState(false)
 
   annotationsRef.current = annotations
   selectedIdRef.current = selectedId
@@ -228,11 +227,14 @@ export function MeasureAnnotator({
         Math.min(window.innerWidth - 24, 1040),
       )
       const maxH = Math.min(
-        window.innerHeight * (window.innerWidth < 640 ? 0.48 : 0.56),
-        window.innerWidth < 640 ? 420 : 640,
+        window.innerHeight * (window.innerWidth < 640 ? 0.66 : 0.68),
+        window.innerWidth < 640 ? 560 : 760,
       )
-      // 允许适度放大，避免极小图把画布缩成 1px 导致触点映射错乱
-      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 4)
+      // 按容器等比适配；手机端尽量用满宽度以放大操作区
+      const scale = Math.min(
+        maxW / Math.max(1, img.naturalWidth),
+        maxH / Math.max(1, img.naturalHeight),
+      )
       const nextW = Math.max(1, Math.floor(img.naturalWidth * scale))
       const nextH = Math.max(1, Math.floor(img.naturalHeight * scale))
       if (canvas.width !== nextW || canvas.height !== nextH) {
@@ -502,8 +504,8 @@ export function MeasureAnnotator({
   function handleSave() {
     onSave(annotations, { name: name.trim() || '现场照片', room: room.trim() })
     setDirty(false)
-    setSavedFlash(true)
-    setTimeout(() => setSavedFlash(false), 1200)
+    // 保存后回到归档/选图页，方便立即开始下一张
+    onBack()
   }
 
   function handleBack() {
@@ -565,7 +567,7 @@ export function MeasureAnnotator({
             撤销
           </button>
           <button type="button" className="btn btn-primary" onClick={handleSave}>
-            {savedFlash ? '已保存' : dirty ? '保存*' : '保存'}
+            {dirty ? '保存并继续' : '完成'}
           </button>
         </div>
       </header>
