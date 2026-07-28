@@ -219,9 +219,13 @@
 
 .measure-root .measure-canvas {
   display: block;
+  width: auto;
+  height: auto;
   max-width: 100%;
   touch-action: none;
   cursor: crosshair;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .measure-root .canvas-loading {
@@ -256,25 +260,75 @@
   .measure-root.editor-page {
     width: 100%;
     margin: 0;
-    padding: 0.5rem 0 1.25rem;
+    padding: 0.25rem 0 1rem;
+  }
+
+  .measure-root .topbar {
+    margin-bottom: 0.4rem;
+    gap: 0.35rem;
+  }
+
+  .measure-root .topbar .btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .measure-root .editor-meta {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .measure-root .editor-meta label span {
+    font-size: 0.7rem;
+  }
+
+  .measure-root .editor-meta input {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .measure-root .toolbar {
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .measure-root .chip {
+    padding: 0.28rem 0.55rem;
+    font-size: 0.72rem;
+  }
+
+  .measure-root .tool-label {
+    font-size: 0.7rem;
+  }
+
+  .measure-root .swatch {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .measure-root .hint {
+    margin: 0 0 0.4rem;
+    font-size: 0.72rem;
+    line-height: 1.35;
   }
 
   .measure-root .edit-row {
     grid-template-columns: 1fr 1fr;
   }
 
-  .measure-root .toolbar {
-    gap: 0.35rem;
-  }
-
-  .measure-root .btn {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+  .measure-root .canvas-wrap {
+    min-height: 220px;
   }
 
   .measure-root .canvas-nav {
     width: 36px;
     height: 36px;
+  }
+
+  .measure-root .btn {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
   }
 }
 

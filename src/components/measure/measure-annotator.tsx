@@ -53,6 +53,19 @@ export function MeasureAnnotator({
   const imageRef = useRef<HTMLImageElement | null>(null)
   const drawingPen = useRef(false)
   const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const annotationsRef = useRef<Annotation[]>(photo.annotations)
+  const selectedIdRef = useRef<string | null>(null)
+  const draftStartRef = useRef<Point | null>(null)
+  const hoverRef = useRef<Point | null>(null)
+  const toolRef = useRef<ToolMode>('dimension')
+  const colorRef = useRef(COLORS[0])
+  const lineDragRef = useRef<{
+    start: Point
+    pointerId: number
+    moved: boolean
+  } | null>(null)
+  const penPointsRef = useRef<Point[]>([])
+  const rafRef = useRef(0)
 
   const [annotations, setAnnotations] = useState<Annotation[]>(photo.annotations)
   const [history, setHistory] = useState<Annotation[][]>([])
@@ -63,7 +76,6 @@ export function MeasureAnnotator({
   const [color, setColor] = useState(COLORS[0])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [draftStart, setDraftStart] = useState<Point | null>(null)
-  const [hover, setHover] = useState<Point | null>(null)
   const [pendingLine, setPendingLine] = useState<DraftLine>(null)
   const [pendingKind, setPendingKind] = useState<'dimension' | 'arrow' | 'text' | null>(null)
   const [valueInput, setValueInput] = useState('')
@@ -74,6 +86,12 @@ export function MeasureAnnotator({
   const [dirty, setDirty] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
 
+  annotationsRef.current = annotations
+  selectedIdRef.current = selectedId
+  draftStartRef.current = draftStart
+  toolRef.current = tool
+  colorRef.current = color
+
   // 切换照片时重置编辑状态
   useEffect(() => {
     setAnnotations(photo.annotations)
@@ -82,7 +100,9 @@ export function MeasureAnnotator({
     setRoom(photo.room)
     setSelectedId(null)
     setDraftStart(null)
-    setHover(null)
+    hoverRef.current = null
+    lineDragRef.current = null
+    penPointsRef.current = []
     setPendingLine(null)
     setPendingKind(null)
     setValueInput('')
@@ -134,6 +154,66 @@ export function MeasureAnnotator({
     })
   }
 
+  function paintCanvas() {
+    const canvas = canvasRef.current
+    const img = imageRef.current
+    if (!canvas || !img || !canvas.width || !canvas.height) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const sx = canvas.width / img.naturalWidth
+    const sy = canvas.height / img.naturalHeight
+    const list = annotationsRef.current
+    const selected = selectedIdRef.current
+    const currentTool = toolRef.current
+    const currentColor = colorRef.current
+    const start = draftStartRef.current
+    const hover = hoverRef.current
+
+    for (const a of list) {
+      // 涂鸦拖拽中用 ref 最新点，避免每帧 setState
+      if (
+        drawingPen.current &&
+        a.id === selected &&
+        a.kind === 'pen' &&
+        penPointsRef.current.length > 0
+      ) {
+        drawAnnotation(
+          ctx,
+          { ...a, points: penPointsRef.current },
+          sx,
+          sy,
+          true,
+        )
+        continue
+      }
+      drawAnnotation(ctx, a, sx, sy, a.id === selected)
+    }
+
+    if (start && hover && (currentTool === 'dimension' || currentTool === 'arrow')) {
+      ctx.save()
+      ctx.strokeStyle = currentColor
+      ctx.lineWidth = Math.max(2, canvas.width * 0.0025)
+      ctx.setLineDash([6, 4])
+      ctx.beginPath()
+      ctx.moveTo(start.x * sx, start.y * sy)
+      ctx.lineTo(hover.x * sx, hover.y * sy)
+      ctx.stroke()
+      ctx.restore()
+    }
+  }
+
+  function schedulePaint() {
+    if (rafRef.current) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0
+      paintCanvas()
+    })
+  }
+
+  // 仅在容器尺寸变化时改 canvas 缓冲；绘制单独触发，避免 pointermove 反复 resize 导致延迟和错位
   useEffect(() => {
     if (!ready) return
     const canvas = canvasRef.current
@@ -141,50 +221,55 @@ export function MeasureAnnotator({
     const img = imageRef.current
     if (!canvas || !wrap || !img) return
 
-    const draw = () => {
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      const sx = canvas.width / img.naturalWidth
-      const sy = canvas.height / img.naturalHeight
-
-      for (const a of annotations) {
-        drawAnnotation(ctx, a, sx, sy, a.id === selectedId)
-      }
-
-      if (draftStart && hover && (tool === 'dimension' || tool === 'arrow')) {
-        ctx.save()
-        ctx.strokeStyle = color
-        ctx.lineWidth = 2
-        ctx.setLineDash([6, 4])
-        ctx.beginPath()
-        ctx.moveTo(draftStart.x * sx, draftStart.y * sy)
-        ctx.lineTo(hover.x * sx, hover.y * sy)
-        ctx.stroke()
-        ctx.restore()
-      }
-    }
-
     const resize = () => {
-      const maxW = wrap.clientWidth
-      const maxH = Math.min(window.innerHeight * 0.56, 640)
-      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 1)
-      canvas.width = Math.floor(img.naturalWidth * scale)
-      canvas.height = Math.floor(img.naturalHeight * scale)
-      draw()
+      const maxW = Math.max(
+        wrap.clientWidth,
+        wrap.parentElement?.clientWidth ?? 0,
+        Math.min(window.innerWidth - 24, 1040),
+      )
+      const maxH = Math.min(
+        window.innerHeight * (window.innerWidth < 640 ? 0.48 : 0.56),
+        window.innerWidth < 640 ? 420 : 640,
+      )
+      // 允许适度放大，避免极小图把画布缩成 1px 导致触点映射错乱
+      const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight, 4)
+      const nextW = Math.max(1, Math.floor(img.naturalWidth * scale))
+      const nextH = Math.max(1, Math.floor(img.naturalHeight * scale))
+      if (canvas.width !== nextW || canvas.height !== nextH) {
+        canvas.width = nextW
+        canvas.height = nextH
+      }
+      // 明确 CSS 尺寸，避免仅依赖 intrinsic 在部分 WebView 上测量不准
+      canvas.style.width = `${nextW}px`
+      canvas.style.height = `${nextH}px`
+      paintCanvas()
     }
 
     resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(wrap)
     window.addEventListener('resize', resize)
-    return () => window.removeEventListener('resize', resize)
-  }, [ready, annotations, selectedId, draftStart, hover, color, tool, naturalSize])
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', resize)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, naturalSize.w, naturalSize.h])
+
+  useEffect(() => {
+    if (!ready) return
+    paintCanvas()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, annotations, selectedId, draftStart, color, tool])
 
   function toImageCoords(clientX: number, clientY: number): Point | null {
     const canvas = canvasRef.current
     const img = imageRef.current
-    if (!canvas || !img) return null
+    if (!canvas || !img || !canvas.width || !canvas.height) return null
     const rect = canvas.getBoundingClientRect()
+    if (rect.width < 1 || rect.height < 1) return null
+    // 用显示尺寸映射到自然像素，避免 CSS 缩放后错位
     const x = ((clientX - rect.left) / rect.width) * img.naturalWidth
     const y = ((clientY - rect.top) / rect.height) * img.naturalHeight
     return {
@@ -195,16 +280,30 @@ export function MeasureAnnotator({
 
   function hitTest(x: number, y: number): string | null {
     const threshold = Math.max(naturalSize.w, naturalSize.h) * 0.018
-    for (let i = annotations.length - 1; i >= 0; i--) {
-      if (hitTestAnnotation(annotations[i], x, y, threshold)) return annotations[i].id
+    const list = annotationsRef.current
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (hitTestAnnotation(list[i], x, y, threshold)) return list[i].id
     }
     return null
+  }
+
+  function beginPendingLine(line: NonNullable<DraftLine>, kind: 'dimension' | 'arrow') {
+    setPendingLine(line)
+    setPendingKind(kind)
+    setValueInput('')
+    setNoteInput('')
+    setDraftStart(null)
+    draftStartRef.current = null
+    hoverRef.current = null
+    lineDragRef.current = null
+    schedulePaint()
   }
 
   function onPointerDown(e: ReactPointerEvent) {
     if (pendingKind) return
     const canvas = canvasRef.current
     if (!canvas) return
+    e.preventDefault()
     canvas.setPointerCapture(e.pointerId)
     const pt = toImageCoords(e.clientX, e.clientY)
     if (!pt) return
@@ -224,6 +323,7 @@ export function MeasureAnnotator({
 
     if (tool === 'pen') {
       drawingPen.current = true
+      penPointsRef.current = [pt]
       const stroke: Annotation = {
         kind: 'pen',
         id: uid(),
@@ -238,7 +338,7 @@ export function MeasureAnnotator({
       return
     }
 
-    // dimension / arrow
+    // dimension / arrow：支持拖拽画线；轻点则保留两点点击模式
     const hit = hitTest(pt.x, pt.y)
     if (hit && !draftStart) {
       setSelectedId(hit)
@@ -248,16 +348,16 @@ export function MeasureAnnotator({
 
     if (!draftStart) {
       setDraftStart(pt)
-      setHover(pt)
+      draftStartRef.current = pt
+      hoverRef.current = pt
       setSelectedId(null)
+      lineDragRef.current = { start: pt, pointerId: e.pointerId, moved: false }
+      schedulePaint()
     } else {
-      const line = { x1: draftStart.x, y1: draftStart.y, x2: pt.x, y2: pt.y }
-      setPendingLine(line)
-      setPendingKind(tool === 'arrow' ? 'arrow' : 'dimension')
-      setValueInput('')
-      setNoteInput('')
-      setDraftStart(null)
-      setHover(null)
+      beginPendingLine(
+        { x1: draftStart.x, y1: draftStart.y, x2: pt.x, y2: pt.y },
+        tool === 'arrow' ? 'arrow' : 'dimension',
+      )
     }
   }
 
@@ -266,27 +366,61 @@ export function MeasureAnnotator({
     if (!pt) return
 
     if (tool === 'pen' && drawingPen.current && selectedId) {
-      setAnnotations((prev) =>
-        prev.map((a) => {
-          if (a.id !== selectedId || a.kind !== 'pen') return a
-          return { ...a, points: [...a.points, pt] }
-        }),
-      )
-      setDirty(true)
+      const pts = penPointsRef.current
+      const last = pts[pts.length - 1]
+      if (!last || Math.hypot(pt.x - last.x, pt.y - last.y) >= 1.5) {
+        penPointsRef.current = [...pts, pt]
+        schedulePaint()
+      }
       return
     }
 
     if (draftStart && (tool === 'dimension' || tool === 'arrow')) {
-      setHover(pt)
+      hoverRef.current = pt
+      const drag = lineDragRef.current
+      if (drag && drag.pointerId === e.pointerId) {
+        const dist = Math.hypot(pt.x - drag.start.x, pt.y - drag.start.y)
+        const threshold = Math.max(naturalSize.w, naturalSize.h) * 0.012
+        if (dist >= threshold) drag.moved = true
+      }
+      schedulePaint()
     }
   }
 
-  function onPointerUp() {
+  function onPointerUp(e: ReactPointerEvent) {
     if (drawingPen.current) {
       drawingPen.current = false
-      // finalize history already pushed at start; mark dirty
+      const pts = penPointsRef.current
+      const sid = selectedIdRef.current
+      if (sid && pts.length > 0) {
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            a.id === sid && a.kind === 'pen' ? { ...a, points: pts } : a,
+          ),
+        )
+      }
+      penPointsRef.current = []
       setDirty(true)
+      return
     }
+
+    const drag = lineDragRef.current
+    if (
+      drag &&
+      drag.pointerId === e.pointerId &&
+      drag.moved &&
+      (tool === 'dimension' || tool === 'arrow')
+    ) {
+      const pt = toImageCoords(e.clientX, e.clientY)
+      if (pt) {
+        beginPendingLine(
+          { x1: drag.start.x, y1: drag.start.y, x2: pt.x, y2: pt.y },
+          tool === 'arrow' ? 'arrow' : 'dimension',
+        )
+        return
+      }
+    }
+    lineDragRef.current = null
   }
 
   function confirmPending() {
@@ -345,6 +479,8 @@ export function MeasureAnnotator({
     setTextPos(null)
     setValueInput('')
     setNoteInput('')
+    hoverRef.current = null
+    lineDragRef.current = null
   }
 
   function deleteSelected() {
@@ -385,12 +521,12 @@ export function MeasureAnnotator({
       ? '点击标注可选中，可在下方编辑尺寸'
       : tool === 'dimension'
         ? draftStart
-          ? '再点一下确定终点'
-          : '点两点画尺寸线'
+          ? '拖到终点松手，或再点一下确定终点'
+          : '按住拖动画尺寸线，或点两点'
         : tool === 'arrow'
           ? draftStart
-            ? '再点一下确定箭头终点'
-            : '点两点画指示箭头'
+            ? '拖到终点松手，或再点一下确定箭头终点'
+            : '按住拖动画箭头，或点两点'
           : tool === 'text'
             ? '点击照片放置文字说明'
             : '按住拖动画涂鸦'
@@ -480,7 +616,10 @@ export function MeasureAnnotator({
               onClick={() => {
                 setTool(t.id)
                 setDraftStart(null)
-                setHover(null)
+                draftStartRef.current = null
+                hoverRef.current = null
+                lineDragRef.current = null
+                schedulePaint()
               }}
             >
               {t.label}
@@ -565,7 +704,7 @@ export function MeasureAnnotator({
           onPointerUp={(e) => {
             const start = swipeStart.current
             swipeStart.current = null
-            onPointerUp()
+            onPointerUp(e)
             if (!start || tool !== 'select' || !showPager || pendingKind) return
             const dx = e.clientX - start.x
             const dy = e.clientY - start.y
@@ -573,7 +712,7 @@ export function MeasureAnnotator({
             if (dx < 0 && canNext) handleNavigate(1)
             if (dx > 0 && canPrev) handleNavigate(-1)
           }}
-          onPointerCancel={onPointerUp}
+          onPointerCancel={(e) => onPointerUp(e)}
         />
       </div>
 

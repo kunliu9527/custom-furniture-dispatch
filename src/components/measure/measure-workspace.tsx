@@ -387,6 +387,18 @@ export function MeasureWorkspace({
 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
+      {editing ? (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-stone-200 bg-white px-3 py-2 sm:px-4">
+          <p className="min-w-0 truncate text-sm font-semibold text-stone-900">{title}</p>
+          <button
+            type="button"
+            className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
+            onClick={onClose}
+          >
+            关闭
+          </button>
+        </div>
+      ) : (
       <div className="flex flex-col gap-2 border-b border-stone-200 bg-white px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-stone-900">{title}</p>
@@ -395,8 +407,7 @@ export function MeasureWorkspace({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          {!editing ? (
-            <div className="flex overflow-hidden rounded-full border border-stone-200 text-xs">
+          <div className="flex overflow-hidden rounded-full border border-stone-200 text-xs">
               <button
                 type="button"
                 className={`px-3 py-1.5 ${
@@ -420,7 +431,6 @@ export function MeasureWorkspace({
                 图纸模式
               </button>
             </div>
-          ) : null}
           <button
             type="button"
             className="rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
@@ -430,8 +440,9 @@ export function MeasureWorkspace({
           </button>
         </div>
       </div>
+      )}
 
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4">
+      <div className={`min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4 ${editing ? "pt-2" : ""}`}>
         {editing ? (
           <MeasureAnnotator
             key={editing.id}

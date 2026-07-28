@@ -352,7 +352,7 @@ export function OrderCard({
   return (
     <article
       id={`order-card-${order.id}`}
-      className={`vi-order-card ${
+      className={`vi-order-card flex flex-col ${
         isFeedbackActive
           ? ORDER_STATUS_SUCCESS_CARD_CLASS
           : focused
@@ -413,7 +413,7 @@ export function OrderCard({
       </div>
 
       {!isFeedbackActive && hasPrimaryActionBar ? (
-        <div className="vi-order-action-bar mt-3 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="vi-order-action-bar mt-3 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3 max-lg:order-3 max-lg:border-b-0 max-lg:border-t max-lg:pb-0 max-lg:pt-3">
           {pendingAccept && onConfirmDesignerAccept ? (
             <>
               <span className="w-full text-xs text-amber-800 sm:w-auto">
@@ -523,7 +523,7 @@ export function OrderCard({
         </div>
       ) : null}
 
-      <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-2.5 text-sm">
+      <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-2.5 text-sm max-lg:order-2 max-lg:mt-3">
         <div className="min-w-0">
           <dt className="vi-dl-term">客户姓名</dt>
           <dd className="vi-dl-value">{customerNameLabel}</dd>
