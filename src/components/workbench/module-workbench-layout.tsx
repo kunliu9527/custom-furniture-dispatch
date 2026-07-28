@@ -189,8 +189,9 @@ export function ModuleWorkbenchLayout({
             </div>
           ) : null}
 
-          <div className={`${EVAL_WORKBENCH_PANE_SCROLL} flex min-h-0 flex-1 flex-col`}>
-            <div className={`${EVAL_WORKBENCH_PANE_INNER} flex min-h-0 flex-1 flex-col pb-8 lg:pb-0`}>
+          {/* 滚动容器勿再加 flex-col，否则移动端子项被压扁裁切、手势滚不动 */}
+          <div className={EVAL_WORKBENCH_PANE_SCROLL}>
+            <div className={`${EVAL_WORKBENCH_PANE_INNER} pb-8 lg:pb-0`}>
               {mobileTabs ? (
                 <div className="mb-3 shrink-0 lg:hidden">{mobileTabs}</div>
               ) : null}

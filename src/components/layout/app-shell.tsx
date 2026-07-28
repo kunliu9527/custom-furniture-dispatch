@@ -32,8 +32,9 @@ export function AppShell({
       className="vi-app-bg grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden"
       {...(boardKey ? { "data-board": boardKey } : {})}
     >
-      <header className="vi-glass-header">
-        <div className="vi-shell-inner mx-auto flex max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-3">
+      {/* min-w-0：防止导航/筛选项把整页撑出视口后被 overflow-hidden 裁切且无法滑动 */}
+      <header className="vi-glass-header min-w-0">
+        <div className="vi-shell-inner mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
@@ -62,10 +63,10 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className={`min-h-0 overflow-hidden ${mainClassName}`}>
+      <main className={`min-h-0 min-w-0 overflow-hidden ${mainClassName}`}>
         {children}
       </main>
-      <SyncFooterStatus className="shrink-0" />
+      <SyncFooterStatus className="min-w-0 shrink-0" />
     </div>
   );
 }

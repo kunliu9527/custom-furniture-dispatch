@@ -57,40 +57,44 @@ export function WorkbenchMobileChips({
   }
 
   return (
-    <div className="-mx-0.5 flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {items.map((item) => {
-        const active = value === item.id;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onChange(item.id)}
-            className={`vi-filter-chip shrink-0 flex-col items-start gap-0.5 py-2 ${
-              active ? "vi-filter-chip-active" : ""
-            }`}
-          >
-            <span className="text-xs font-semibold leading-tight">{item.label}</span>
-            {item.hint ? (
-              <span
-                className={`text-[10px] leading-tight ${
-                  active ? "opacity-95" : "text-slate-500"
-                }`}
-              >
-                {item.hint}
+    <div className="w-full min-w-0 overflow-x-auto pb-0.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex w-max gap-1.5">
+        {items.map((item) => {
+          const active = value === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onChange(item.id)}
+              className={`vi-filter-chip shrink-0 flex-col items-start gap-0.5 py-2 ${
+                active ? "vi-filter-chip-active" : ""
+              }`}
+            >
+              <span className="text-xs font-semibold leading-tight">
+                {item.label}
               </span>
-            ) : null}
-            {item.badge != null ? (
-              <span
-                className={`text-[10px] font-medium tabular-nums leading-tight ${
-                  active ? "opacity-95" : "text-slate-500"
-                }`}
-              >
-                {item.badge}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+              {item.hint ? (
+                <span
+                  className={`text-[10px] leading-tight ${
+                    active ? "opacity-95" : "text-slate-500"
+                  }`}
+                >
+                  {item.hint}
+                </span>
+              ) : null}
+              {item.badge != null ? (
+                <span
+                  className={`text-[10px] font-medium tabular-nums leading-tight ${
+                    active ? "opacity-95" : "text-slate-500"
+                  }`}
+                >
+                  {item.badge}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

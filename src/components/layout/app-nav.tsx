@@ -19,15 +19,15 @@ export function AppNav({ showAuth = true }: AppNavProps) {
 
   return (
     <nav className="flex w-full min-w-0 flex-col gap-2 sm:max-w-full sm:flex-row sm:flex-wrap sm:items-center">
-      {/* 多角色导航项多：小屏横向滑动，避免把整页撑破 */}
-      <div className="vi-nav-segment w-max max-w-full flex-nowrap overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+      {/* 容器限宽 + pill 不收缩，多角色导航可横向滑动 */}
+      <div className="vi-nav-segment w-full min-w-0 max-w-full flex-nowrap overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:w-auto sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
         {links.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`vi-nav-pill whitespace-nowrap ${
+              className={`vi-nav-pill shrink-0 whitespace-nowrap ${
                 isActive ? "vi-nav-pill-active" : ""
               }`}
             >
