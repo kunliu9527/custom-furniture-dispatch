@@ -93,8 +93,16 @@ export const MEASURE_ROOMS = [
   "其他",
 ] as const;
 
+/** 生成测量照片 ID（兼容 http 公网 IP 等非安全上下文） */
 export function measureUid(): string {
-  return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      /* randomUUID 在非 HTTPS 下可能不可用 */
+    }
+  }
+  return `m-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function annotationLabel(a: MeasureAnnotation): string {

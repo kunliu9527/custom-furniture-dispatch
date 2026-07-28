@@ -252,6 +252,32 @@
   gap: 0.55rem;
 }
 
+@media (max-width: 640px) {
+  .measure-root.editor-page {
+    width: 100%;
+    margin: 0;
+    padding: 0.5rem 0 1.25rem;
+  }
+
+  .measure-root .edit-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .measure-root .toolbar {
+    gap: 0.35rem;
+  }
+
+  .measure-root .btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .measure-root .canvas-nav {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 .measure-root .selected-panel {
   background: #14312f;
   color: #f4fffd;

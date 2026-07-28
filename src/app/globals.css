@@ -295,7 +295,20 @@ body {
   border: 1px solid var(--separator-opaque);
   background: var(--system-gray6);
   padding: 0;
-  overflow: hidden;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .vi-nav-segment {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .vi-nav-segment::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .vi-nav-segment .vi-nav-pill {
@@ -592,6 +605,20 @@ body {
 .vi-data-table thead th {
   font-weight: 700;
   color: var(--vi-ink-secondary);
+}
+
+/* 表头列间竖向分隔线（border-collapse 下用右边界） */
+.vi-data-table thead th:not(:last-child),
+[data-board] .vi-table-head-row th:not(:last-child) {
+  border-right: 1px solid var(--separator-opaque);
+}
+
+[data-board] .vi-table-head-row th:not(:last-child) {
+  border-right-color: color-mix(
+    in srgb,
+    var(--board-table-head-border) 85%,
+    var(--separator-strong)
+  );
 }
 
 /** 看板归总/排名表：列宽随内容，不撑满容器 */

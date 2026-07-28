@@ -26,6 +26,8 @@ import {
 
   getEffectiveDesignerHomeStore,
 
+  getEffectiveDesignerRoster,
+
   getEffectiveDesignersInStores,
 
   isCrossStoreOrderForDesigner,
@@ -208,24 +210,26 @@ export default function DesignerPage() {
 
       setCurrentDesigner(lockedName as DesignerName);
 
-    } else if (designerLookupStores?.length) {
-
-      const roster = getEffectiveDesignersInStores(
-
-        designerLookupStores,
-
-        designerHomeStoreIndex,
-
-        staffRecords,
-
-      );
+    } else {
+      // 全公司范围时 designerLookupStores 为 null，也必须写入真实姓名；
+      // 否则 currentDesigner 空串 → 筛选「未选择」，但 <select> 仍显示名册第一项（汤雷），
+      // 手机端表现为「看着选了汤雷但列表空，切换后再选回来才有数据」。
+      const roster = designerLookupStores?.length
+        ? getEffectiveDesignersInStores(
+            designerLookupStores,
+            designerHomeStoreIndex,
+            staffRecords,
+          )
+        : getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords);
 
       if (roster.length > 0) {
-
-        setCurrentDesigner(roster[0].name as DesignerName);
-
+        const preferred =
+          user?.displayName &&
+          roster.some((d) => d.name === user.displayName)
+            ? user.displayName
+            : roster[0].name;
+        setCurrentDesigner(preferred as DesignerName);
       }
-
     }
 
     if (user?.username) {

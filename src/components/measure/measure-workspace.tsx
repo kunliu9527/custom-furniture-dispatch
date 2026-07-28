@@ -105,8 +105,17 @@ export function MeasureWorkspace({
   const [exportMode, setExportMode] =
     useState<MeasureBatchExportMode>("annotated");
 
+  const sessionKeyRef = useRef<string | null>(null);
+
+  // 仅在打开工作台或切换订单时重置；勿在 persist 回写 measurement 时清空 editing
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      sessionKeyRef.current = null;
+      return;
+    }
+    const sessionKey = order.id;
+    if (sessionKeyRef.current === sessionKey) return;
+    sessionKeyRef.current = sessionKey;
     setPhotos(order.measurement?.photos ?? []);
     setEditing(null);
     setEditingIndex(0);
@@ -180,12 +189,26 @@ export function MeasureWorkspace({
 
   async function handlePick(dataUrl: string, fileName: string) {
     setError("");
-    const photoId = measureUid();
-    setBusyId(photoId);
+    let photoId = "";
     try {
+      photoId = measureUid();
+      setBusyId(photoId);
       let imageUrl: string | undefined;
+      let usedStorage = storage;
       if (storage === "cloud") {
-        imageUrl = await uploadCloudImage(order.id, photoId, dataUrl);
+        try {
+          imageUrl = await uploadCloudImage(order.id, photoId, dataUrl);
+        } catch (cloudErr) {
+          // 云端失败时自动回落本地，避免现场量尺完全中断
+          await saveLocalMeasureImage(order.id, photoId, dataUrl);
+          usedStorage = "local";
+          setStorage("local");
+          setError(
+            cloudErr instanceof Error
+              ? `云端上传失败，已改存本地：${cloudErr.message}`
+              : "云端上传失败，已改存本地",
+          );
+        }
       } else {
         await saveLocalMeasureImage(order.id, photoId, dataUrl);
       }
@@ -194,13 +217,13 @@ export function MeasureWorkspace({
         id: photoId,
         name: fileName,
         room: "其他",
-        storage,
+        storage: usedStorage,
         imageUrl,
         annotations: [],
         createdAt: now,
         updatedAt: now,
       };
-      const next = [...photos, photo];
+      const next = [...photosRef.current, photo];
       persist(next);
       setImageCache((prev) => ({ ...prev, [photoId]: dataUrl }));
       setEditingIndex(next.length - 1);
@@ -219,9 +242,10 @@ export function MeasureWorkspace({
     annotations: MeasureAnnotation[];
   }) {
     setError("");
-    const photoId = measureUid();
-    setBusyId(photoId);
+    let photoId = "";
     try {
+      photoId = measureUid();
+      setBusyId(photoId);
       let imageUrl: string | undefined;
       if (storage === "cloud") {
         imageUrl = await uploadCloudImage(order.id, photoId, payload.imageDataUrl);
@@ -362,15 +386,15 @@ export function MeasureWorkspace({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100/95 backdrop-blur-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-stone-200 bg-white px-4 py-3 shadow-sm">
-        <div>
-          <p className="text-sm font-semibold text-stone-900">{title}</p>
+    <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
+      <div className="flex flex-col gap-2 border-b border-stone-200 bg-white px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-stone-900">{title}</p>
           <p className="text-xs text-stone-500">
             现场拍照或图纸测距 · 多图可切换 · 超过 1 张自动 ZIP
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           {!editing ? (
             <div className="flex overflow-hidden rounded-full border border-stone-200 text-xs">
               <button

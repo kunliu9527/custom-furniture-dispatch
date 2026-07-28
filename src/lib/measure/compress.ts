@@ -12,7 +12,12 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("图片加载失败"));
+    img.onerror = () =>
+      reject(
+        new Error(
+          "图片无法解码（请改用 JPEG/PNG；部分手机 HEIC 需先转换）",
+        ),
+      );
     img.src = src;
   });
 }
