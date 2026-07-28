@@ -47,21 +47,23 @@ export function WorkbenchPeriodSearchBar({
 
   return (
     <div className="block w-full space-y-2">
-      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2">
-        <p className="vi-heading-section shrink-0 text-[13px] leading-tight">
-          {headingLabel}
-        </p>
-        {showSearch && onQueryChange ? (
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder={placeholder}
-            className={`vi-field py-1.5 ${searchClass}`}
-          />
-        ) : null}
-        {trailing}
-        <div className="ml-auto flex shrink-0 items-center">
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <p className="vi-heading-section shrink-0 text-[13px] leading-tight">
+            {headingLabel}
+          </p>
+          {showSearch && onQueryChange ? (
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder={placeholder}
+              className={`vi-field py-1.5 ${searchClass}`}
+            />
+          ) : null}
+          {trailing}
+        </div>
+        <div className="flex w-full min-w-0 items-center overflow-x-auto sm:ml-auto sm:w-auto sm:shrink-0 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <PeriodFilterBar
             value={period}
             onChange={onPeriodChange}

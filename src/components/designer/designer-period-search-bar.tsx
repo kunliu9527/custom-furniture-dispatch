@@ -23,7 +23,7 @@ export function DesignerPeriodSearchBar({
   return (
     <WorkbenchPeriodSearchBar
       {...rest}
-      searchWidthClass="min-w-[11rem] w-[85%] max-w-[14rem] shrink-0"
+      searchWidthClass="min-w-0 w-full max-w-none flex-1 sm:min-w-[11rem] sm:w-[85%] sm:max-w-[14rem] sm:flex-none"
       trailing={
         <button
           type="button"
