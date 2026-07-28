@@ -412,8 +412,125 @@ export function OrderCard({
         ) : null}
       </div>
 
+      <dl className="mt-4 grid grid-cols-1 gap-x-3 gap-y-3 text-sm min-[420px]:grid-cols-2 lg:grid-cols-3">
+        <div className="min-w-0">
+          <dt className="vi-dl-term">客户姓名</dt>
+          <dd className="vi-dl-value">{customerNameLabel}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">联系电话</dt>
+          <dd className="vi-dl-value break-all">{order.phone || "—"}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">定制空间</dt>
+          <dd className="vi-dl-value">{formatSpaces(order.spaces)}</dd>
+        </div>
+        <div className="min-w-0 min-[420px]:col-span-2 lg:col-span-1">
+          <dt className="vi-dl-term">小区地址</dt>
+          <dd className="vi-dl-value break-words">
+            {order.address?.trim() || "—"}
+          </dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">预算</dt>
+          <dd className="vi-dl-value">{formatBudget(order.budget)}</dd>
+        </div>
+        <div className="min-w-0 min-[420px]:col-span-2 lg:col-span-1">
+          {onUpdateDeposit ? (
+            <DepositEditor
+              order={order}
+              onSave={onUpdateDeposit}
+              readOnly={readOnly}
+              compact
+            />
+          ) : (
+            <>
+              <dt className="vi-dl-term">定金</dt>
+              <dd
+                className={`font-medium ${order.deposit <= 0 ? "text-amber-600" : "text-slate-800"}`}
+              >
+                {formatDeposit(order.deposit)}
+              </dd>
+            </>
+          )}
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">派单门店</dt>
+          <dd className="vi-dl-value">{order.dispatchStore}</dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="vi-dl-term">派单人</dt>
+          <dd className="vi-dl-value">{order.dispatcherName || "—"}</dd>
+        </div>
+        {hasOrderAmount ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">下单金额</dt>
+            <dd className="font-semibold text-blue-700">
+              {formatOrderAmount(order.orderAmount)}
+            </dd>
+          </div>
+        ) : null}
+        {intervals?.toMeasured != null ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">量尺间隔</dt>
+            <dd className="vi-dl-value text-zinc-600">
+              {formatIntervalDays(intervals.toMeasured)}
+            </dd>
+          </div>
+        ) : null}
+        {intervals?.toDrawn != null ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">出图间隔</dt>
+            <dd className="vi-dl-value text-zinc-600">
+              {formatIntervalDays(intervals.toDrawn)}
+            </dd>
+          </div>
+        ) : null}
+        {intervals?.toSigned != null ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">签约间隔</dt>
+            <dd className="vi-dl-value text-zinc-600">
+              {formatIntervalDays(intervals.toSigned)}
+            </dd>
+          </div>
+        ) : null}
+        {intervals?.toOrdered != null ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">下单间隔</dt>
+            <dd className="vi-dl-value text-zinc-600">
+              {formatIntervalDays(intervals.toOrdered)}
+            </dd>
+          </div>
+        ) : null}
+        {order.status === "已下单" || order.status === "已安装" ? (
+          <div className="min-w-0">
+            <dt className="vi-dl-term">耗时</dt>
+            <dd className="vi-dl-value">{totalElapsed ?? "—"}</dd>
+          </div>
+        ) : null}
+        {!showDesigner && hasBeenTransferred(order) ? (
+          <div className="col-span-full min-w-0 border-t border-slate-100 pt-2">
+            <dt className="vi-dl-term">指派信息</dt>
+            <dd>
+              <AssignmentInfo order={order} />
+            </dd>
+          </div>
+        ) : null}
+        {showAfterSales && hasAfterSales(order) ? (
+          <div className="col-span-full min-w-0 border-t border-slate-100 pt-2">
+            <dt className="vi-dl-term">售后金</dt>
+            <dd className="font-semibold text-rose-700">
+              {formatAfterSalesAmount(order.afterSalesAmount)}
+            </dd>
+            <p className="mt-0.5 text-xs text-slate-400">
+              由设计经理登记 · 流程后续项
+            </p>
+          </div>
+        ) : null}
+      </dl>
+
       {!isFeedbackActive && hasPrimaryActionBar ? (
-        <div className="vi-order-action-bar mt-3 flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3 max-lg:order-3 max-lg:border-b-0 max-lg:border-t max-lg:pb-0 max-lg:pt-3">
+        <div className="vi-order-action-bar mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
           {pendingAccept && onConfirmDesignerAccept ? (
             <>
               <span className="w-full text-xs text-amber-800 sm:w-auto">
@@ -522,123 +639,6 @@ export function OrderCard({
           )}
         </div>
       ) : null}
-
-      <dl className="mt-4 grid grid-cols-3 gap-x-3 gap-y-2.5 text-sm max-lg:order-2 max-lg:mt-3">
-        <div className="min-w-0">
-          <dt className="vi-dl-term">客户姓名</dt>
-          <dd className="vi-dl-value">{customerNameLabel}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">联系电话</dt>
-          <dd className="vi-dl-value break-all">{order.phone || "—"}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">定制空间</dt>
-          <dd className="vi-dl-value">{formatSpaces(order.spaces)}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">小区地址</dt>
-          <dd className="vi-dl-value break-words">
-            {order.address?.trim() || "—"}
-          </dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">预算</dt>
-          <dd className="vi-dl-value">{formatBudget(order.budget)}</dd>
-        </div>
-        <div className="min-w-0">
-          {onUpdateDeposit ? (
-            <DepositEditor
-              order={order}
-              onSave={onUpdateDeposit}
-              readOnly={readOnly}
-              compact
-            />
-          ) : (
-            <>
-              <dt className="vi-dl-term">定金</dt>
-              <dd
-                className={`font-medium ${order.deposit <= 0 ? "text-amber-600" : "text-slate-800"}`}
-              >
-                {formatDeposit(order.deposit)}
-              </dd>
-            </>
-          )}
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">派单门店</dt>
-          <dd className="vi-dl-value">{order.dispatchStore}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className="vi-dl-term">派单人</dt>
-          <dd className="vi-dl-value">{order.dispatcherName || "—"}</dd>
-        </div>
-        {hasOrderAmount ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">下单金额</dt>
-            <dd className="font-semibold text-blue-700">
-              {formatOrderAmount(order.orderAmount)}
-            </dd>
-          </div>
-        ) : null}
-        {intervals?.toMeasured != null ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">量尺间隔</dt>
-            <dd className="vi-dl-value text-zinc-600">
-              {formatIntervalDays(intervals.toMeasured)}
-            </dd>
-          </div>
-        ) : null}
-        {intervals?.toDrawn != null ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">出图间隔</dt>
-            <dd className="vi-dl-value text-zinc-600">
-              {formatIntervalDays(intervals.toDrawn)}
-            </dd>
-          </div>
-        ) : null}
-        {intervals?.toSigned != null ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">签约间隔</dt>
-            <dd className="vi-dl-value text-zinc-600">
-              {formatIntervalDays(intervals.toSigned)}
-            </dd>
-          </div>
-        ) : null}
-        {intervals?.toOrdered != null ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">下单间隔</dt>
-            <dd className="vi-dl-value text-zinc-600">
-              {formatIntervalDays(intervals.toOrdered)}
-            </dd>
-          </div>
-        ) : null}
-        {order.status === "已下单" || order.status === "已安装" ? (
-          <div className="min-w-0">
-            <dt className="vi-dl-term">耗时</dt>
-            <dd className="vi-dl-value">{totalElapsed ?? "—"}</dd>
-          </div>
-        ) : null}
-        {!showDesigner && hasBeenTransferred(order) ? (
-          <div className="col-span-3 min-w-0 border-t border-slate-100 pt-2">
-            <dt className="vi-dl-term">指派信息</dt>
-            <dd>
-              <AssignmentInfo order={order} />
-            </dd>
-          </div>
-        ) : null}
-        {showAfterSales && hasAfterSales(order) ? (
-          <div className="col-span-3 min-w-0 border-t border-slate-100 pt-2">
-            <dt className="vi-dl-term">售后金</dt>
-            <dd className="font-semibold text-rose-700">
-              {formatAfterSalesAmount(order.afterSalesAmount)}
-            </dd>
-            <p className="mt-0.5 text-xs text-slate-400">
-              由设计经理登记 · 流程后续项
-            </p>
-          </div>
-        ) : null}
-      </dl>
 
       {supplementPane ? (
         <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/50 p-2.5">

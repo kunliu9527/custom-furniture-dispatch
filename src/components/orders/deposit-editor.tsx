@@ -56,8 +56,12 @@ export function DepositEditor({
   if (!editing) {
     return (
       <div className={`flex flex-wrap items-center gap-2 ${compact ? "text-xs" : "text-sm"}`}>
-        <span className="text-slate-500">定金</span>
-        <span className={order.deposit <= 0 ? "font-medium text-amber-600" : "font-medium text-slate-800"}>
+        <span className="shrink-0 text-slate-500">定金</span>
+        <span
+          className={`min-w-0 break-all ${
+            order.deposit <= 0 ? "font-medium text-amber-600" : "font-medium text-slate-800"
+          }`}
+        >
           {formatDeposit(order.deposit)}
         </span>
         {order.preMeasureDeposit ? (
@@ -68,7 +72,7 @@ export function DepositEditor({
         <Button
           type="button"
           variant="outline"
-          className="h-7 px-2 text-xs"
+          className="h-7 shrink-0 px-2 text-xs"
           onClick={() => {
             setInput(order.deposit > 0 ? String(order.deposit) : "");
             setEditing(true);
