@@ -69,7 +69,7 @@ const designerExtraRankColumns: { key: RankingSortColumn; label: string }[] = [
 ];
 
 function RankFlag({ badge }: { badge: RankBadge }) {
-  const fill = badge === "red" ? "#dc2626" : "#9333ea";
+  const fill = badge === "red" ? "#ff3b30" : "#007aff";
   return (
     <svg
       className="inline-block h-[1em] w-[1em] shrink-0"

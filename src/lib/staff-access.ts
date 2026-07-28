@@ -33,9 +33,9 @@ export const ACCESS_LEVEL_LABELS: Record<StaffAccessLevel, string> = {
 
 export const ACCESS_LEVEL_DESCRIPTIONS: Record<StaffAccessLevel, string> = {
   personal:
-    "派单人：项目进程管理仅本人单查询，设计师为同店+本人订单关联；设计师：本人订单可操作（含线下签约）；均无门店汇总。安装师：仅交付本人单",
+    "派单人：新客户开发（本人）+ 项目进程管理仅本人单查询/简报；设计师：设计师工作台本人单可操作 + 项目进程仅本人查询；安装师：仅验收与交付本人单",
   store_manager:
-    "店长看板本店；项目进程管理只读 + 验收与交付本店；新客户开发与设计师工作台",
+    "新客户开发本店可操作；项目进程管理本店只读；验收与交付本店只读（推进安装/验收需设计经理或验收经理）；无设计师工作台；可看综合系统看板本店范围",
   design_manager:
     "总部：全站；具体门店：所属门店数据 + 验收与交付含本人关联订单门店；可修改所属范围订单",
   general_manager:

@@ -68,12 +68,12 @@ export function ManagerAlertPanel({
                 <button
                   type="button"
                   onClick={() => onSelectDesigner(item.designer)}
-                  className="font-medium text-violet-700 hover:underline"
+                  className="font-medium text-sky-800 hover:underline"
                 >
                   {item.designer}
                 </button>
               ) : (
-                <span className="text-violet-700">{item.designer}</span>
+                <span className="text-sky-800">{item.designer}</span>
               )}
               <span className="text-slate-400">
                 已停 {item.daysStuck} 天 · {formatDispatchMoney(item.budget)}

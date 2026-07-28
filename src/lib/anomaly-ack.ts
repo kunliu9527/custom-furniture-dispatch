@@ -1,4 +1,4 @@
-import type { FollowUpKind } from "./follow-up";
+﻿import type { FollowUpKind } from "./follow-up";
 
 /** 仅低评类与已转派可通过「已跟进」消除待办 */
 export function followUpKindRequiresAck(kind: FollowUpKind): boolean {
@@ -16,7 +16,7 @@ export function isTransferredAcked(
   return acks.has(transferredAckKey(orderId));
 }
 
-/** 异常待办标签：轻微爆红 */
+/** 工单待办标签：轻微爆红 */
 export const MILD_ANOMALY_LABELS = new Set(["未派单滞留", "已转派"]);
 
 export function anomalyLabelChipClass(label: string): string {

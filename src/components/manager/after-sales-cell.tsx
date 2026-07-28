@@ -59,7 +59,7 @@ export function AfterSalesCell({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-xs text-indigo-600 hover:text-indigo-800"
+          className="text-xs text-blue-600 hover:text-blue-800"
         >
           修改
         </button>
@@ -72,7 +72,7 @@ export function AfterSalesCell({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+        className="text-xs font-medium text-blue-600 hover:text-blue-800"
       >
         填写售后金
       </button>
@@ -88,7 +88,7 @@ export function AfterSalesCell({
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder="售后金额"
-        className="w-full rounded border border-slate-200 px-2 py-1 text-sm outline-none focus:border-indigo-500"
+        className="w-full rounded border border-slate-200 px-2 py-1 text-sm outline-none focus:border-blue-500"
         autoFocus
       />
       <div className="flex gap-1">

@@ -1,24 +1,21 @@
 import { AuthorCredit } from "@/components/home/author-credit";
 import { SyncFooterStatus } from "@/components/sync/sync-footer-status";
-import { HomeBoardCards } from "@/components/home/home-board-cards";
+import { HomeGuestLanding } from "@/components/home/home-guest-landing";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeHero } from "@/components/home/home-hero";
-import { HomeRedirect } from "@/components/home/home-redirect";
-import { TodayTodosPanel } from "@/components/home/today-todos-panel";
+import { HomeStatusStrip } from "@/components/home/home-status-strip";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-full flex-col bg-gradient-to-b from-indigo-50/50 via-slate-50 to-white">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(99,102,241,0.12),transparent)]"
-        aria-hidden
-      />
+    <div
+      className="relative flex min-h-dvh flex-col"
+      style={{ background: "var(--bg-grouped-primary)" }}
+    >
       <HomeHeader />
-      <HomeRedirect />
-      <div className="relative mx-auto flex w-full max-w-4xl flex-col px-4 pt-6 pb-14 sm:px-6 sm:pt-8 sm:pb-16">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 pt-5 pb-14 sm:gap-6 sm:px-6 sm:pt-7 sm:pb-16">
+        <HomeGuestLanding />
         <HomeHero />
-        <TodayTodosPanel />
-        <HomeBoardCards />
+        <HomeStatusStrip />
       </div>
       <SyncFooterStatus />
       <AuthorCredit />

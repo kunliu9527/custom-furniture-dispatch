@@ -26,7 +26,7 @@ export function FunnelBarChart({ stages }: FunnelBarChartProps) {
             <span className="text-xs font-medium text-slate-600">{stage.label}</span>
             <div className="h-7 overflow-hidden rounded-md bg-slate-100">
               <div
-                className="flex h-full items-center rounded-md bg-gradient-to-r from-indigo-500 to-indigo-400 px-2 text-[11px] font-medium text-white transition-all"
+                className="flex h-full items-center rounded-md bg-gradient-to-r from-blue-500 to-blue-400 px-2 text-[11px] font-medium text-white transition-all"
                 style={{ width: `${widthPct}%` }}
               >
                 {stage.count > 0 && widthPct > 18 ? stage.count : null}

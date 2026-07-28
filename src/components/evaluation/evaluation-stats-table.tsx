@@ -133,7 +133,7 @@ export function EvaluationStatsTable({
                 ) : null}
               </td>
               <td
-                className={`${tdClass} text-center font-semibold text-indigo-700`}
+                className={`${tdClass} text-center font-semibold text-blue-700`}
               >
                 {formatEvaluationMetric(row.total, row.totalAmount)}
               </td>

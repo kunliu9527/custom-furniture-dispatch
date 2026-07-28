@@ -69,6 +69,8 @@ interface OrderListProps {
 
   showAcceptAction?: boolean;
 
+  showMeasureAction?: boolean;
+
   showAfterSales?: boolean;
 
   canRevertOrder?: (order: Order) => boolean;
@@ -221,6 +223,8 @@ export function OrderList({
   onConfirmDesignerAccept,
 
   showAcceptAction = false,
+
+  showMeasureAction = false,
 
   showAfterSales = false,
 
@@ -477,6 +481,8 @@ export function OrderList({
             onConfirmDesignerAccept={onConfirmDesignerAccept}
 
             showAcceptAction={showAcceptAction}
+
+            showMeasureAction={showMeasureAction}
 
             showAfterSales={showAfterSales}
 

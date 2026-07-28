@@ -44,7 +44,7 @@ export function StoreResultSummary({
       drill={drill}
       onDrillChange={onDrillChange}
       flow={flow}
-      totalAmountClassName="text-violet-700"
+      totalAmountClassName="text-sky-800"
       anomalyOptions={anomalyOptions}
     />
   );

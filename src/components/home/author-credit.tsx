@@ -61,7 +61,10 @@ export function AuthorCredit() {
 
   if (showEmail) {
     return (
-      <p className="absolute bottom-2 right-3 text-[10px] text-slate-400">
+      <p
+        className="absolute bottom-2 right-3 text-[10px]"
+        style={{ color: "var(--label-tertiary)" }}
+      >
         {AUTHOR_EMAIL_TEXT}
       </p>
     );
@@ -71,7 +74,8 @@ export function AuthorCredit() {
     <button
       type="button"
       onClick={handleClick}
-      className="absolute bottom-2 right-3 text-[10px] text-slate-300/80 transition hover:text-slate-500 hover:underline"
+      className="absolute bottom-2 right-3 text-[10px] underline-offset-2 hover:underline"
+      style={{ color: "var(--label-quaternary)" }}
     >
       作者：何处不青山
     </button>

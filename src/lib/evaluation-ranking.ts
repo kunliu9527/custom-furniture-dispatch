@@ -3,7 +3,7 @@ import type {
   EvaluationMetricCell,
 } from "./evaluation-stats";
 
-export type RankBadge = "red" | "purple";
+export type RankBadge = "red" | "blue";
 
 export interface MetricDualRank {
   countPlace: number | null;
@@ -93,7 +93,7 @@ function buildDualRank(
 
 export function rankBadgeForPlace(place: number | null): RankBadge | null {
   if (place === 1) return "red";
-  if (place === 2) return "purple";
+  if (place === 2) return "blue";
   return null;
 }
 

@@ -20,7 +20,7 @@ function HintChip({
     default: "bg-zinc-100/80 text-zinc-600",
     warn: "bg-amber-50 text-amber-800 ring-amber-200/60",
     danger: "bg-rose-50 text-rose-700 ring-rose-200/60",
-    info: "bg-indigo-50 text-indigo-700 ring-indigo-200/60",
+    info: "bg-blue-50 text-blue-700 ring-blue-200/60",
   };
   return (
     <span

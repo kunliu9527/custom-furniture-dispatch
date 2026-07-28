@@ -95,14 +95,14 @@ export function CommissionSettingsPanel() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-5 shadow-sm"
+      className="rounded-xl border border-sky-200/80 bg-gradient-to-br from-sky-50/60 to-white p-5 shadow-sm"
     >
       <div className="mb-4">
         <h2 className="text-sm font-semibold text-slate-900">提成比例与开放权限</h2>
         <p className="mt-1 text-xs leading-relaxed text-slate-600">
           管理员可随时调整核算比例；下方开关控制各权限角色是否能看到「提成底稿」导出（默认全部关闭，仅管理员始终可见）。
         </p>
-        <p className="mt-2 text-[11px] text-violet-800/80">
+        <p className="mt-2 text-[11px] text-sky-800/80">
           当前：{formatCommissionRatesSummary(commissionSettings.rates)}
         </p>
       </div>

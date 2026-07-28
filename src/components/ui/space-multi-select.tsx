@@ -37,7 +37,7 @@ export function SpaceMultiSelect({
               onClick={() => toggle(space)}
               className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                 checked
-                  ? "border-indigo-300 bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200"
+                  ? "border-blue-300 bg-blue-50 text-blue-800 ring-1 ring-blue-200"
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
             >

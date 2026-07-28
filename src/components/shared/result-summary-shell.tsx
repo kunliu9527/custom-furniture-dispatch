@@ -30,7 +30,7 @@ export function ResultSummaryShell({
   onDrillChange,
   flow,
   lookupStatusFilter,
-  totalAmountClassName = "text-violet-700",
+  totalAmountClassName = "text-sky-800",
   anomalyOptions,
 }: ResultSummaryShellProps) {
   const amounts = sumDispatchTotals(baseOrders, supplements);

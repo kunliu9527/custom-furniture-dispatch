@@ -117,14 +117,14 @@ export function EvaluationViewTabs({
                     >
                       <span
                         className={`block text-[13px] font-semibold leading-snug ${
-                          active ? "text-indigo-950" : "text-slate-900"
+                          active ? "text-slate-900" : "text-slate-900"
                         }`}
                       >
                         {tab.label}
                       </span>
                       <span
                         className={`mt-0.5 block text-[11px] font-semibold tabular-nums leading-tight ${
-                          active ? "text-indigo-800" : "text-indigo-700"
+                          active ? "text-blue-800" : "text-blue-700"
                         }`}
                       >
                         {metric}
@@ -179,14 +179,14 @@ export function EvaluationViewTabs({
               >
                 <p
                   className={`text-sm font-semibold ${
-                    active ? "text-indigo-950" : "text-slate-900"
+                    active ? "text-slate-900" : "text-slate-900"
                   }`}
                 >
                   {tab.label}
                 </p>
                 <p
                   className={`mt-1 text-xs ${
-                    active ? "text-indigo-700" : "text-slate-500"
+                    active ? "text-blue-700" : "text-slate-500"
                   }`}
                 >
                   {tab.description}
@@ -205,7 +205,7 @@ export function EvaluationViewTabs({
             >
               <p
                 className={`text-sm font-bold tabular-nums ${
-                  active ? "text-indigo-900" : "text-indigo-700"
+                  active ? "text-blue-900" : "text-blue-700"
                 }`}
               >
                 {metric}

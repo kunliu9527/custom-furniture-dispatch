@@ -54,7 +54,7 @@ export const RISK_TREND_METRIC_OPTIONS: {
 }[] = [
   { key: "flowTimeoutCount", label: "流程超时", color: "#e11d48" },
   { key: "signTimeoutCount", label: "签约超时", color: "#c2410c" },
-  { key: "pendingAcceptanceCount", label: "待扫码验收", color: "#9333ea" },
+  { key: "pendingAcceptanceCount", label: "待扫码验收", color: "#007aff" },
 ];
 
 export type TrendMetricKey =
@@ -92,7 +92,7 @@ export const TREND_METRIC_OPTIONS: {
     key: "newDispatchCount",
     label: "新派单",
     format: (v) => `${v} 笔`,
-    color: "#4f46e5",
+    color: "#007aff",
     axis: "count",
   },
   {

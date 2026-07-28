@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { AppShell } from "@/components/layout/app-shell";
 import { RouteGuard } from "@/components/auth/route-guard";
@@ -248,11 +248,7 @@ function ManagerPageContent() {
     if (focus) {
       switch (focus) {
         case "flow-timeout":
-          if (lookupOnly) {
-            setMainSection("weekly");
-          } else {
-            setMainSection("reports");
-          }
+          setMainSection(lookupOnly ? "lookup" : "reports");
           break;
         case "sign-timeout":
           setMainSection("lookup");
@@ -260,11 +256,7 @@ function ManagerPageContent() {
           lookup.setStatusFilter("待签约");
           break;
         case "pending-acceptance":
-          if (lookupOnly) {
-            setMainSection("weekly");
-          } else {
-            setMainSection("reports");
-          }
+          setMainSection(lookupOnly ? "lookup" : "reports");
           break;
         case "pending-refund":
           setMainSection("lookup");
@@ -279,7 +271,8 @@ function ManagerPageContent() {
     } else if (section === "weekly") {
       setMainSection("weekly");
     } else if (section === "reports") {
-      setMainSection("reports");
+      // 本人账号无工单待办侧栏：深链落到订单查询，避免空白/误跳简报
+      setMainSection(lookupOnly ? "lookup" : "reports");
     }
 
     if (view === "designer" && designer) {
@@ -292,10 +285,11 @@ function ManagerPageContent() {
     }
     if (orderId) {
       const order = scopedOrders.find((o) => o.id === orderId);
-      if (order && section === "reports") {
+      if (order && section === "reports" && !lookupOnly) {
         setMainSection("reports");
         setFocusOrderId(orderId);
       } else if (order) {
+        setMainSection("lookup");
         lookup.setSearchQuery(resolveOrderDisplayName(order));
         setFocusOrderId(null);
       }
@@ -353,7 +347,7 @@ function ManagerPageContent() {
                 ) : mainSection === "reports" ? (
                   <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
                     <p className="text-xs text-slate-600">
-                      异常待办
+                      工单待办
                       {managerScopeLabel ? ` · ${managerScopeLabel}` : ""}
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-500">

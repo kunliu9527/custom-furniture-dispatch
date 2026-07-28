@@ -58,25 +58,16 @@ import { resolveStrongPinOrder } from "@/lib/strong-pin-order";
 
 import {
   canEditOrderOnDesignerPage,
-
   canEditWorkflowRemarkOnOrder,
-
   canPersonalModifyOrderContent,
-
   canUseDesignerSwitcher,
-
   canUserRevertOrderStatus,
-
   canOfflineSignContract,
-
+  canAccessAdminPage,
   isPageReadOnly,
-
   lockedDesignerName,
-
   resolveDesignerLookupStores,
-
   scopeOrdersForUser,
-
 } from "@/lib/permissions";
 
 import { canAccessDesignerPage } from "@/lib/nav-access";
@@ -170,7 +161,9 @@ export default function DesignerPage() {
 
   const lockedName = lockedDesignerName(user);
 
-  const [currentDesigner, setCurrentDesigner] = useState<DesignerName>("汤雷");
+  const [currentDesigner, setCurrentDesigner] = useState<DesignerName | "">(
+    "",
+  );
 
   const [statusFilter, setStatusFilter] =
 
@@ -188,7 +181,8 @@ export default function DesignerPage() {
 
   const orderPositionPinTimerRef = useRef<number | null>(null);
 
-  const effectiveDesigner = (lockedName ?? currentDesigner) as DesignerName;
+  const effectiveDesigner = (lockedName ??
+    (currentDesigner || "未选择")) as DesignerName;
 
   const pageReadOnly = isPageReadOnly(user, "designer");
 
@@ -253,6 +247,12 @@ export default function DesignerPage() {
       if (savedPeriod) {
 
         setPeriod(savedPeriod);
+
+      } else {
+
+        // 默认「全部」，避免跨月在途单被本月周期藏起误以为丢单
+
+        setPeriod({ preset: "all" });
 
       }
 
@@ -515,10 +515,12 @@ export default function DesignerPage() {
       return "未找到匹配订单";
     }
     if (statusFilter === "全部") {
-      return `${effectiveDesigner} 暂无派单，请等待店长指派`;
+      return canAccessAdminPage(user)
+        ? `${effectiveDesigner} 当前周期暂无派单。可等待店长指派，或自行前往「新客户开发」录入（将固定指派给自己）。`
+        : `${effectiveDesigner} 当前周期暂无派单，请等待店长指派。若仍看不到历史在途单，请将统计周期切换为「全部」。`;
     }
     return `暂无「${statusFilter}」状态的订单`;
-  }, [orderQuery, strongPin, statusFilter, effectiveDesigner]);
+  }, [orderQuery, strongPin, statusFilter, effectiveDesigner, user]);
 
   useEffect(() => {
     if (focusOrderId) return;
@@ -620,6 +622,7 @@ export default function DesignerPage() {
         }
 
         showAcceptAction={canEditOwn}
+        showMeasureAction={canEditOwn}
 
         showAfterSales
 
@@ -800,19 +803,21 @@ export default function DesignerPage() {
                           <span className="ml-2 text-xs font-normal text-zinc-500">
                             {filteredOrders.length} 笔
                             {isStrongPinActive ? (
-                              <span className="ml-1.5 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-200/60">
+                              <span className="ml-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 ring-1 ring-blue-200/60">
                                 强定位
                               </span>
                             ) : null}
                           </span>
                         }
                       />
-                      {statusFilter === "全部" && user?.role === "designer" ? (
+                      {statusFilter === "全部" &&
+                      user?.role === "designer" &&
+                      canAccessAdminPage(user) ? (
                         <Link
                           href="/admin"
-                          className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200/60 transition hover:bg-indigo-100"
+                          className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200/60 transition hover:bg-blue-100"
                         >
-                          前往新客户开发录入（固定指派给自己）
+                          自行录入并指派给自己
                         </Link>
                       ) : null}
                     </div>
@@ -898,6 +903,7 @@ export default function DesignerPage() {
                     }
 
                     showAcceptAction={canEditOwn}
+                    showMeasureAction={canEditOwn}
 
                     showAfterSales
 

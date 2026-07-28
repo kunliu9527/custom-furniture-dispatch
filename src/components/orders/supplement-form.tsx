@@ -64,7 +64,7 @@ export function SupplementForm({
   const headerPad = embedded ? "" : "px-5 py-4";
   const bodyPad = embedded ? "mt-1.5" : "px-5 py-3";
   const titleClass = embedded
-    ? "shrink-0 text-xs font-semibold uppercase tracking-wide text-indigo-800 leading-none"
+    ? "shrink-0 text-xs font-semibold uppercase tracking-wide text-blue-800 leading-none"
     : "text-base font-semibold text-slate-900";
   const embeddedTitleHintClass =
     "min-w-0 whitespace-nowrap text-xs font-normal normal-case leading-none text-slate-500";
@@ -72,7 +72,7 @@ export function SupplementForm({
     ? embeddedTitleHintClass
     : "mt-0.5 text-sm text-slate-500";
   const embeddedControlClass =
-    "mt-1 w-[8.5rem] max-w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20";
+    "mt-1 w-[8.5rem] max-w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 
   const hintText =
     supplements.length > 0
@@ -97,7 +97,7 @@ export function SupplementForm({
           !readOnly ? (
             <button
               type="button"
-              className={`${embeddedControlClass} text-left transition-colors hover:border-indigo-300 disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`${embeddedControlClass} text-left transition-colors hover:border-blue-300 disabled:cursor-not-allowed disabled:opacity-50`}
               onClick={() => setExpanded((v) => !v)}
               disabled={eligibleOrders.length === 0}
             >
@@ -129,14 +129,14 @@ export function SupplementForm({
         <div
           className={
             embedded
-              ? `${bodyPad} text-xs leading-snug text-indigo-800`
+              ? `${bodyPad} text-xs leading-snug text-blue-800`
               : `border-t border-teal-100 ${bodyPad}`
           }
         >
           {!embedded ? (
             <p className="text-xs font-medium text-slate-600">增补单记录</p>
           ) : (
-            <p className="text-xs font-medium text-indigo-700">{hintText}</p>
+            <p className="text-xs font-medium text-blue-700">{hintText}</p>
           )}
           <ul
             className={`space-y-1 ${embedded ? "mt-1" : "mt-1.5 text-slate-600"} ${embedded ? "" : "text-sm"}`}
@@ -156,7 +156,7 @@ export function SupplementForm({
           onSubmit={handleSubmit}
           className={`grid gap-3 sm:grid-cols-2 ${
             embedded
-              ? "mt-1.5 rounded-lg border border-indigo-100 bg-white/80 p-2"
+              ? "mt-1.5 rounded-lg border border-blue-100 bg-white/80 p-2"
               : `border-t border-teal-100 ${bodyPad}`
           }`}
         >

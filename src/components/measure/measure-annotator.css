@@ -1,0 +1,328 @@
+﻿/* Scoped measure editor (from 量尺记) */
+.measure-root {
+  --ink: #1c1917;
+  --muted: #78716c;
+  --teal: #0f6b66;
+  --teal-deep: #0a524e;
+  --danger: #b91c1c;
+  --line: #e7e5e4;
+  --surface: #fffdfb;
+  --radius: 16px;
+  --shadow: 0 8px 24px rgba(28, 25, 23, 0.08);
+  color: var(--ink);
+  font-family: "PingFang SC", "Segoe UI", system-ui, sans-serif;
+  box-sizing: border-box;
+}
+
+.measure-root *,
+.measure-root *::before,
+.measure-root *::after {
+  box-sizing: border-box;
+}
+
+.measure-root.editor-page {
+  width: min(1040px, calc(100% - 1rem));
+  margin: 0 auto;
+  padding: 0.75rem 0 2rem;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.measure-root .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.measure-root .btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.measure-root .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.measure-root .btn-primary {
+  background: var(--teal);
+  color: #f7fffe;
+}
+
+.measure-root .btn-secondary {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.measure-root .btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  padding-inline: 0.6rem;
+}
+
+.measure-root .btn-danger {
+  background: #f8e8e4;
+  color: var(--danger);
+}
+
+.measure-root .picker-row,
+.measure-root .topbar-actions,
+.measure-root .modal-actions,
+.measure-root .toolbar,
+.measure-root .tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.measure-root .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.measure-root .photo-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.measure-root .pager-index {
+  min-width: 3.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--teal);
+}
+
+.measure-root .canvas-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(20, 20, 20, 0.45);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.measure-root .canvas-nav-prev {
+  left: 8px;
+}
+
+.measure-root .canvas-nav-next {
+  right: 8px;
+}
+
+.measure-root .editor-meta {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.measure-root label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.measure-root label > span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.measure-root input,
+.measure-root select {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.measure-root .chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.measure-root .chip.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+.measure-root .swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--line);
+  cursor: pointer;
+  padding: 0;
+}
+
+.measure-root .swatch.active {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.measure-root .tool-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.measure-root .hint {
+  margin: 0 0 0.65rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.measure-root .canvas-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #ebe4d7;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+}
+
+.measure-root .measure-canvas {
+  display: block;
+  max-width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.measure-root .canvas-loading {
+  position: absolute;
+  color: var(--muted);
+}
+
+.measure-root .edit-panel,
+.measure-root .selected-panel {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+}
+
+.measure-root .edit-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.measure-root .edit-panel h4 {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+}
+
+.measure-root .edit-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 1.2fr;
+  gap: 0.55rem;
+}
+
+.measure-root .selected-panel {
+  background: #14312f;
+  color: #f4fffd;
+}
+
+.measure-root .anno-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.measure-root .anno-list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.measure-root .anno-list button.active {
+  border-color: var(--teal);
+}
+
+.measure-root .anno-list i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.measure-root .anno-list .empty {
+  color: var(--muted);
+  padding: 0.4rem 0;
+}
+
+.measure-root .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 80;
+  backdrop-filter: blur(4px);
+}
+
+.measure-root .modal {
+  width: min(420px, 100%);
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 1.15rem;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.measure-root .modal-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .measure-root .editor-meta,
+  .measure-root .edit-row {
+    grid-template-columns: 1fr;
+  }
+}

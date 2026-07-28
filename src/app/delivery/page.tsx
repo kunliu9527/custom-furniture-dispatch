@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { AcceptanceSummaryBar } from "@/components/delivery/acceptance-summary-bar";
 import { DeliveryCustomerAcceptancePanel } from "@/components/delivery/delivery-customer-acceptance-panel";
@@ -129,6 +129,10 @@ export default function DeliveryPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
   const [uiHydrated, setUiHydrated] = useState(false);
+  const deepLinkApplied = useRef(false);
+  const [pendingDeepLinkOrderId, setPendingDeepLinkOrderId] = useState<
+    string | null
+  >(null);
 
   const canEdit = canEditDeliveryPage(user);
   const readOnly = !canEdit;
@@ -178,7 +182,47 @@ export default function DeliveryPage() {
   useEffect(() => {
     if (!user || !uiHydrated) return;
     saveWorkbenchPeriod(user.username, period);
-  }, [user, period, uiHydrated]);
+  }, [user, uiHydrated, period]);
+
+  /** 待办/企微深链：/delivery?orderId=… 定位到该交付单 */
+  useEffect(() => {
+    if (!isHydrated || !uiHydrated || deepLinkApplied.current) return;
+    const orderId = new URLSearchParams(window.location.search).get("orderId");
+    if (!orderId) {
+      deepLinkApplied.current = true;
+      return;
+    }
+    // 等订单池就绪；找不到则保留 pending，避免周期未切到「全部」时漏定位
+    if (deliveryOrders.length === 0) return;
+    const order = deliveryOrders.find((o) => o.id === orderId);
+    deepLinkApplied.current = true;
+    if (!order) return;
+
+    setPeriod({ preset: "all" });
+    setViewMode("status");
+    setQuery("");
+    setPendingDeepLinkOrderId(order.id);
+    if (
+      order.status === "已签约" ||
+      order.status === "已下单" ||
+      order.status === "已安装" ||
+      order.status === "已验收"
+    ) {
+      setStatusFilter(order.status);
+    } else {
+      setStatusFilter("全部");
+    }
+  }, [isHydrated, uiHydrated, deliveryOrders]);
+
+  useEffect(() => {
+    if (!pendingDeepLinkOrderId) return;
+    const inPeriod = periodDeliveryOrders.find(
+      (o) => o.id === pendingDeepLinkOrderId,
+    );
+    if (!inPeriod) return;
+    setSelectedId(inPeriod.id);
+    setPendingDeepLinkOrderId(null);
+  }, [pendingDeepLinkOrderId, periodDeliveryOrders]);
 
   useEffect(() => {
     if (!user || !uiHydrated) return;
@@ -568,6 +612,13 @@ export default function DeliveryPage() {
                 />
               }
             >
+              {readOnly ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+                  当前账号对验收与交付为
+                  <span className="font-semibold">只读</span>
+                  ：可查看进度；标记已安装、发起验收需设计经理或验收经理操作。
+                </div>
+              ) : null}
               {!isSearching && viewMode === "status" ? (
                 <section className="space-y-4">
                   <LookupSectionHeading title="按状态查找" />
@@ -733,9 +784,12 @@ export default function DeliveryPage() {
                         </button>
                       ))}
                       {filteredOrders.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-slate-500">
-                          暂无符合条件的交付单
-                        </p>
+                        <div className="space-y-2 py-12 text-center text-sm text-slate-500">
+                          <p>暂无符合条件的交付单</p>
+                          <p className="text-xs text-slate-400">
+                            可切换统计周期为「全部」，或放宽门店/安装师/状态筛选后再试。
+                          </p>
+                        </div>
                       ) : null}
                     </div>
                     {selected ? (

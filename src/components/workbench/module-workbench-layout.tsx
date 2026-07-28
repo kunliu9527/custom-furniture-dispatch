@@ -14,7 +14,14 @@ import {
   loadWorkbenchSidebarCollapsed,
   saveWorkbenchSidebarCollapsed,
 } from "@/lib/workbench-sidebar-persistence";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 export interface ModuleWorkbenchLayoutProps {
   sidebar: ReactNode;
@@ -80,7 +87,10 @@ function NoPeriodNavHeight() {
   return null;
 }
 
-/** 各业务板块共用：左侧导航 + 可选统计周期 + 固定高度正文滚动区 */
+/**
+ * 各业务板块共用：左侧导航 + 可选统计周期 + 正文滚动区。
+ * children 只挂载一份（避免桌面/手机双树导致重复 id、双表单状态）。
+ */
 export function ModuleWorkbenchLayout({
   sidebar,
   periodBar,
@@ -133,12 +143,13 @@ export function ModuleWorkbenchLayout({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div
-        className={`hidden min-h-0 flex-1 lg:flex ${
+        className={`flex min-h-0 flex-1 ${
           sidebarCollapsed ? "gap-x-0" : EVAL_WORKBENCH_COL_GAP
         }`}
       >
+        {/* 桌面侧栏；小屏隐藏，改用顶部 mobileTabs */}
         <div
-          className={`relative shrink-0 overflow-visible transition-[width] duration-200 ease-out motion-reduce:transition-none ${sidebarWidthClass}`}
+          className={`relative hidden shrink-0 overflow-visible transition-[width] duration-200 ease-out motion-reduce:transition-none lg:block ${sidebarWidthClass}`}
         >
           <aside
             className={`flex min-h-0 flex-col overflow-hidden transition-opacity duration-150 ease-out motion-reduce:transition-none ${
@@ -151,7 +162,9 @@ export function ModuleWorkbenchLayout({
             <div
               className={`${EVAL_WORKBENCH_NAV_CARD} flex min-h-0 flex-1 flex-col overflow-hidden`}
             >
-              <div className={`${EVAL_SIDEBAR_INNER_PAD} ${EVAL_WORKBENCH_PANE_SCROLL}`}>
+              <div
+                className={`${EVAL_SIDEBAR_INNER_PAD} ${EVAL_WORKBENCH_PANE_SCROLL}`}
+              >
                 {sidebar}
               </div>
             </div>
@@ -167,24 +180,24 @@ export function ModuleWorkbenchLayout({
 
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {sidebarUiHydrated && sidebarCollapsed ? (
-            <WorkbenchSidebarToggle
-              collapsed={sidebarCollapsed}
-              onToggle={toggleSidebar}
-              variant="expand"
-            />
+            <div className="hidden lg:block">
+              <WorkbenchSidebarToggle
+                collapsed={sidebarCollapsed}
+                onToggle={toggleSidebar}
+                variant="expand"
+              />
+            </div>
           ) : null}
-          {periodBlock}
-          <div className={EVAL_WORKBENCH_PANE_SCROLL}>
-            <div className={EVAL_WORKBENCH_PANE_INNER}>{children}</div>
-          </div>
-        </div>
-      </div>
 
-      <div className={`${EVAL_WORKBENCH_PANE_SCROLL} lg:hidden`}>
-        <div className={`${EVAL_WORKBENCH_PANE_INNER} pb-8`}>
-          {mobileTabs ? <div className="mb-3 shrink-0">{mobileTabs}</div> : null}
-          {periodBlock}
-          {children}
+          <div className={`${EVAL_WORKBENCH_PANE_SCROLL} flex min-h-0 flex-1 flex-col`}>
+            <div className={`${EVAL_WORKBENCH_PANE_INNER} flex min-h-0 flex-1 flex-col pb-8 lg:pb-0`}>
+              {mobileTabs ? (
+                <div className="mb-3 shrink-0 lg:hidden">{mobileTabs}</div>
+              ) : null}
+              {periodBlock}
+              {children}
+            </div>
+          </div>
         </div>
       </div>
     </div>

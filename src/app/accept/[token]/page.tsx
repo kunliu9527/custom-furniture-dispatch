@@ -69,7 +69,20 @@ export default function AcceptPage({
     e.preventDefault();
     if (!token) return;
     if (hasIssue) {
-      setError("安装有问题时请先联系门店处理，暂不提交验收");
+      const store = payload?.dispatchStore?.trim() || "门店";
+      const dispatcher = payload?.dispatcherName?.trim();
+      const designer = payload?.designer?.trim();
+      const contacts = [
+        dispatcher ? `客户经理「${dispatcher}」` : null,
+        designer ? `设计师「${designer}」` : null,
+      ]
+        .filter(Boolean)
+        .join("或");
+      setError(
+        contacts
+          ? `安装有问题时请先联系${store}的${contacts}处理，暂不提交验收。`
+          : `安装有问题时请先联系「${store}」处理，暂不提交验收。`,
+      );
       return;
     }
     if (
@@ -246,9 +259,33 @@ export default function AcceptPage({
               className="mt-0.5"
             />
             <span>
-              安装有问题，暂不验收（请先联系门店填写安装问题反馈单）
+              安装有问题，暂不验收（请先联系门店「{payload.dispatchStore}
+              」{payload.dispatcherName ? `客户经理「${payload.dispatcherName}」` : ""}
+              {payload.designer ? `或设计师「${payload.designer}」` : ""}
+              填写安装问题反馈单）
             </span>
           </label>
+          {hasIssue ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+              当前无法在线提交验收。请直接联系：
+              <br />
+              门店：{payload.dispatchStore}
+              <br />
+              客户经理：{payload.dispatcherName || "—"}
+              {payload.designer ? (
+                <>
+                  <br />
+                  设计师：{payload.designer}
+                </>
+              ) : null}
+              {payload.phone ? (
+                <>
+                  <br />
+                  订单预留电话（可核对身份）：{payload.phone}
+                </>
+              ) : null}
+            </div>
+          ) : null}
           {error ? <p className="text-sm text-rose-600">{error}</p> : null}
           <Button type="submit" disabled={submitting} className="w-full">
             {submitting ? "提交中…" : "确认验收并提交评价"}

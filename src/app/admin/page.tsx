@@ -49,6 +49,9 @@ export default function AdminPage() {
   const [dispatchFocusDesigner, setDispatchFocusDesigner] = useState<
     string | null
   >(null);
+  const [dispatchFocusOrderId, setDispatchFocusOrderId] = useState<
+    string | null
+  >(null);
   const urlNavApplied = useRef(false);
   const allowedAdminModes = useMemo(
     () => getVisibleAdminViewModes(user),
@@ -99,27 +102,53 @@ export default function AdminPage() {
     const designer = params.get("designer");
     const focus = params.get("focus");
     if (!view && !orderId && !designer) return;
+    if (orderId && orders.length === 0) return;
     urlNavApplied.current = true;
-    if (view === "orderLookup" && allowedAdminModes.includes("orderLookup")) {
-      setViewMode("orderLookup");
-    }
-    if (view === "dispatch" && allowedAdminModes.includes("dispatch")) {
-      setViewMode("dispatch");
-    }
+
+    const targetOrder = orderId
+      ? orders.find((o) => o.id === orderId)
+      : undefined;
+
     if (designer) {
       setDispatchFocusDesigner(designer);
     }
-    if (orderId) {
+
+    if (
+      orderId &&
+      targetOrder?.status === "未派单" &&
+      (view === "dispatch" || !view) &&
+      allowedAdminModes.includes("dispatch")
+    ) {
+      setViewMode("dispatch");
+      setDispatchFocusOrderId(orderId);
       setLookupOrderId(orderId);
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById("admin-undispatched-section")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else if (orderId && allowedAdminModes.includes("orderLookup")) {
+      setViewMode("orderLookup");
+      setLookupOrderId(orderId);
+      setDispatchFocusOrderId(null);
+    } else {
+      if (view === "orderLookup" && allowedAdminModes.includes("orderLookup")) {
+        setViewMode("orderLookup");
+      }
+      if (view === "dispatch" && allowedAdminModes.includes("dispatch")) {
+        setViewMode("dispatch");
+      }
+      if (orderId) setLookupOrderId(orderId);
     }
-    if (focus === "undispatched" && view === "dispatch") {
+
+    if (focus === "undispatched" && (view === "dispatch" || !view)) {
       window.requestAnimationFrame(() => {
         document
           .getElementById("admin-undispatched-section")
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
-  }, [isHydrated, allowedAdminModes]);
+  }, [isHydrated, allowedAdminModes, orders]);
 
   useEffect(() => {
     if (!user?.username) return;
@@ -184,8 +213,7 @@ export default function AdminPage() {
                 fillHeight
               />
 
-              {undispatchedOrders.length > 0 ? (
-                <section
+              <section
                   id="admin-undispatched-section"
                   className="flex max-h-[min(38%,16rem)] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm scroll-mt-24 max-lg:max-h-none max-lg:shrink"
                 >
@@ -194,7 +222,9 @@ export default function AdminPage() {
                       title="未派单客户"
                       suffix={
                         <span className="ml-2 text-xs font-normal text-slate-500">
-                          共 {undispatchedOrders.length} 笔
+                          {undispatchedOrders.length > 0
+                            ? `共 ${undispatchedOrders.length} 笔`
+                            : "全部已指派"}
                         </span>
                       }
                     />
@@ -202,9 +232,10 @@ export default function AdminPage() {
                   <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 max-lg:flex-none max-lg:max-h-72 max-lg:overflow-y-auto">
                     <OrderList
                       orders={undispatchedOrders}
-                      emptyMessage="暂无未派单客户"
+                      emptyMessage="当前范围暂无未派单客户，全部已指派"
                       showDesigner={false}
                       showAssignDesigner
+                      focusOrderId={dispatchFocusOrderId}
                       assignDesignerDefault={
                         dispatchFocusDesigner as DesignerName | undefined
                       }
@@ -215,7 +246,6 @@ export default function AdminPage() {
                     />
                   </div>
                 </section>
-              ) : null}
             </div>
           ) : viewMode === "orderLookup" ? (
             user ? (

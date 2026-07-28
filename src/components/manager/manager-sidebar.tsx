@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { ManagerMainSection } from "@/lib/manager-ui-persistence";
 import {
@@ -9,7 +9,7 @@ import {
 interface ManagerSidebarProps {
   mainSection: ManagerMainSection;
   onMainSectionChange: (section: ManagerMainSection) => void;
-  /** 本人派单/设计：无异常待办，仅本周简报与订单查询 */
+  /** 本人派单/设计：无工单待办，仅本周简报与订单查询 */
   personalWeeklyOnly?: boolean;
 }
 
@@ -40,7 +40,7 @@ export function ManagerSidebar({
             onClick={() => onMainSectionChange("reports")}
             className={`vi-sidebar-item vi-sidebar-item-stack ${reportsActive ? "vi-sidebar-item-active" : ""}`}
           >
-            <span className="vi-sidebar-item-title">异常待办</span>
+            <span className="vi-sidebar-item-title">工单待办</span>
             <span className="vi-sidebar-item-hint">按时间排序 · 最新在上</span>
           </button>
         ) : null}
@@ -68,7 +68,7 @@ export function ManagerMobileNav({
     { id: "weekly", label: "本周简报", hint: "本周 · 上周" },
     ...(personalWeeklyOnly
       ? []
-      : [{ id: "reports", label: "异常待办", hint: "最新在上" }]),
+      : [{ id: "reports", label: "工单待办", hint: "最新在上" }]),
     { id: "lookup", label: "订单查询", hint: "状态 · 派单 · 设计师" },
   ];
 

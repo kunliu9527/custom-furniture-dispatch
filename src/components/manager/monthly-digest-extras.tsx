@@ -222,7 +222,7 @@ function DimensionBars({ entry }: { entry: RoleScoreEntry }) {
   const dims: { label: string; value: number; color: string }[] = [
     { label: "产值", value: entry.outputScore, color: "bg-emerald-500" },
     { label: "效率", value: entry.efficiencyScore, color: "bg-sky-500" },
-    { label: "质量", value: entry.qualityScore, color: "bg-violet-500" },
+    { label: "质量", value: entry.qualityScore, color: "bg-sky-500" },
   ].filter((d) => !(d.label === "产值" && entry.outputScore === 0));
 
   return (

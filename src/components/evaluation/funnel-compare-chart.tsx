@@ -24,7 +24,7 @@ export function FunnelCompareChart({ compare }: FunnelCompareChartProps) {
     <div className="space-y-3">
       <div className="grid grid-cols-[72px_1fr_1fr] gap-x-3 gap-y-1 text-[11px] text-slate-500">
         <span />
-        <span className="text-center font-medium text-indigo-700">{currentLabel}</span>
+        <span className="text-center font-medium text-blue-700">{currentLabel}</span>
         <span className="text-center font-medium text-slate-600">{previousLabel}</span>
       </div>
 
@@ -48,7 +48,7 @@ export function FunnelCompareChart({ compare }: FunnelCompareChartProps) {
             <div className="space-y-0.5">
               <div className="h-6 overflow-hidden rounded-md bg-slate-100">
                 <div
-                  className="h-full rounded-md bg-gradient-to-r from-indigo-500 to-indigo-400"
+                  className="h-full rounded-md bg-gradient-to-r from-blue-500 to-blue-400"
                   style={{ width: `${widthCurrent}%` }}
                 />
               </div>

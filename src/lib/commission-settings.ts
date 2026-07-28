@@ -33,7 +33,7 @@ export const DEFAULT_COMMISSION_RATES: CommissionRateConfig = {
   dispatcherDepositPercent: 0,
   dispatcherPreMeasureBonus: 0,
   dispatcherOrderedPercent: 0,
-  designerOrderedPercent: 1.5,
+  designerOrderedPercent: 3,
   designerSupplementPercent: 1.2,
 };
 

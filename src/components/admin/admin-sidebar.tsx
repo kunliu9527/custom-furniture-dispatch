@@ -33,7 +33,7 @@ export function AdminSidebar({
 
   return (
     <div className="space-y-1.5">
-      <p className="vi-label-caps px-0.5">门店管理</p>
+      <p className="vi-label-caps px-0.5">新客户开发</p>
       <ul className="space-y-0.5">
         {visible.map((item) => {
           const active = viewMode === item.id;

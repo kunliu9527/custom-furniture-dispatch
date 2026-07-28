@@ -40,7 +40,7 @@ export function InteractiveBreakdown({
             onClick={() => onSelect("全部")}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition ${
               selected === "全部"
-                ? "border-indigo-300 bg-indigo-600 text-white"
+                ? "border-blue-300 bg-blue-600 text-white"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -48,7 +48,7 @@ export function InteractiveBreakdown({
             <span
               className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                 selected === "全部"
-                  ? "bg-indigo-500 text-white"
+                  ? "bg-blue-500 text-white"
                   : "bg-slate-100 text-slate-800"
               }`}
             >
@@ -65,7 +65,7 @@ export function InteractiveBreakdown({
             }
             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition ${
               selected === item.key
-                ? "border-indigo-300 bg-indigo-600 text-white"
+                ? "border-blue-300 bg-blue-600 text-white"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
             }`}
           >
@@ -73,7 +73,7 @@ export function InteractiveBreakdown({
             <span
               className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                 selected === item.key
-                  ? "bg-indigo-500 text-white"
+                  ? "bg-blue-500 text-white"
                   : "bg-slate-100 text-slate-800"
               }`}
             >

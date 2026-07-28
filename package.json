@@ -7,8 +7,14 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
+    "ui-skills": "ui-skills",
+    "ui-skills:list": "ui-skills list",
+    "ui-skills:baseline": "ui-skills get baseline-ui",
     "clean": "node -e \"const fs=require('fs');for (const p of ['.next','out','build','coverage']) fs.rmSync(p,{recursive:true,force:true});\"",
     "dep": "node scripts/deploy.mjs",
+    "pack": "node scripts/package-release.mjs",
+    "start:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-dispatch.ps1",
+    "install:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-local.ps1",
     "sync:pull": "node scripts/pull-cloud-snapshot.mjs",
     "digest:cron": "node scripts/weekly-digest-cron.mjs",
     "digest:preview": "node scripts/weekly-digest-cron.mjs --preview",
@@ -21,6 +27,7 @@
     "@upstash/redis": "^1.38.0",
     "html-to-image": "^1.11.13",
     "next": "16.2.6",
+    "pdfjs-dist": "^6.1.200",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -33,7 +40,9 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "playwright": "^1.62.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "ui-skills": "^0.2.4"
   }
 }

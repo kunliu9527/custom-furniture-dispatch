@@ -34,7 +34,7 @@ export function AssignmentInfo({ order, compact = false }: AssignmentInfoProps) 
       {order.designer !== order.originalDesigner ? (
         <p className="text-slate-500">
           当前负责：
-          <span className="font-medium text-indigo-700">{order.designer}</span>
+          <span className="font-medium text-blue-700">{order.designer}</span>
         </p>
       ) : null}
       {transferCount > 0 ? (

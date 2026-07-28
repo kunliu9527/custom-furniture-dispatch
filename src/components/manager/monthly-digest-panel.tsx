@@ -167,7 +167,7 @@ export function MonthlyDigestPanel({
 
   const wrapperClass = embedded
     ? ""
-    : "rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-4";
+    : "rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-4";
 
   const isGlobalBrief = reportScope === "global";
   const showFlowBar = isGlobalBrief;
@@ -239,8 +239,8 @@ export function MonthlyDigestPanel({
     <div className={wrapperClass}>
       {!embedded ? (
         <div className="mb-2">
-          <h2 className="text-sm font-semibold text-indigo-900">本月管理简报</h2>
-          <p className="mt-0.5 text-xs text-indigo-700/90">{digest.periodLabel}</p>
+          <h2 className="text-sm font-semibold text-blue-900">本月管理简报</h2>
+          <p className="mt-0.5 text-xs text-blue-700/90">{digest.periodLabel}</p>
         </div>
       ) : (
         <p className="mb-1 text-xs text-slate-500">
@@ -274,7 +274,7 @@ export function MonthlyDigestPanel({
       <div className={showFlowBar ? "mt-3 space-y-3" : "space-y-3"}>
         <DigestBriefSection
           title={`② ${analysisTitle}`}
-          tone="indigo"
+          tone="blue"
           stats={stats}
         />
 

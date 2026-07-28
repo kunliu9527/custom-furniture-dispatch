@@ -45,16 +45,21 @@ export function SyncFooterStatus({ className }: { className?: string }) {
 
   const muted =
     status === "connected" || status === "syncing" || status === "connecting";
-  const textClass = muted
-    ? "text-[10px] text-slate-400"
-    : status === "error"
-      ? "text-[10px] text-rose-600"
-      : "text-[10px] text-slate-500";
 
   return (
-    <footer className={`border-t border-slate-100/80 py-2 ${className ?? ""}`}>
+    <footer
+      className={`border-t py-2 ${className ?? ""}`}
+      style={{ borderColor: "var(--separator)" }}
+    >
       <div
-        className={`mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 sm:px-6 ${textClass}`}
+        className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 text-[10px] sm:px-6"
+        style={{
+          color: muted
+            ? "var(--label-tertiary)"
+            : status === "error"
+              ? "var(--system-red)"
+              : "var(--label-secondary)",
+        }}
       >
         <span title={detail ?? labels[status]}>
           {labels[status]}
@@ -65,7 +70,8 @@ export function SyncFooterStatus({ className }: { className?: string }) {
             type="button"
             onClick={() => void handleRetry()}
             disabled={retrying}
-            className="text-[10px] font-medium text-rose-700 underline-offset-2 hover:underline disabled:opacity-60"
+            className="text-[10px] font-medium underline-offset-2 hover:underline disabled:opacity-60"
+            style={{ color: "var(--system-red)" }}
           >
             {retrying ? "重试中…" : "重试同步"}
           </button>

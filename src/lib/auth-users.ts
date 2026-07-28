@@ -107,6 +107,6 @@ export function authenticate(
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "管理员",
   design_manager: "设计经理",
-  dispatcher: "派单人（店长）",
+  dispatcher: "派单人",
   designer: "设计师",
 };

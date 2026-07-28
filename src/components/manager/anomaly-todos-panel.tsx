@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { OrderAnomalyName } from "@/components/orders/order-anomaly-badges";
 import { useAuth } from "@/context/auth-context";
@@ -43,7 +43,7 @@ interface AnomalyTodosPanelProps {
 
 const actionBtnClass =
   "shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold transition";
-const actionPrimaryClass = `${actionBtnClass} bg-indigo-600 text-white hover:bg-indigo-700`;
+const actionPrimaryClass = `${actionBtnClass} bg-blue-600 text-white hover:bg-blue-700`;
 const actionSecondaryClass = `${actionBtnClass} border border-slate-200 bg-white text-slate-700 hover:bg-slate-50`;
 
 export function AnomalyTodosPanel({
@@ -87,7 +87,7 @@ export function AnomalyTodosPanel({
     if (reply && order && canModifyOrderInUserScope(user, order)) {
       addWorkflowRemark(
         order.id,
-        `[异常待办·${labels.join("、")}] ${reply}`,
+        `[工单待办·${labels.join("、")}] ${reply}`,
         order.status as WorkflowRemarkStage,
       );
     }
@@ -126,7 +126,7 @@ export function AnomalyTodosPanel({
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
         <h2 className="text-sm font-semibold text-slate-900">
-          异常待办
+          工单待办
           {snapshot.totalCount > 0 ? (
             <span className="ml-1 text-xs font-medium text-rose-600">
               ({snapshot.totalCount})
@@ -147,7 +147,7 @@ export function AnomalyTodosPanel({
       <div className="p-4 sm:p-5">
         {snapshot.totalCount === 0 ? (
           <p className="py-10 text-center text-sm text-slate-500">
-            暂无异常待办
+            暂无工单待办
           </p>
         ) : (
           <ul className="space-y-3">
@@ -283,7 +283,7 @@ function AnomalyTodoOrderCard({
       id={`anomaly-todo-${row.orderId}`}
       className={`rounded-lg border px-3 py-2.5 text-xs transition ${
         focused
-          ? "border-indigo-400 bg-indigo-50/60 ring-2 ring-indigo-300/50"
+          ? "border-blue-400 bg-blue-50/60 ring-2 ring-blue-300/50"
           : "border-slate-200 bg-white"
       }`}
     >
@@ -357,7 +357,7 @@ function AnomalyTodoOrderCard({
               onChange={(e) => onDraftChange(e.target.value)}
               placeholder="填写备注（选填）"
               rows={2}
-              className="w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20"
+              className="w-full resize-y rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
             />
           </label>
           <button

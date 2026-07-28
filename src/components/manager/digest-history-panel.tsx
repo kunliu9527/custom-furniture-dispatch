@@ -101,7 +101,7 @@ export function DigestHistoryPanel({
             onClick={() => setFilter(opt.id)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
               filter === opt.id
-                ? "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200"
+                ? "bg-blue-100 text-blue-800 ring-1 ring-blue-200"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >

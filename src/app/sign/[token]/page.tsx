@@ -197,8 +197,8 @@ export default function SignPage({
           onSubmit={handleSubmit}
           className="mt-6 space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80"
         >
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
-            <p className="text-sm font-semibold text-indigo-900">方案确认</p>
+          <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+            <p className="text-sm font-semibold text-blue-900">方案确认</p>
             <label className="mt-2 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"

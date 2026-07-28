@@ -1,10 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import { notificationBadgeCount } from "@/lib/manager-notifications";
 import { managerAnomalyTodosHref } from "@/lib/manager-deep-link";
-import { scopeOrdersForUser } from "@/lib/permissions";
+import {
+  isPersonalManagerLookupOnly,
+  scopeOrdersForUser,
+} from "@/lib/permissions";
 import {
   canReceiveManagerNotifications,
   isDigestUnread,
@@ -29,17 +32,22 @@ export function ManagerNotificationBell() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const anomalyHref = managerAnomalyTodosHref();
+  const personalOnly = isPersonalManagerLookupOnly(user);
+  /** 本人账号侧栏无「工单待办」，通知改走订单查询，避免假入口 */
+  const anomalyHref = personalOnly
+    ? "/manager?section=lookup"
+    : managerAnomalyTodosHref();
+  const digestHref = "/manager?section=weekly";
 
   const scopedOrders = useMemo(
     () => scopeOrdersForUser(orders, user),
     [orders, user],
   );
 
-  const anomalyCount = useMemo(
-    () => notificationBadgeCount(scopedOrders, user?.username),
-    [scopedOrders, user?.username],
-  );
+  const anomalyCount = useMemo(() => {
+    if (personalOnly) return 0;
+    return notificationBadgeCount(scopedOrders, user?.username);
+  }, [scopedOrders, user?.username, personalOnly]);
 
   const digestUnread = useMemo(
     () =>
@@ -58,16 +66,17 @@ export function ManagerNotificationBell() {
 
   return (
     <div className="flex items-center gap-1">
-      <span
-        className="relative rounded-lg px-2.5 py-2 text-slate-500"
+      <Link
+        href={digestHref}
+        className="relative rounded-lg px-2.5 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
         aria-label={
-          digestCount > 0 ? "本周简报未读" : "本周简报已读"
+          digestCount > 0 ? "本周简报未读，前往查看" : "前往本周简报"
         }
         title={digestCount > 0 ? "本周简报未读" : "本周简报"}
       >
         <span className="text-xs font-medium">简报</span>
         <BadgeCount count={digestCount} />
-      </span>
+      </Link>
       <Link
         href={anomalyHref}
         onClick={(event) => {
@@ -76,19 +85,25 @@ export function ManagerNotificationBell() {
         }}
         className="relative rounded-lg px-2.5 py-2 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
         aria-label={
-          anomalyCount > 0
-            ? `异常待办 ${anomalyCount} 项，前往处理`
-            : "前往异常待办"
+          personalOnly
+            ? "前往订单查询"
+            : anomalyCount > 0
+              ? `工单待办 ${anomalyCount} 项，前往处理`
+              : "前往工单待办"
         }
         title={
-          anomalyCount > 0
-            ? `${anomalyCount} 项异常待办`
-            : pathname === "/manager"
-              ? "异常待办（暂无待处理项）"
-              : "异常待办"
+          personalOnly
+            ? "订单查询"
+            : anomalyCount > 0
+              ? `${anomalyCount} 项工单待办`
+              : pathname === "/manager"
+                ? "工单待办（暂无待处理项）"
+                : "工单待办"
         }
       >
-        <span className="text-xs font-medium">通知</span>
+        <span className="text-xs font-medium">
+          {personalOnly ? "查询" : "通知"}
+        </span>
         <BadgeCount count={anomalyCount} />
       </Link>
     </div>

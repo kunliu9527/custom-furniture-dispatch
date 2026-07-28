@@ -1,4 +1,4 @@
-import {
+﻿import {
   anomalyLabelText,
   buildAnomalyTodosSnapshot,
   pickPrimaryAnomalyLabel,
@@ -107,7 +107,7 @@ export function buildRoleDailyTodos(
       headline:
         anomaly.totalCount > 0
           ? `全公司待处理 ${anomaly.totalCount} 项，优先跟进前 ${capped.length} 项`
-          : "暂无异常待办，可查看本周简报",
+          : "暂无工单待办，可查看本周简报",
     };
   }
 
@@ -303,6 +303,6 @@ export function formatDailyTodosText(
     }
   }
 
-  lines.push("", "请登录系统处理 → 项目进程管理 / 异常待办");
+  lines.push("", "请登录系统处理 → 项目进程管理 / 工单待办");
   return lines.join("\n");
 }

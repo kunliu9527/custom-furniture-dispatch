@@ -1,13 +1,13 @@
-import type { UserRole } from "./staff-roster";
 import type { StoreName } from "./types";
 import type { SessionUser } from "./permissions";
-import { getDispatcherHomeStore, getEffectiveDispatcherRoster } from "./dispatchers";
+import { getEffectiveDispatcherRoster } from "./dispatchers";
 import type { StaffRecord } from "./staff-roster";
 import {
   hasFullOrderScope,
   hasGlobalDispatcherLookup,
   hasStoreDispatcherLookup,
   hasStoreLevelLookupScope,
+  isAcceptanceManagerAccess,
   isInstallerSession,
   isPersonalDispatcherLookup,
   resolveAssignedStoresForUser,
@@ -17,32 +17,23 @@ import {
 import { getDesignerHomeStore } from "./designers";
 import type { DesignerName } from "./types";
 
-/** 登录后默认进入的板块 */
+/**
+ * 登录后默认入口：一线角色直达主战场，管理岗仍进今日工作台总览。
+ */
 export function getDefaultPathForSession(user: SessionUser): string {
-  if (user.accessLevel === "acceptance_manager") {
+  if (isAcceptanceManagerAccess(user) || isInstallerSession(user)) {
     return "/delivery";
   }
-  if (user.accessLevel === "personal" && isInstallerSession(user)) {
-    return "/delivery";
+  if (user.role === "designer" && user.accessLevel === "personal") {
+    return "/designer";
   }
-  if (
-    user.accessLevel === "admin" ||
-    user.accessLevel === "design_manager" ||
-    user.accessLevel === "general_manager"
-  ) {
-    return "/manager";
+  if (user.role === "dispatcher" && user.accessLevel === "personal") {
+    return "/admin";
   }
-  switch (user.role) {
-    case "admin":
-    case "design_manager":
-      return "/manager";
-    case "dispatcher":
-      return "/admin";
-    case "designer":
-      return "/designer";
-    default:
-      return "/";
+  if (user.accessLevel === "store_manager") {
+    return "/admin";
   }
+  return "/";
 }
 
 /** 按派单人查找默认选中：店长权限优先本人（名册内），否则全部；个人派单人仅本人 */

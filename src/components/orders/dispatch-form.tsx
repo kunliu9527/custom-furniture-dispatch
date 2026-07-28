@@ -134,7 +134,7 @@ function buildInitial(
   );
   const defaultDesigner = (designerRoster[0]?.name ??
     getEffectiveDesignerRoster(designerStoreIndex, staffRecords)[0]?.name ??
-    "汤雷") as DesignerName;
+    null) as DesignerName | null;
 
   return {
     customerName: "",
@@ -511,6 +511,18 @@ export function DispatchForm({
           </span>
         </label>
       ) : null}
+      {effectiveTab === "new_customer" && willDispatch ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-950">
+          已选择设计师「{designerValue}」，提交将按
+          <span className="font-semibold">确认派单</span>
+          处理。若只想录入客户、暂不指派，请清空设计师。
+        </div>
+      ) : null}
+      {dispatchBlocked && !canOverride && willDispatch ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900">
+          在途已满，无法继续派单。请联系设计经理在「项目进程管理」协调，或由其勾选超额确认后再派。
+        </div>
+      ) : null}
     </>
   );
 
@@ -521,7 +533,7 @@ export function DispatchForm({
         fillHeight ? "min-h-0 flex-1 max-lg:flex-none" : ""
       }`}
     >
-      <div className="shrink-0 border-b border-[var(--vi-border)] bg-gradient-to-r from-zinc-50/90 to-indigo-50/30 px-5 py-4">
+      <div className="shrink-0 border-b border-[var(--vi-border)] bg-gradient-to-r from-zinc-50/90 to-blue-50/30 px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <div className="vi-segmented">

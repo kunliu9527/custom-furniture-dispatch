@@ -107,11 +107,11 @@ export function SiteBrandingSettings() {
           预览
         </p>
         <div className="mt-3 text-center">
-          <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 ring-1 ring-indigo-600/10">
+          <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-600/10">
             {badgeLabel.trim() || DEFAULT_SITE_BRANDING.badgeLabel}
           </span>
-          <p className="mt-4 text-lg font-bold text-indigo-900">
-            <span className="inline-block rounded-2xl bg-indigo-100 px-4 py-2 ring-1 ring-indigo-200/80">
+          <p className="mt-4 text-lg font-bold text-blue-900">
+            <span className="inline-block rounded-2xl bg-blue-100 px-4 py-2 ring-1 ring-blue-200/80">
               {headlineTitle.trim() || DEFAULT_SITE_BRANDING.headlineTitle}
             </span>
           </p>

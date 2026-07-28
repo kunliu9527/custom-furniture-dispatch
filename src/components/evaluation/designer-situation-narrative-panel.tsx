@@ -12,12 +12,12 @@ export function DesignerSituationNarrativePanel({
   let index = 1;
 
   return (
-    <section className="rounded-xl border border-indigo-100/80 bg-indigo-50/40 px-4 py-4">
+    <section className="rounded-xl border border-blue-100/80 bg-blue-50/40 px-4 py-4">
       <header>
-        <h3 className="text-sm font-semibold text-indigo-950">
+        <h3 className="text-sm font-semibold text-slate-900">
           {narrative.title}
         </h3>
-        <p className="mt-0.5 text-xs text-indigo-700/80">
+        <p className="mt-0.5 text-xs text-blue-700/80">
           统计周期：{narrative.periodHint}
           {narrative.scopeHint ? ` · 所属：${narrative.scopeHint}` : null}
         </p>
@@ -31,7 +31,7 @@ export function DesignerSituationNarrativePanel({
       <div className="mt-3 space-y-4">
         {narrative.sections.map((section) => (
           <div key={section.heading}>
-            <p className="text-xs font-semibold text-indigo-900">
+            <p className="text-xs font-semibold text-blue-900">
               {section.heading}
             </p>
             <ol className="mt-1.5 list-none space-y-2 pl-0">
@@ -43,7 +43,7 @@ export function DesignerSituationNarrativePanel({
                     key={`${section.heading}-${n}`}
                     className="text-sm leading-relaxed text-slate-800"
                   >
-                    <span className="mr-1.5 font-semibold tabular-nums text-indigo-800">
+                    <span className="mr-1.5 font-semibold tabular-nums text-blue-800">
                       {n}.
                     </span>
                     {item}
@@ -55,7 +55,7 @@ export function DesignerSituationNarrativePanel({
         ))}
       </div>
 
-      <p className="mt-3 border-t border-indigo-100/80 pt-2 text-[11px] leading-relaxed text-indigo-700/75">
+      <p className="mt-3 border-t border-blue-100/80 pt-2 text-[11px] leading-relaxed text-blue-700/75">
         数据口径说明：{narrative.footnote}
       </p>
     </section>

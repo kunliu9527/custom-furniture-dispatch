@@ -17,7 +17,7 @@ function SortIndicator({
     );
   }
   return (
-    <span className="text-[10px] font-semibold text-indigo-600" aria-hidden>
+    <span className="text-[10px] font-semibold text-blue-600" aria-hidden>
       {direction === "desc" ? "↓" : "↑"}
     </span>
   );
@@ -60,7 +60,7 @@ export function SortableTh({
         title={title ?? `按${label}排序`}
         className={`inline-flex items-center gap-0.5 font-bold uppercase tracking-wide text-slate-600 transition-colors hover:text-slate-900 ${alignClass} ${
           align === "center" ? "justify-center" : "justify-start"
-        } ${active ? "text-indigo-700" : ""}`}
+        } ${active ? "text-blue-700" : ""}`}
       >
         <span>{label}</span>
         <SortIndicator active={active} direction={direction} />

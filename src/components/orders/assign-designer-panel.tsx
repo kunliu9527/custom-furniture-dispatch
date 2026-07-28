@@ -118,10 +118,10 @@ export function AssignDesignerPanel({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50/40 p-4"
+      className="mt-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4"
     >
-      <p className="text-sm font-medium text-indigo-900">指派设计师</p>
-      <p className="mt-1 text-xs text-indigo-700/80">
+      <p className="text-sm font-medium text-blue-900">指派设计师</p>
+      <p className="mt-1 text-xs text-blue-700/80">
         客户信息已录入，指派后将进入「待量尺」流程。
       </p>
       {personalDispatcher ? <CrossStoreAssignHint className="mt-3" /> : null}

@@ -107,7 +107,10 @@ export function LoginPanel({
 
   if (!isHydrated) {
     return (
-      <span className="text-sm text-slate-400">
+      <span
+        className="text-sm"
+        style={{ color: "var(--label-tertiary)" }}
+      >
         {variant === "home" ? "加载…" : ""}
       </span>
     );
@@ -123,8 +126,13 @@ export function LoginPanel({
         }
       >
         <div className="text-right text-sm">
-          <p className="font-medium text-slate-900">{user.displayName}</p>
-          <p className="text-xs text-slate-500">
+          <p
+            className="font-medium"
+            style={{ color: "var(--label-primary)" }}
+          >
+            {user.displayName}
+          </p>
+          <p className="text-xs" style={{ color: "var(--label-secondary)" }}>
             {ACCESS_LEVEL_LABELS[user.accessLevel]}
             {user.assignedStores?.length
               ? ` · ${formatManagedStoresLabel(user.assignedStores)}`
@@ -133,7 +141,12 @@ export function LoginPanel({
                 : ""}
           </p>
           {passwordMessage ? (
-            <p className="mt-1 text-xs text-emerald-600">{passwordMessage}</p>
+            <p
+              className="mt-1 text-xs"
+              style={{ color: "var(--system-green)" }}
+            >
+              {passwordMessage}
+            </p>
           ) : null}
         </div>
         <Button
@@ -151,7 +164,8 @@ export function LoginPanel({
           <Button
             type="button"
             variant="ghost"
-            className="text-xs text-rose-600 hover:text-rose-700"
+            className="text-xs"
+            style={{ color: "var(--system-red)" }}
             onClick={handleReinitializeLocal}
           >
             初始化本地
@@ -160,9 +174,10 @@ export function LoginPanel({
         {passwordOpen ? (
           <form
             onSubmit={handleChangePassword}
-            className={`vi-popover absolute z-50 mt-2 p-4 ${
+            className={`vi-popover absolute mt-2 p-4 ${
               variant === "home" ? "right-0 top-full w-72" : "right-0 top-full w-64"
             }`}
+            style={{ zIndex: "var(--z-dropdown)" }}
           >
             <p className="vi-heading-section">修改密码</p>
             <div className="mt-3 space-y-3">
@@ -201,7 +216,12 @@ export function LoginPanel({
               />
             </div>
             {passwordError ? (
-              <p className="mt-2 text-sm text-red-600">{passwordError}</p>
+              <p
+                className="mt-2 text-sm"
+                style={{ color: "var(--system-red)" }}
+              >
+                {passwordError}
+              </p>
             ) : null}
             <div className="mt-4 flex gap-2">
               <Button type="submit" className="flex-1">
@@ -229,13 +249,19 @@ export function LoginPanel({
       {open ? (
         <form
           onSubmit={handleSubmit}
-          className={`vi-popover absolute z-50 mt-2 p-4 ${
+          className={`vi-popover absolute mt-2 p-4 ${
             variant === "home" ? "right-0 w-72" : "right-0 w-64"
           }`}
+          style={{ zIndex: "var(--z-dropdown)" }}
         >
           <p className="vi-heading-section">账号登录</p>
-          <p className="mt-1 text-xs text-zinc-500">请输入账号与密码</p>
-          <div className="mt-3 space-y-3">
+          <p
+            className="mt-1 text-[13px]"
+            style={{ color: "var(--label-secondary)" }}
+          >
+            输入账号与密码进入派单工作台
+          </p>
+          <div className="mt-4 space-y-3">
             <Input
               label="账号"
               name="username"
@@ -262,7 +288,9 @@ export function LoginPanel({
             />
           </div>
           {error ? (
-            <p className="mt-2 text-sm text-red-600">{error}</p>
+            <p className="mt-2 text-sm" style={{ color: "var(--system-red)" }}>
+              {error}
+            </p>
           ) : null}
           <div className="mt-4 flex gap-2">
             <Button type="submit" className="flex-1">

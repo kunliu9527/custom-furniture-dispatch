@@ -35,7 +35,7 @@ export function QrCodeDisplay({ url, label = "扫码打开" }: QrCodeDisplayProp
       </div>
       <div className="min-w-0 flex-1 space-y-2">
         <p className="text-xs font-medium text-slate-600">{label}</p>
-        <p className="break-all text-xs text-indigo-700">{url}</p>
+        <p className="break-all text-xs text-blue-700">{url}</p>
         <button
           type="button"
           onClick={() => void navigator.clipboard.writeText(url)}

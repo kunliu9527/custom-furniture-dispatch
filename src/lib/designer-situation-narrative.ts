@@ -1,11 +1,11 @@
 import type { DispatcherEvaluationRow } from "./evaluation-stats";
 import type { PeriodSelection } from "./period-filter";
 import {
-  buildPersonPerformanceNarrative,
-  DESIGNER_PERSON_CONFIG,
-  formatPersonPerformanceNarrativeText,
-} from "./person-performance-narrative";
+  buildPerformanceAnalysisForRole,
+  type PerformanceAnalysisResult,
+} from "./performance-analysis";
 import {
+  formatPerformanceSituationNarrativeText,
   performanceNarrativePeriodScopeLabel,
   type PerformanceSituationNarrative,
 } from "./performance-narrative-core";
@@ -19,6 +19,22 @@ export function designerSituationPeriodScopeLabel(
   return performanceNarrativePeriodScopeLabel(period);
 }
 
+export function buildDesignerSituationAnalysis(
+  rows: DispatcherEvaluationRow[],
+  orders: Order[],
+  period: PeriodSelection,
+  periodLabel: string,
+  scopeHint?: string,
+): PerformanceAnalysisResult {
+  return buildPerformanceAnalysisForRole("designer", {
+    rows,
+    orders,
+    period,
+    periodLabel,
+    scopeHint,
+  });
+}
+
 export function buildDesignerSituationNarrative(
   rows: DispatcherEvaluationRow[],
   orders: Order[],
@@ -26,18 +42,17 @@ export function buildDesignerSituationNarrative(
   periodLabel: string,
   scopeHint?: string,
 ): DesignerSituationNarrative {
-  return buildPersonPerformanceNarrative(
-    DESIGNER_PERSON_CONFIG,
+  return buildDesignerSituationAnalysis(
     rows,
     orders,
     period,
     periodLabel,
     scopeHint,
-  );
+  ).narrative;
 }
 
 export function formatDesignerSituationNarrativeText(
   narrative: DesignerSituationNarrative,
 ): string {
-  return formatPersonPerformanceNarrativeText(narrative);
+  return formatPerformanceSituationNarrativeText(narrative);
 }

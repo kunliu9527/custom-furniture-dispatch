@@ -236,21 +236,21 @@ export function WeeklyDigestPanel({
       className={
         embedded
           ? ""
-          : "rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-4"
+          : "rounded-xl border border-sky-200 bg-sky-50/60 px-4 py-4"
       }
     >
       {!embedded ? (
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-violet-900">
+            <h2 className="text-sm font-semibold text-sky-900">
               本周管理简报
             </h2>
-            <p className="mt-0.5 text-xs text-violet-700/90">{digest.weekLabel}</p>
+            <p className="mt-0.5 text-xs text-sky-800/90">{digest.weekLabel}</p>
           </div>
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}
-            className="text-xs text-violet-600 hover:underline"
+            className="text-xs text-sky-700 hover:underline"
           >
             {collapsed ? "展开" : "收起"}
           </button>
@@ -287,7 +287,7 @@ export function WeeklyDigestPanel({
               <div className="mt-3 space-y-3">
                 <DigestBriefSection
                   title="② 本期分析"
-                  tone="indigo"
+                  tone="blue"
                   stats={stats}
                 />
 
@@ -344,7 +344,7 @@ export function WeeklyDigestPanel({
                     : "推送到企微群"}
               </Button>
             ) : (
-              <span className="self-center text-[11px] text-violet-600/80">
+              <span className="self-center text-[11px] text-sky-700/80">
                 企微未配置 · 可用复制后粘贴到群
               </span>
             )}

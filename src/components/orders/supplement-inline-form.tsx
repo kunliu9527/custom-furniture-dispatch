@@ -33,7 +33,7 @@ export function SupplementInlineForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-2">
-      <p className="text-xs font-semibold text-indigo-900">新增增补单</p>
+      <p className="text-xs font-semibold text-blue-900">新增增补单</p>
       {existingSupplements.length > 0 ? (
         <div className="text-[11px] leading-snug text-teal-800">
           <p className="font-medium">本周期 {existingSupplements.length} 笔</p>

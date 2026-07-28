@@ -208,7 +208,7 @@ export function DesignerPerformanceTable({
                 </td>
                 <td className="px-3 py-2.5 tabular-nums">{row.inProgressCount}</td>
                 <td className="px-3 py-2.5 tabular-nums">{row.orderedCount}</td>
-                <td className="px-3 py-2.5 tabular-nums font-medium text-indigo-700">
+                <td className="px-3 py-2.5 tabular-nums font-medium text-blue-700">
                   {row.orderedAmount > 0
                     ? formatDispatchMoney(row.orderedAmount)
                     : "—"}
@@ -234,7 +234,7 @@ export function DesignerPerformanceTable({
                 </td>
                 <td className="px-3 py-2.5 tabular-nums">{row.activityTotal}</td>
                 <td className="px-3 py-2.5 tabular-nums">{row.activityAdvances}</td>
-                <td className="px-3 py-2.5 tabular-nums font-semibold text-violet-700">
+                <td className="px-3 py-2.5 tabular-nums font-semibold text-sky-800">
                   {formatContributionScore(row.contributionScore)}
                 </td>
               </tr>

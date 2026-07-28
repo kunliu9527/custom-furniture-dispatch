@@ -1,0 +1,181 @@
+/**
+ * Apple HIG–inspired design tokens for custom-furniture-dispatch
+ *
+ * Sources:
+ * - Apple Human Interface Guidelines
+ * - axiaoge2/Apple-Hig-Designer resources/design-tokens.css (adapted)
+ * - Project overrides: web admin tool (PingFang, restrained button radius)
+ *
+ * Import in globals.css. Prefer these over ad-hoc indigo/violet hex.
+ */
+
+:root {
+  /* Typography */
+  --font-system:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-caption2: 11px;
+  --text-caption1: 12px;
+  --text-footnote: 13px;
+  --text-subhead: 15px;
+  --text-callout: 16px;
+  --text-body: 17px;
+  --text-headline: 17px;
+  --text-title3: 20px;
+  --text-title2: 22px;
+  --text-title1: 28px;
+  --text-large-title: 34px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.25;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.5;
+
+  /* System colors (light) */
+  --system-blue: #007aff;
+  --system-green: #34c759;
+  --system-orange: #ff9500;
+  --system-red: #ff3b30;
+  --system-teal: #5ac8fa;
+  --system-gray: #8e8e93;
+  --system-gray2: #aeaeb2;
+  --system-gray3: #c7c7cc;
+  --system-gray4: #d1d1d6;
+  --system-gray5: #e5e5ea;
+  --system-gray6: #f2f2f7;
+
+  /* Labels */
+  --label-primary: #000000;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-tertiary: rgba(60, 60, 67, 0.3);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+
+  /* Fills */
+  --fill-primary: rgba(120, 120, 128, 0.2);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --fill-tertiary: rgba(120, 120, 128, 0.12);
+  --fill-quaternary: rgba(120, 120, 128, 0.08);
+
+  /* Backgrounds */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f2f7;
+  --bg-tertiary: #ffffff;
+  --bg-grouped-primary: #f2f2f7;
+  --bg-grouped-secondary: #ffffff;
+  --bg-grouped-tertiary: #f2f2f7;
+
+  /* Separators — opaque for hard edges on web admin surfaces */
+  --separator: #d1d1d6;
+  --separator-opaque: #c6c6c8;
+  --separator-strong: #aeaeb2;
+
+  /* Semantic aliases for app code */
+  --color-accent: var(--system-blue);
+  --color-accent-pressed: #0066d6;
+  --color-danger: var(--system-red);
+  --color-success: var(--system-green);
+  --color-warning: var(--system-orange);
+
+  /* 8pt spacing */
+  --space-0: 0;
+  --space-px: 1px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --touch-min: 44px;
+
+  /* Radius — tool UI: 6–8px surfaces, avoid soft marketing cards */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 12px;
+  --radius-full: 9999px;
+  --radius-button: var(--radius-lg);
+  --radius-card: var(--radius-lg);
+  --radius-modal: var(--radius-2xl);
+  --radius-input: var(--radius-md);
+  --radius-segment: var(--radius-md);
+
+  /* Shadows — panels stay flat; controls may use --shadow-control */
+  --shadow-none: none;
+  --shadow-xs: none;
+  --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.28);
+
+  /* Motion */
+  --duration-faster: 100ms;
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0, 0, 0.58, 1);
+
+  /* Z scale */
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-header: 40;
+  --z-dropdown: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+  --z-max: 80;
+
+  /* Header — solid workbench chrome (not frosted glass) */
+  --glass-header-bg: #ffffff;
+  --glass-header-blur: 0px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --label-primary: #ffffff;
+    --label-secondary: rgba(235, 235, 245, 0.6);
+    --label-tertiary: rgba(235, 235, 245, 0.3);
+    --label-quaternary: rgba(235, 235, 245, 0.18);
+
+    --bg-primary: #000000;
+    --bg-secondary: #1c1c1e;
+    --bg-tertiary: #2c2c2e;
+    --bg-grouped-primary: #000000;
+    --bg-grouped-secondary: #1c1c1e;
+    --bg-grouped-tertiary: #2c2c2e;
+
+    --separator: #38383a;
+    --separator-opaque: #48484a;
+    --separator-strong: #636366;
+
+    --system-gray6: #1c1c1e;
+    --glass-header-bg: #1c1c1e;
+    --glass-header-blur: 0px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-faster: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+}

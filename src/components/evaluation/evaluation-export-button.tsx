@@ -32,7 +32,7 @@ export function EvaluationExportButton({
     <button
       type="button"
       onClick={handleClick}
-      className={`shrink-0 rounded border border-[var(--vi-border-strong)] bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 shadow-[var(--vi-shadow-xs)] transition hover:border-indigo-200 hover:text-indigo-700 ${className}`}
+      className={`shrink-0 rounded border border-[var(--vi-border-strong)] bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-500 shadow-[var(--vi-shadow-xs)] transition hover:border-blue-200 hover:text-blue-700 ${className}`}
     >
       导出
     </button>

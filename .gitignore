@@ -19,9 +19,17 @@
 
 # production
 /build
+/release
 
 # cloud sync data (server-side snapshot)
 /data/
+/data/measure-images/
+
+# local exports / one-off workbooks
+/exports/
+
+# Cursor local agent artifacts (keep project skills if committed separately)
+/.cursor/
 
 # misc
 .DS_Store

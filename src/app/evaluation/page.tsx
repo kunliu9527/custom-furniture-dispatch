@@ -1467,7 +1467,7 @@ export default function EvaluationPage() {
                             <button
                               type="button"
                               onClick={handleExportCommissionDraft}
-                              className="rounded-md border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-800 hover:bg-indigo-100"
+                              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-800 hover:bg-blue-100"
                             >
                               导出{periodLabel}提成底稿 CSV
                             </button>

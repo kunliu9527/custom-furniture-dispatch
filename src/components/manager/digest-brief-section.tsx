@@ -4,7 +4,7 @@ import { ManagerDigestStats } from "@/components/manager/manager-digest-stats";
 
 interface DigestBriefSectionProps {
   title: string;
-  tone?: "indigo" | "rose" | "neutral";
+  tone?: "blue" | "rose" | "neutral";
   hint?: string;
   stats?: { label: string; value: string; hint?: string }[];
   children?: React.ReactNode;
@@ -14,7 +14,7 @@ const sectionToneClass: Record<
   NonNullable<DigestBriefSectionProps["tone"]>,
   string
 > = {
-  indigo: "vi-brief-section-indigo",
+  blue: "vi-brief-section-indigo",
   rose: "vi-brief-section-rose",
   neutral: "vi-brief-section-neutral",
 };
@@ -23,7 +23,7 @@ const titleClass: Record<
   NonNullable<DigestBriefSectionProps["tone"]>,
   string
 > = {
-  indigo: "text-indigo-950",
+  blue: "text-slate-900",
   rose: "text-rose-950",
   neutral: "text-slate-900",
 };
@@ -35,16 +35,12 @@ export function DigestBriefSection({
   stats,
   children,
 }: DigestBriefSectionProps) {
-  const statTone = tone === "rose" ? "rose" : "indigo";
+  const statTone = tone === "rose" ? "rose" : "blue";
 
   return (
-    <section
-      className={`vi-brief-section ${sectionToneClass[tone]}`}
-    >
+    <section className={`vi-brief-section ${sectionToneClass[tone]}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2 pl-1">
-        <h3
-          className={`vi-brief-section-title ${titleClass[tone]}`}
-        >
+        <h3 className={`vi-brief-section-title ${titleClass[tone]}`}>
           {title}
         </h3>
         {hint ? (

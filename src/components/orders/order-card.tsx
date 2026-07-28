@@ -59,6 +59,8 @@ import {
   parseStatusFromFeedbackLabel,
   type OrderStatusTransitionPayload,
 } from "@/lib/order-status-feedback";
+import { MeasureWorkspace } from "@/components/measure/measure-workspace";
+import { useOrders } from "@/context/orders-context";
 import { FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
 
 interface OrderCardProps {
@@ -83,6 +85,8 @@ interface OrderCardProps {
   ) => boolean;
   onConfirmDesignerAccept?: (id: string) => boolean;
   showAcceptAction?: boolean;
+  /** 确认接单后显示「易测量」 */
+  showMeasureAction?: boolean;
   showAfterSales?: boolean;
   canRevertOrder?: (order: Order) => boolean;
   canEditRemark?: (order: Order) => boolean;
@@ -129,6 +133,7 @@ export function OrderCard({
   onConfirmRefund,
   onConfirmDesignerAccept,
   showAcceptAction = false,
+  showMeasureAction = false,
   showAfterSales = false,
   canRevertOrder,
   canEditRemark: canEditRemarkCheck,
@@ -152,6 +157,7 @@ export function OrderCard({
   inlineStatusFeedback = true,
 }: OrderCardProps) {
   const { designerHomeStoreIndex } = useAuth();
+  const { saveOrderMeasurement } = useOrders();
   const nextStatus = getNextStatus(order.status);
   const requiresOrderAmount = nextStatus === "已下单";
   const showSignedOrderForm =
@@ -160,6 +166,12 @@ export function OrderCard({
   const [refundTags, setRefundTags] = useState<OrderIssueTag[]>([]);
   const pendingAccept =
     showAcceptAction && needsDesignerAcceptance(order);
+  const canOpenMeasure =
+    showMeasureAction &&
+    Boolean(order.designerAcceptedAt) &&
+    !readOnly &&
+    !pendingAccept;
+  const measurePhotoCount = order.measurement?.photos?.length ?? 0;
   const canAdvance =
     !readOnly &&
     !pendingAccept &&
@@ -182,6 +194,7 @@ export function OrderCard({
     : null;
 
   const [showOrderAmountForm, setShowOrderAmountForm] = useState(false);
+  const [showMeasureWorkspace, setShowMeasureWorkspace] = useState(false);
   const [orderAmountInput, setOrderAmountInput] = useState("");
   const [amountError, setAmountError] = useState("");
   const [remarkDraft, setRemarkDraft] = useState("");
@@ -321,6 +334,7 @@ export function OrderCard({
       : order.status;
   const hasPrimaryActions =
     Boolean(pendingAccept && onConfirmDesignerAccept) ||
+    canOpenMeasure ||
     (!showRefundPanel &&
       (canAdvance ||
         canRevert ||
@@ -337,7 +351,7 @@ export function OrderCard({
 
   return (
     <article
-      id={focused ? `order-card-${order.id}` : undefined}
+      id={`order-card-${order.id}`}
       className={`vi-order-card ${
         isFeedbackActive
           ? ORDER_STATUS_SUCCESS_CARD_CLASS
@@ -417,11 +431,24 @@ export function OrderCard({
                 确认接单
               </Button>
             </>
-          ) : showRefundPanel && canMarkRefund ? null : canAdvance ||
-            canRevert ||
-            canMarkRefund ||
-            canConfirmRefund ||
-            canDelete ? (
+          ) : (
+            <>
+              {canOpenMeasure ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full bg-teal-700 text-white hover:bg-teal-800 sm:w-auto"
+                  onClick={() => setShowMeasureWorkspace(true)}
+                >
+                  易测量
+                  {measurePhotoCount > 0 ? `（${measurePhotoCount}）` : ""}
+                </Button>
+              ) : null}
+              {showRefundPanel && canMarkRefund ? null : canAdvance ||
+                canRevert ||
+                canMarkRefund ||
+                canConfirmRefund ||
+                canDelete ? (
             <>
               {canAdvance ? (
                 <Button
@@ -491,6 +518,8 @@ export function OrderCard({
           ) : order.status === "已退单" ? (
             <p className="text-sm text-red-600">订单已退单，流程已终止</p>
           ) : null}
+            </>
+          )}
         </div>
       ) : null}
 
@@ -547,7 +576,7 @@ export function OrderCard({
         {hasOrderAmount ? (
           <div className="min-w-0">
             <dt className="vi-dl-term">下单金额</dt>
-            <dd className="font-semibold text-indigo-700">
+            <dd className="font-semibold text-blue-700">
               {formatOrderAmount(order.orderAmount)}
             </dd>
           </div>
@@ -612,7 +641,7 @@ export function OrderCard({
       </dl>
 
       {supplementPane ? (
-        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-2.5">
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/50 p-2.5">
           {supplementPane}
         </div>
       ) : null}
@@ -779,6 +808,23 @@ export function OrderCard({
           </div>
         </div>
       ) : null}
+
+      <MeasureWorkspace
+        order={order}
+        open={showMeasureWorkspace}
+        onClose={() => setShowMeasureWorkspace(false)}
+        onSaveMeasurement={saveOrderMeasurement}
+        onCompleteMeasure={
+          canOpenMeasure && onAdvanceStatus
+            ? () => {
+                setShowMeasureWorkspace(false);
+                runStatusAction("已更新为「已量尺」", () =>
+                  onAdvanceStatus(order.id),
+                );
+              }
+            : undefined
+        }
+      />
     </article>
   );
 }

@@ -44,7 +44,7 @@ export function TabTrendChartBody({
           <DualLineMiniChart
             points={dispatcherSeries as unknown as MiniChartPoint[]}
             lines={[
-              { key: "newDispatchCount", label: "派单", color: "#4f46e5" },
+              { key: "newDispatchCount", label: "派单", color: "#007aff" },
               {
                 key: "signedContractAmount",
                 label: "签约额",
@@ -92,7 +92,7 @@ export function TabTrendChartBody({
             {
               key: "electronicRate",
               label: "电子验收率",
-              color: "#9333ea",
+              color: "#007aff",
               scale: "percent",
             },
           ]}
@@ -166,7 +166,7 @@ function DispatcherTop5Chart({ rows }: { rows: DispatcherPerformanceRow[] }) {
           <span className="w-16 truncate text-xs text-slate-700">{r.label}</span>
           <div className="h-2 flex-1 rounded-full bg-slate-100">
             <div
-              className="h-2 rounded-full bg-indigo-500"
+              className="h-2 rounded-full bg-blue-500"
               style={{ width: `${(r.contributionScore / max) * 100}%` }}
             />
           </div>

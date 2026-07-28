@@ -79,12 +79,12 @@ export function ManagerPendingAcceptancePanel({
                 <button
                   type="button"
                   onClick={() => onSelectDesigner(order.designer!)}
-                  className="font-medium text-violet-700 hover:underline"
+                  className="font-medium text-sky-800 hover:underline"
                 >
                   {order.designer}
                 </button>
               ) : (
-                <span className="text-violet-700">{order.designer ?? "—"}</span>
+                <span className="text-sky-800">{order.designer ?? "—"}</span>
               )}
             </li>
           ))}

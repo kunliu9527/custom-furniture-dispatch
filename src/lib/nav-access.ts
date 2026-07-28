@@ -76,7 +76,7 @@ export function canViewOtherDesignersOrders(user: SessionUser | null): boolean {
 }
 
 export function getVisibleNavLinks(user: SessionUser | null) {
-  if (!user) return [...NAV_LINKS];
+  if (!user) return [];
   if (isAcceptanceManagerAccess(user)) {
     return NAV_LINKS.filter((item) => item.href === "/delivery");
   }

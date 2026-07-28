@@ -92,7 +92,7 @@ export function DataToolsPanel() {
       <CommissionSettingsPanel />
 
       {canExportCommission ? (
-        <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
+        <section className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">提成核算底稿</h2>
           <p className="mt-1 text-xs leading-relaxed text-slate-600">
             按上方保存的比例导出派单人 + 设计师绩效与建议提成基数。

@@ -37,7 +37,7 @@ export function IssueTagsEditor({
             onClick={() => toggle(opt.id)}
             className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
               active
-                ? "bg-violet-600 text-white"
+                ? "bg-blue-600 text-white"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
             }`}
           >

@@ -48,12 +48,12 @@ export function DesignerWorkbenchSidebar({
     <div className="flex min-h-0 flex-col gap-3">
       <div className="shrink-0 space-y-2 border-b border-[var(--vi-border)] pb-3">
         <div>
-          <p className="vi-label-caps text-indigo-700/80">
+          <p className="vi-label-caps text-blue-700/80">
             {showSwitcher ? "当前查看设计师" : "当前登录设计师"}
           </p>
           <p className="mt-1 text-[11px] leading-snug text-zinc-500">
             所在门店
-            <span className="ml-1 font-semibold text-indigo-600">{homeStore}</span>
+            <span className="ml-1 font-semibold text-blue-600">{homeStore}</span>
           </p>
         </div>
         {showSwitcher ? (
@@ -63,7 +63,7 @@ export function DesignerWorkbenchSidebar({
             stores={designerLookupStores}
           />
         ) : (
-          <p className="truncate rounded-lg bg-gradient-to-r from-indigo-50/80 to-violet-50/60 px-2.5 py-2 text-sm font-semibold tracking-tight text-indigo-950 ring-1 ring-indigo-100">
+          <p className="truncate rounded-lg bg-blue-50 px-2.5 py-2 text-sm font-semibold tracking-tight text-slate-900 ring-1 ring-blue-100">
             {effectiveDesigner}
           </p>
         )}
@@ -104,12 +104,12 @@ export function DesignerMobileNav({
   return (
     <div className="space-y-2">
       <div className="rounded-lg border border-[var(--vi-border)] bg-white px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-700/80">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700/80">
           {showSwitcher ? "当前查看设计师" : "当前登录设计师"}
         </p>
         <p className="mt-0.5 text-[11px] text-zinc-500">
           所在门店
-          <span className="ml-1 font-semibold text-indigo-600">{homeStore}</span>
+          <span className="ml-1 font-semibold text-blue-600">{homeStore}</span>
         </p>
         {showSwitcher ? (
           <div className="mt-2">
@@ -120,7 +120,7 @@ export function DesignerMobileNav({
             />
           </div>
         ) : (
-          <p className="mt-1 truncate text-sm font-semibold text-indigo-950">
+          <p className="mt-1 truncate text-sm font-semibold text-slate-900">
             {effectiveDesigner}
           </p>
         )}

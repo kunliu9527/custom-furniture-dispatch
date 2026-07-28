@@ -1,6 +1,7 @@
 import type { DesignerName } from "./designers";
+import type { OrderMeasurement } from "./measure/types";
 
-export type { DesignerName };
+export type { DesignerName, OrderMeasurement };
 
 export type StoreName =
   | "东岸天冠"
@@ -76,6 +77,7 @@ export type OrderEventKind =
   | "增补单"
   | "售后金"
   | "接单确认"
+  | "量尺记录"
   | "流程备注"
   | "问题标记";
 
@@ -211,6 +213,8 @@ export interface Order {
   totalElapsedDays?: number | null;
   /** 设计师确认接单时间 */
   designerAcceptedAt?: string | null;
+  /** 易测量量尺记录 */
+  measurement?: OrderMeasurement | null;
   /** 操作日志 */
   orderEvents?: OrderEvent[];
   /** 问题标签（经理维护） */

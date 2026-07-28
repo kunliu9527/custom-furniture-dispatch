@@ -2,33 +2,33 @@ import { formatDispatchMoney } from "@/lib/dispatch-totals";
 
 interface DigestStatsProps {
   items: { label: string; value: string; hint?: string }[];
-  tone?: "violet" | "indigo" | "rose";
+  tone?: "blue" | "teal" | "rose";
 }
 
 const tileToneClass: Record<
   NonNullable<DigestStatsProps["tone"]>,
   string
 > = {
-  violet: "vi-stat-tile-violet",
-  indigo: "vi-stat-tile-indigo",
+  teal: "vi-stat-tile-violet",
+  blue: "vi-stat-tile-indigo",
   rose: "vi-stat-tile-rose",
 };
 
 const labelClass: Record<NonNullable<DigestStatsProps["tone"]>, string> = {
-  violet: "text-violet-700",
-  indigo: "text-indigo-700",
+  teal: "text-sky-800",
+  blue: "text-blue-700",
   rose: "text-rose-700",
 };
 
 const valueClass: Record<NonNullable<DigestStatsProps["tone"]>, string> = {
-  violet: "text-violet-950",
-  indigo: "text-indigo-950",
+  teal: "text-slate-900",
+  blue: "text-slate-900",
   rose: "text-rose-950",
 };
 
 export function ManagerDigestStats({
   items,
-  tone = "violet",
+  tone = "teal",
   className = "",
 }: DigestStatsProps & { className?: string }) {
   return (

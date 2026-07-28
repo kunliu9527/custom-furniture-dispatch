@@ -114,11 +114,11 @@ export function WeeklyDigestSummaryCard({
       );
 
   return (
-    <section className="rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3">
+    <section className="rounded-xl border border-sky-200 bg-sky-50/60 px-4 py-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-violet-900">{title}</h2>
-          <p className="mt-0.5 text-xs text-violet-700/90">
+          <h2 className="text-sm font-semibold text-sky-900">{title}</h2>
+          <p className="mt-0.5 text-xs text-sky-800/90">
             {digest.weekLabel} · {formatPeriodLabel(weekPeriod)}
             {scopeHint}
           </p>
@@ -169,7 +169,7 @@ export function WeeklyDigestSummaryCard({
       ) : null}
 
       {displayActionLines.length > 0 ? (
-        <p className="mt-3 text-xs text-violet-900/90">
+        <p className="mt-3 text-xs text-sky-900/90">
           建议：{displayActionLines[0]}
           {displayActionLines.length > 1
             ? ` · 另有 ${displayActionLines.length - 1} 项`

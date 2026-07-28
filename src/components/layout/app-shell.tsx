@@ -23,30 +23,34 @@ export function AppShell({
   mainClassName = "mx-auto max-w-6xl px-4 py-8 sm:px-6",
   board,
 }: AppShellProps) {
-  const boardKey: BoardKey | undefined = board ? boardKeyFromHref(board) : undefined;
+  const boardKey: BoardKey | undefined = board
+    ? boardKeyFromHref(board)
+    : undefined;
 
   return (
     <div
       className="vi-app-bg grid h-dvh grid-rows-[auto_1fr_auto] overflow-hidden"
       {...(boardKey ? { "data-board": boardKey } : {})}
     >
-      <header className="vi-glass-header z-50">
-        <div className="vi-shell-inner mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3.5">
+      <header className="vi-glass-header">
+        <div className="vi-shell-inner mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
-              className="vi-logo-mark h-9 w-9 shrink-0 rounded-xl text-sm transition-transform hover:scale-[1.03]"
+              className="vi-logo-mark size-9 shrink-0 text-sm"
+              aria-label="返回首页"
             >
               派
             </Link>
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="vi-heading-section truncate text-base sm:text-lg">
-                  {title}
-                </h1>
-              </div>
+              <h1 className="vi-heading-section truncate text-base sm:text-[17px]">
+                {title}
+              </h1>
               {description ? (
-                <p className="mt-0.5 truncate text-xs text-zinc-500 sm:text-sm">
+                <p
+                  className="mt-0.5 truncate text-xs sm:text-[13px]"
+                  style={{ color: "var(--label-secondary)" }}
+                >
                   {description}
                 </p>
               ) : null}

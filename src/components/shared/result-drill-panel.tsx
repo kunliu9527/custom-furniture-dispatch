@@ -101,13 +101,13 @@ export function ResultDrillPanel({
       {hasActiveDrill(drill) ? (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-slate-500">结果筛选：</span>
-          <span className="rounded-md bg-indigo-50 px-2 py-1 font-medium text-indigo-800">
+          <span className="rounded-md bg-blue-50 px-2 py-1 font-medium text-blue-800">
             {drillFilterLabel(drill)}
           </span>
           <button
             type="button"
             onClick={clearDrill}
-            className="text-indigo-600 hover:text-indigo-800"
+            className="text-blue-600 hover:text-blue-800"
           >
             清除
           </button>

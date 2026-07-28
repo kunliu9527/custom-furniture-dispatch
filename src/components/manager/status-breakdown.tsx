@@ -42,14 +42,14 @@ export function StatusBreakdown({
             onClick={() => onSelect("全部")}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition ${
               selected === "全部"
-                ? "border-indigo-300 bg-indigo-600 text-white"
+                ? "border-blue-300 bg-blue-600 text-white"
                 : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
             }`}
           >
             全部
             <span
               className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
-                selected === "全部" ? "bg-indigo-500 text-white" : "bg-slate-100"
+                selected === "全部" ? "bg-blue-500 text-white" : "bg-slate-100"
               }`}
             >
               {total}
@@ -64,7 +64,7 @@ export function StatusBreakdown({
               onClick={() => onSelect(selected === status ? "全部" : status)}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition ${
                 selected === status
-                  ? "border-indigo-300 bg-indigo-600 text-white"
+                  ? "border-blue-300 bg-blue-600 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
               }`}
             >
@@ -72,7 +72,7 @@ export function StatusBreakdown({
               <span
                 className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
                   selected === status
-                    ? "bg-indigo-500 text-white"
+                    ? "bg-blue-500 text-white"
                     : "bg-slate-100 text-slate-800"
                 }`}
               >

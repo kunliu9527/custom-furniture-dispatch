@@ -178,7 +178,7 @@ export function ManagerOrderTable({
                                 e.target.value as DesignerName,
                               )
                             }
-                            className="w-full min-w-[92px] rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                            className="w-full min-w-[92px] rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                           >
                             {designerRoster.map((d) => (
                               <option key={d.name} value={d.name}>
@@ -224,7 +224,7 @@ export function ManagerOrderTable({
                   <td className={`${tdClass} text-xs`}>
                     {formatBudget(order.budget)}
                   </td>
-                  <td className={`${tdClass} text-xs font-medium text-indigo-700`}>
+                  <td className={`${tdClass} text-xs font-medium text-blue-700`}>
                     {formatOrderAmount(order.orderAmount)}
                   </td>
                   <td className={`${tdClass} text-xs`}>
@@ -248,7 +248,7 @@ export function ManagerOrderTable({
                       "—"
                     )}
                   </td>
-                  <td className={`${tdClass} text-xs font-semibold text-violet-700`}>
+                  <td className={`${tdClass} text-xs font-semibold text-sky-800`}>
                     {combined > 0 ? formatCurrency(combined) : "—"}
                   </td>
                   <td className={tdClass}>

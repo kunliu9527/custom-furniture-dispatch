@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { AutoSnapshotResult } from "@/lib/evaluation-auto-snapshot";
 import type { OperationsBrief } from "@/lib/operations-brief";
@@ -32,7 +32,7 @@ export function EvaluationCockpit({
       {brief.secondaryCompareHint ? ` · ${brief.secondaryCompareHint}` : null}
       {snapshotStatus === "saved" ? " · 本月快照已自动归档" : null}
       {snapshotStatus === "exists" ? " · 快照已存在" : null}
-      {isDemoTrend ? " · 演示趋势数据" : null}
+      {isDemoTrend ? " · 含演示趋势（非正式数据）" : null}
     </>
   );
 
@@ -48,11 +48,22 @@ export function EvaluationCockpit({
             </div>
             <Link
               href={managerFocusHref("flow-timeout")}
-              className="text-xs font-medium text-indigo-600 hover:underline"
+              className="text-xs font-medium text-blue-600 hover:underline"
             >
-              前往店长看板处理异常 →
+              前往项目进程管理处理异常 →
             </Link>
           </div>
+
+          {isDemoTrend ? (
+            <div
+              className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950"
+              role="status"
+            >
+              <span className="font-semibold">演示趋势数据</span>
+              ：当前环境注入了示例趋势/问题标签，仅供界面验收，
+              <span className="font-semibold">请勿当作真实经营指标</span>。
+            </div>
+          ) : null}
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {brief.kpis.map((kpi) => {
@@ -99,7 +110,7 @@ export function EvaluationCockpit({
                       <span className={deltaTone}>{kpi.deltaLabel}</span>
                     ) : null}
                     {kpi.wowLabel ? (
-                      <span className="text-indigo-600">{kpi.wowLabel}</span>
+                      <span className="text-blue-600">{kpi.wowLabel}</span>
                     ) : null}
                     {kpi.yoyLabel ? (
                       <span className="text-slate-500">{kpi.yoyLabel}</span>
@@ -114,7 +125,7 @@ export function EvaluationCockpit({
             {brief.anomalies.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2">
                 <span className="text-xs font-medium text-amber-900">
-                  异常待办
+                  工单待办
                 </span>
                 {brief.anomalies.map((a) => (
                   <Link

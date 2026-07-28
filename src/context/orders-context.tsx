@@ -27,6 +27,8 @@ import {
 import { normalizeIssueTags } from "@/lib/issue-tags";
 import { INITIAL_DATA } from "@/lib/initial-data";
 import { appendOrderEvent, normalizeOrderEvents } from "@/lib/order-events";
+import { normalizeMeasurement } from "@/lib/measure/normalize";
+import type { OrderMeasurement } from "@/lib/measure/types";
 import {
   countDesignerInProgress,
   DESIGNER_MAX_IN_PROGRESS,
@@ -121,6 +123,7 @@ interface OrdersContextValue {
   initiateAcceptance: (id: string) => void;
   skipElectronicAcceptance: (id: string) => void;
   confirmDesignerAccept: (id: string) => boolean;
+  saveOrderMeasurement: (id: string, measurement: OrderMeasurement) => void;
   setOrderIssueTags: (id: string, tags: OrderIssueTag[]) => void;
   addSupplementOrder: (
     parentOrderId: string,
@@ -195,6 +198,7 @@ function normalizeOrder(raw: Record<string, unknown>): Order {
       typeof raw.designerAcceptedAt === "string"
         ? raw.designerAcceptedAt
         : null,
+    measurement: normalizeMeasurement(raw.measurement),
     orderEvents: normalizeOrderEvents(raw.orderEvents),
     issueTags: normalizeIssueTags(raw.issueTags),
     contract: normalizeContract(raw.contract),
@@ -889,6 +893,24 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return changed;
   }, []);
 
+  const saveOrderMeasurement = useCallback(
+    (id: string, measurement: OrderMeasurement) => {
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id !== id) return order;
+          const updated = {
+            ...order,
+            measurement,
+          };
+          return withEvent(updated, actorRef.current, "量尺记录", {
+            note: `${measurement.photos.length} 张照片`,
+          });
+        }),
+      );
+    },
+    [],
+  );
+
   const setOrderIssueTags = useCallback((id: string, tags: OrderIssueTag[]) => {
     setOrders((prev) =>
       prev.map((order) => {
@@ -996,6 +1018,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       initiateAcceptance,
       skipElectronicAcceptance,
       confirmDesignerAccept,
+      saveOrderMeasurement,
       setOrderIssueTags,
       addSupplementOrder,
       setAfterSalesAmount,
@@ -1021,6 +1044,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       initiateAcceptance,
       skipElectronicAcceptance,
       confirmDesignerAccept,
+      saveOrderMeasurement,
       setOrderIssueTags,
       addSupplementOrder,
       setAfterSalesAmount,
