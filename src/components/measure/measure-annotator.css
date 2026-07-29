@@ -28,20 +28,6 @@
   overflow: auto;
 }
 
-/* 全屏覆盖层内：手机端整页 flex，画布吃剩余高度 */
-@media (max-width: 640px) {
-  .measure-root.editor-page {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    margin: 0;
-    padding: 0.35rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-}
-
 .measure-root .sr-only {
   position: absolute;
   width: 1px;
@@ -271,112 +257,145 @@
 }
 
 @media (max-width: 640px) {
+  .measure-root.editor-page {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+  }
+
   .measure-root .topbar {
     order: 0;
     flex-shrink: 0;
-    margin-bottom: 0.25rem;
-    gap: 0.25rem;
+    margin: 0;
+    padding: 0.45rem 0.6rem;
+    gap: 0.35rem;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
   }
 
   .measure-root .topbar .btn {
-    padding: 0.4rem 0.6rem;
+    padding: 0.45rem 0.7rem;
     font-size: 0.8rem;
-    min-height: 36px;
+    min-height: 40px;
   }
 
   .measure-root .photo-pager {
     order: 0;
-    width: 100%;
-    justify-content: space-between;
+    flex: 1 1 auto;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .measure-root .photo-pager .btn {
+    padding: 0.35rem 0.55rem;
+    min-width: 2rem;
+  }
+
+  .measure-root .pager-index {
+    min-width: 2.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* 绘制时隐藏名称/房间，把高度留给画布；信息可在保存后再改 */
+  .measure-root .editor-meta {
+    display: none;
   }
 
   .measure-root .toolbar {
     order: 1;
     flex-shrink: 0;
-    gap: 0.3rem;
-    margin-bottom: 0.25rem;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0.45rem 0.6rem;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
     overflow-x: auto;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .measure-root .toolbar::-webkit-scrollbar {
+    display: none;
   }
 
   .measure-root .toolbar .tool-group {
     flex-wrap: nowrap;
+    flex-shrink: 0;
   }
 
   .measure-root .chip {
-    padding: 0.4rem 0.65rem;
-    font-size: 0.75rem;
-    min-height: 36px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+    min-height: 40px;
     white-space: nowrap;
   }
 
   .measure-root .tool-label {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     white-space: nowrap;
   }
 
   .measure-root .swatch {
-    width: 1.4rem;
-    height: 1.4rem;
+    width: 1.5rem;
+    height: 1.5rem;
   }
 
   .measure-root .hint {
-    order: 2;
-    flex-shrink: 0;
-    margin: 0 0 0.25rem;
-    font-size: 0.7rem;
-    line-height: 1.3;
+    display: none;
   }
 
   .measure-root .canvas-wrap {
-    order: 3;
+    order: 2;
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 
-  .measure-root .editor-meta {
-    order: 4;
-    flex-shrink: 0;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-    margin: 0.35rem 0 0;
-  }
-
-  .measure-root .editor-meta label span {
-    font-size: 0.68rem;
-  }
-
-  .measure-root .editor-meta input {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.8rem;
-    min-height: 36px;
-  }
-
+  /* 编辑尺寸浮在画布下方，不挤占主画布高度 */
   .measure-root .edit-panel,
-  .measure-root .selected-panel,
-  .measure-root .anno-list {
-    order: 5;
-    flex-shrink: 0;
-    max-height: 28vh;
+  .measure-root .selected-panel {
+    order: 3;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    margin: 0;
+    max-height: 42%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.22);
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .measure-root .anno-list {
+    display: none;
   }
 
   .measure-root .edit-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 88px;
   }
 
   .measure-root .canvas-nav {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .measure-root .btn {
-    padding: 0.4rem 0.65rem;
-    font-size: 0.78rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
   }
 }
 

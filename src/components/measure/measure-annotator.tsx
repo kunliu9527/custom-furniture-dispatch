@@ -551,19 +551,21 @@ export function MeasureAnnotator({
               className="btn btn-secondary"
               disabled={!canPrev}
               onClick={() => handleNavigate(-1)}
+              aria-label="上一张"
             >
-              ‹ 上一张
+              ‹
             </button>
             <span className="pager-index">
-              {photoIndex + 1} / {photoCount}
+              {photoIndex + 1}/{photoCount}
             </span>
             <button
               type="button"
               className="btn btn-secondary"
               disabled={!canNext}
               onClick={() => handleNavigate(1)}
+              aria-label="下一张"
             >
-              下一张 ›
+              ›
             </button>
           </div>
         ) : null}

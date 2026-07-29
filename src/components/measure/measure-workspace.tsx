@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MeasureAnnotator } from "@/components/measure/measure-annotator";
 import { MeasureImagePicker } from "@/components/measure/measure-image-picker";
 import { DrawingMeasurePanel } from "@/components/measure/drawing-measure-panel";
@@ -107,6 +108,21 @@ export function MeasureWorkspace({
   photosRef.current = photos;
   const [editing, setEditing] = useState<MeasurePhotoView | null>(null);
   const [editingIndex, setEditingIndex] = useState(0);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  // 打开时锁住页面滚动，避免 iOS 背景列表跟着滑
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
@@ -393,9 +409,10 @@ export function MeasureWorkspace({
   }
 
   if (!open) return null;
+  if (!portalReady) return null;
 
-  return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100 pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
+  const overlay = (
+    <div className="fixed inset-0 z-[200] flex flex-col bg-stone-100 pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
       {/* 标注编辑时不再叠一层顶栏，把垂直空间留给画布 */}
       {editing ? null : (
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-stone-200 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
@@ -633,4 +650,6 @@ export function MeasureWorkspace({
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
