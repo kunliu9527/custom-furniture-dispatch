@@ -36,6 +36,8 @@ interface AnnotatorProps {
   photoIndex?: number
   photoCount?: number
   onNavigate?: (direction: -1 | 1) => void
+  /** 手机全屏标注：画布优先，表单不占高度 */
+  compact?: boolean
 }
 
 type DraftLine = { x1: number; y1: number; x2: number; y2: number } | null
@@ -47,6 +49,7 @@ export function MeasureAnnotator({
   photoIndex = 0,
   photoCount = 1,
   onNavigate,
+  compact = false,
 }: AnnotatorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -538,8 +541,66 @@ export function MeasureAnnotator({
             ? '点击照片放置文字说明'
             : '按住拖动画涂鸦'
 
+  const toolbar = (
+    <div className={`toolbar${compact ? " toolbar-bottom" : ""}`}>
+      <div className="tool-group tools">
+        {TOOLS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`chip ${tool === t.id ? "active" : ""}`}
+            onClick={() => {
+              setTool(t.id)
+              setDraftStart(null)
+              draftStartRef.current = null
+              hoverRef.current = null
+              lineDragRef.current = null
+              schedulePaint()
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="tool-group">
+        <span className="tool-label">单位</span>
+        {(["mm", "cm", "m"] as Unit[]).map((u) => (
+          <button
+            key={u}
+            type="button"
+            className={`chip ${unit === u ? "active" : ""}`}
+            onClick={() => setUnit(u)}
+          >
+            {u}
+          </button>
+        ))}
+      </div>
+      <div className="tool-group">
+        <span className="tool-label">颜色</span>
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={`swatch ${color === c ? "active" : ""}`}
+            style={{ background: c }}
+            aria-label={c}
+            onClick={() => setColor(c)}
+          />
+        ))}
+      </div>
+      <button
+        type="button"
+        className="btn btn-danger"
+        disabled={!selectedId}
+        onClick={deleteSelected}
+      >
+        删除
+      </button>
+    </div>
+  )
+
   return (
-    <div className="measure-root editor-page">
+    <div className={`measure-root editor-page${compact ? " measure-fs" : ""}`}>
       <header className="topbar">
         <button type="button" className="btn btn-ghost" onClick={handleBack}>
           ← 返回
@@ -574,107 +635,56 @@ export function MeasureAnnotator({
             撤销
           </button>
           <button type="button" className="btn btn-primary" onClick={handleSave}>
-            {dirty ? '保存并继续' : '完成'}
+            {dirty ? "保存" : "完成"}
           </button>
         </div>
       </header>
 
-      <div className="editor-meta">
-        <label>
-          <span>照片名称</span>
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value)
-              setDirty(true)
-            }}
-            placeholder="如：客厅东墙"
-          />
-        </label>
-        <label>
-          <span>房间</span>
-          <input
-            value={room}
-            onChange={(e) => {
-              setRoom(e.target.value)
-              setDirty(true)
-            }}
-            placeholder="如：主卧"
-            list="room-suggestions"
-          />
-          <datalist id="room-suggestions">
-            <option value="客厅" />
-            <option value="主卧" />
-            <option value="次卧" />
-            <option value="厨房" />
-            <option value="卫生间" />
-            <option value="阳台" />
-            <option value="餐厅" />
-            <option value="玄关" />
-          </datalist>
-        </label>
-      </div>
-
-      <div className="toolbar">
-        <div className="tool-group tools">
-          {TOOLS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`chip ${tool === t.id ? 'active' : ''}`}
-              onClick={() => {
-                setTool(t.id)
-                setDraftStart(null)
-                draftStartRef.current = null
-                hoverRef.current = null
-                lineDragRef.current = null
-                schedulePaint()
+      {!compact ? (
+        <div className="editor-meta">
+          <label>
+            <span>照片名称</span>
+            <input
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setDirty(true)
               }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="tool-group">
-          <span className="tool-label">单位</span>
-          {(['mm', 'cm', 'm'] as Unit[]).map((u) => (
-            <button
-              key={u}
-              type="button"
-              className={`chip ${unit === u ? 'active' : ''}`}
-              onClick={() => setUnit(u)}
-            >
-              {u}
-            </button>
-          ))}
-        </div>
-        <div className="tool-group">
-          <span className="tool-label">颜色</span>
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`swatch ${color === c ? 'active' : ''}`}
-              style={{ background: c }}
-              aria-label={c}
-              onClick={() => setColor(c)}
+              placeholder="如：客厅东墙"
             />
-          ))}
+          </label>
+          <label>
+            <span>房间</span>
+            <input
+              value={room}
+              onChange={(e) => {
+                setRoom(e.target.value)
+                setDirty(true)
+              }}
+              placeholder="如：主卧"
+              list="room-suggestions"
+            />
+            <datalist id="room-suggestions">
+              <option value="客厅" />
+              <option value="主卧" />
+              <option value="次卧" />
+              <option value="厨房" />
+              <option value="卫生间" />
+              <option value="阳台" />
+              <option value="餐厅" />
+              <option value="玄关" />
+            </datalist>
+          </label>
         </div>
-        <button
-          type="button"
-          className="btn btn-danger"
-          disabled={!selectedId}
-          onClick={deleteSelected}
-        >
-          删除选中
-        </button>
-      </div>
+      ) : null}
 
-      <p className="hint">
-        {hint}
-        {showPager ? ' · 可点「上一张/下一张」切换，切换时自动保存' : ''}
-      </p>
+      {!compact ? toolbar : null}
+      {!compact ? (
+        <p className="hint">
+          {hint}
+          {showPager ? " · 可点「上一张/下一张」切换，切换时自动保存" : ""}
+        </p>
+      ) : null}
 
       <div className="canvas-wrap" ref={wrapRef}>
         {!ready && <div className="canvas-loading">加载图片…</div>}
@@ -702,7 +712,7 @@ export function MeasureAnnotator({
           ref={canvasRef}
           className="measure-canvas"
           onPointerDown={(e) => {
-            if (tool === 'select' && showPager) {
+            if (tool === "select" && showPager) {
               swipeStart.current = { x: e.clientX, y: e.clientY }
             } else {
               swipeStart.current = null
@@ -714,7 +724,7 @@ export function MeasureAnnotator({
             const start = swipeStart.current
             swipeStart.current = null
             onPointerUp(e)
-            if (!start || tool !== 'select' || !showPager || pendingKind) return
+            if (!start || tool !== "select" || !showPager || pendingKind) return
             const dx = e.clientX - start.x
             const dy = e.clientY - start.y
             if (Math.abs(dx) < 72 || Math.abs(dx) < Math.abs(dy) * 1.4) return
@@ -725,15 +735,29 @@ export function MeasureAnnotator({
         />
       </div>
 
-      {selected?.kind === 'dimension' && (
-        <div className="edit-panel">
-          <h4>编辑尺寸</h4>
+      {compact ? toolbar : null}
+
+      {selected?.kind === "dimension" ? (
+        <div className={compact ? "edit-sheet" : "edit-panel"}>
+          <div className="edit-sheet-head">
+            <h4>编辑尺寸</h4>
+            {compact ? (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setSelectedId(null)}
+              >
+                收起
+              </button>
+            ) : null}
+          </div>
           <div className="edit-row">
             <label>
               <span>数值</span>
               <input
                 value={selected.value}
                 onChange={(e) => updateSelectedDimension({ value: e.target.value })}
+                inputMode="decimal"
               />
             </label>
             <label>
@@ -747,61 +771,72 @@ export function MeasureAnnotator({
                 <option value="m">m</option>
               </select>
             </label>
-            <label>
-              <span>说明</span>
-              <input
-                value={selected.note || ''}
-                onChange={(e) =>
-                  updateSelectedDimension({ note: e.target.value || undefined })
-                }
-                placeholder="如：窗洞净宽"
-              />
-            </label>
+            {!compact ? (
+              <label>
+                <span>说明</span>
+                <input
+                  value={selected.note || ""}
+                  onChange={(e) =>
+                    updateSelectedDimension({ note: e.target.value || undefined })
+                  }
+                  placeholder="如：窗洞净宽"
+                />
+              </label>
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {selected && selected.kind !== 'dimension' && (
+      {selected && selected.kind !== "dimension" && !compact ? (
         <div className="selected-panel">
           <strong>{annotationLabel(selected)}</strong>
         </div>
-      )}
+      ) : null}
 
-      <ul className="anno-list">
-        {annotations.map((a, i) => (
-          <li key={a.id}>
-            <button
-              type="button"
-              className={a.id === selectedId ? 'active' : ''}
-              onClick={() => {
-                setSelectedId(a.id)
-                setTool('select')
-              }}
-            >
-              <i style={{ background: a.color }} />
-              <span>
-                #{i + 1} [{a.kind === 'dimension' ? '尺寸' : a.kind === 'arrow' ? '箭头' : a.kind === 'text' ? '文字' : '涂鸦'}]{' '}
-                {annotationLabel(a)}
-              </span>
-            </button>
-          </li>
-        ))}
-        {annotations.length === 0 && (
-          <li className="empty">暂无标注，选择「尺寸」工具后在图上点两点开始</li>
-        )}
-      </ul>
+      {!compact ? (
+        <ul className="anno-list">
+          {annotations.map((a, i) => (
+            <li key={a.id}>
+              <button
+                type="button"
+                className={a.id === selectedId ? "active" : ""}
+                onClick={() => {
+                  setSelectedId(a.id)
+                  setTool("select")
+                }}
+              >
+                <i style={{ background: a.color }} />
+                <span>
+                  #{i + 1} [
+                  {a.kind === "dimension"
+                    ? "尺寸"
+                    : a.kind === "arrow"
+                      ? "箭头"
+                      : a.kind === "text"
+                        ? "文字"
+                        : "涂鸦"}
+                  ] {annotationLabel(a)}
+                </span>
+              </button>
+            </li>
+          ))}
+          {annotations.length === 0 && (
+            <li className="empty">暂无标注，选择「尺寸」工具后在图上点两点开始</li>
+          )}
+        </ul>
+      ) : null}
 
       {pendingKind && (
         <div className="modal-backdrop">
           <div className="modal">
             <h3>
-              {pendingKind === 'dimension'
-                ? '填写尺寸'
-                : pendingKind === 'arrow'
-                  ? '箭头说明'
-                  : '添加文字'}
+              {pendingKind === "dimension"
+                ? "填写尺寸"
+                : pendingKind === "arrow"
+                  ? "箭头说明"
+                  : "添加文字"}
             </h3>
-            {pendingKind === 'dimension' && (
+            {pendingKind === "dimension" && (
               <label>
                 <span>数值</span>
                 <input
@@ -811,12 +846,12 @@ export function MeasureAnnotator({
                   onChange={(e) => setValueInput(e.target.value)}
                   placeholder={`例如 2400（${unit}）`}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmPending()
+                    if (e.key === "Enter") confirmPending()
                   }}
                 />
               </label>
             )}
-            {pendingKind === 'text' && (
+            {pendingKind === "text" && (
               <label>
                 <span>文字内容</span>
                 <input
@@ -825,21 +860,21 @@ export function MeasureAnnotator({
                   onChange={(e) => setValueInput(e.target.value)}
                   placeholder="如：此处有梁"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmPending()
+                    if (e.key === "Enter") confirmPending()
                   }}
                 />
               </label>
             )}
-            {(pendingKind === 'dimension' || pendingKind === 'arrow') && (
+            {(pendingKind === "dimension" || pendingKind === "arrow") && (
               <label>
-                <span>{pendingKind === 'arrow' ? '说明（可选）' : '说明（可选）'}</span>
+                <span>{pendingKind === "arrow" ? "说明（可选）" : "说明（可选）"}</span>
                 <input
                   value={noteInput}
                   onChange={(e) => setNoteInput(e.target.value)}
-                  placeholder={pendingKind === 'arrow' ? '如：注意管线' : '如：窗洞净宽'}
-                  autoFocus={pendingKind === 'arrow'}
+                  placeholder={pendingKind === "arrow" ? "如：注意管线" : "如：窗洞净宽"}
+                  autoFocus={pendingKind === "arrow"}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmPending()
+                    if (e.key === "Enter") confirmPending()
                   }}
                 />
               </label>
@@ -852,7 +887,7 @@ export function MeasureAnnotator({
                 type="button"
                 className="btn btn-primary"
                 disabled={
-                  (pendingKind === 'dimension' || pendingKind === 'text') && !valueInput.trim()
+                  (pendingKind === "dimension" || pendingKind === "text") && !valueInput.trim()
                 }
                 onClick={confirmPending}
               >
@@ -864,4 +899,5 @@ export function MeasureAnnotator({
       )}
     </div>
   )
+
 }

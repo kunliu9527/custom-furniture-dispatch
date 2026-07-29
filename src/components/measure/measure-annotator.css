@@ -256,8 +256,148 @@
   gap: 0.55rem;
 }
 
+/* 手机全屏标注：靠 .measure-fs 类（不依赖 media query，避免 iOS 视口宽度误判） */
+.measure-root.editor-page.measure-fs {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: #111;
+}
+
+.measure-root.measure-fs .topbar {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  gap: 0.3rem;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+.measure-root.measure-fs .topbar .btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8rem;
+  min-height: 40px;
+}
+
+.measure-root.measure-fs .photo-pager {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+.measure-root.measure-fs .photo-pager .btn {
+  padding: 0.3rem 0.5rem;
+  min-width: 2rem;
+}
+
+.measure-root.measure-fs .pager-index {
+  min-width: 2.5rem;
+  font-size: 0.78rem;
+}
+
+.measure-root.measure-fs .canvas-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.measure-root.measure-fs .toolbar-bottom {
+  flex-shrink: 0;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.measure-root.measure-fs .toolbar-bottom::-webkit-scrollbar {
+  display: none;
+}
+
+.measure-root.measure-fs .toolbar-bottom .tool-group {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.measure-root.measure-fs .chip {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.measure-root.measure-fs .tool-label {
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.measure-root.measure-fs .swatch {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+/* 编辑尺寸：浮层叠在画布上，可收起，不占主高度 */
+.measure-root.measure-fs .edit-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  margin: 0;
+  max-height: 38%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
+  padding: 0.65rem 0.75rem;
+  padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  background: #fffdfb;
+  border-top: 1px solid var(--line);
+}
+
+.measure-root .edit-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.measure-root .edit-sheet-head h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.measure-root.measure-fs .edit-row {
+  grid-template-columns: 1fr 88px;
+}
+
+.measure-root.measure-fs .canvas-nav {
+  width: 44px;
+  height: 44px;
+}
+
+.measure-root.measure-fs .btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 640px) {
-  .measure-root.editor-page {
+  .measure-root.editor-page:not(.measure-fs) {
     width: 100%;
     height: 100%;
     max-height: 100%;
@@ -270,102 +410,20 @@
     background: #111;
   }
 
-  .measure-root .topbar {
-    order: 0;
-    flex-shrink: 0;
-    margin: 0;
-    padding: 0.45rem 0.6rem;
-    gap: 0.35rem;
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .measure-root .topbar .btn {
-    padding: 0.45rem 0.7rem;
-    font-size: 0.8rem;
-    min-height: 40px;
-  }
-
-  .measure-root .photo-pager {
-    order: 0;
-    flex: 1 1 auto;
-    justify-content: center;
-    gap: 0.35rem;
-  }
-
-  .measure-root .photo-pager .btn {
-    padding: 0.35rem 0.55rem;
-    min-width: 2rem;
-  }
-
-  .measure-root .pager-index {
-    min-width: 2.75rem;
-    font-size: 0.8rem;
-  }
-
-  /* 绘制时隐藏名称/房间，把高度留给画布；信息可在保存后再改 */
-  .measure-root .editor-meta {
+  .measure-root.editor-page:not(.measure-fs) .editor-meta,
+  .measure-root.editor-page:not(.measure-fs) .hint,
+  .measure-root.editor-page:not(.measure-fs) .anno-list {
     display: none;
   }
 
-  .measure-root .toolbar {
-    order: 1;
-    flex-shrink: 0;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0.45rem 0.6rem;
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .measure-root .toolbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .measure-root .toolbar .tool-group {
-    flex-wrap: nowrap;
-    flex-shrink: 0;
-  }
-
-  .measure-root .chip {
-    padding: 0.45rem 0.75rem;
-    font-size: 0.78rem;
-    min-height: 40px;
-    white-space: nowrap;
-  }
-
-  .measure-root .tool-label {
-    font-size: 0.72rem;
-    white-space: nowrap;
-  }
-
-  .measure-root .swatch {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .measure-root .hint {
-    display: none;
-  }
-
-  .measure-root .canvas-wrap {
-    order: 2;
+  .measure-root.editor-page:not(.measure-fs) .canvas-wrap {
     flex: 1 1 auto;
     min-height: 0;
     max-height: none;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
   }
 
-  /* 编辑尺寸浮在画布下方，不挤占主画布高度 */
-  .measure-root .edit-panel,
-  .measure-root .selected-panel {
-    order: 3;
+  .measure-root.editor-page:not(.measure-fs) .edit-panel,
+  .measure-root.editor-page:not(.measure-fs) .selected-panel {
     position: absolute;
     left: 0;
     right: 0;
@@ -374,28 +432,9 @@
     margin: 0;
     max-height: 42%;
     overflow: auto;
-    -webkit-overflow-scrolling: touch;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.22);
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-  }
-
-  .measure-root .anno-list {
-    display: none;
-  }
-
-  .measure-root .edit-row {
-    grid-template-columns: 1fr 88px;
-  }
-
-  .measure-root .canvas-nav {
-    width: 44px;
-    height: 44px;
-  }
-
-  .measure-root .btn {
-    padding: 0.45rem 0.7rem;
-    font-size: 0.8rem;
   }
 }
 

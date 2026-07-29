@@ -109,20 +109,50 @@ export function MeasureWorkspace({
   const [editing, setEditing] = useState<MeasurePhotoView | null>(null);
   const [editingIndex, setEditingIndex] = useState(0);
   const [portalReady, setPortalReady] = useState(false);
+  const [compact, setCompact] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 768px)").matches
+      : false,
+  );
 
   useEffect(() => {
     setPortalReady(true);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const sync = () => setCompact(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   // 打开时锁住页面滚动，避免 iOS 背景列表跟着滑
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
+    const prevTouch = document.body.style.touchAction;
+    const prevPosition = document.body.style.position;
+    const prevTop = document.body.style.top;
+    const prevWidth = document.body.style.width;
+    const scrollY = window.scrollY;
     document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    // iOS：固定 body，防止背景页跟着滑并把 fixed 层“顶走”
+    if (compact) {
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+    }
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouch;
+      document.body.style.position = prevPosition;
+      document.body.style.top = prevTop;
+      document.body.style.width = prevWidth;
+      if (compact) window.scrollTo(0, scrollY);
     };
-  }, [open]);
+  }, [open, compact]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [imageCache, setImageCache] = useState<Record<string, string>>({});
@@ -412,7 +442,26 @@ export function MeasureWorkspace({
   if (!portalReady) return null;
 
   const overlay = (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-stone-100 pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
+    <div
+      className="flex flex-col bg-stone-100"
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        width: "100vw",
+        height: "100dvh",
+        maxHeight: "100dvh",
+        zIndex: 99999,
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        background: editing ? "#111" : undefined,
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       {/* 标注编辑时不再叠一层顶栏，把垂直空间留给画布 */}
       {editing ? null : (
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-stone-200 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
@@ -471,6 +520,7 @@ export function MeasureWorkspace({
             photo={editing}
             photoIndex={editingIndex}
             photoCount={photos.length}
+            compact={compact}
             onSave={handleAnnotatorSave}
             onBack={() => setEditing(null)}
             onNavigate={(dir) => void handleNavigate(dir)}
