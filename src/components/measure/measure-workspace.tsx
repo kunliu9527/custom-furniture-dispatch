@@ -35,29 +35,38 @@ interface MeasureWorkspaceProps {
   onCompleteMeasure?: () => void;
 }
 
+async function fetchUrlAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function resolveImageDataUrl(
   orderId: string,
   photo: OrderMeasurePhoto,
 ): Promise<string | null> {
   if (photo.storage === "local") {
-    return loadLocalMeasureImage(orderId, photo.id);
+    const local = await loadLocalMeasureImage(orderId, photo.id);
+    if (local) return local;
+    // 换机/清缓存后本地可能没了，若仍有云端地址则回落
+    if (photo.imageUrl) return fetchUrlAsDataUrl(photo.imageUrl);
+    return null;
   }
   if (photo.imageUrl) {
-    try {
-      const res = await fetch(photo.imageUrl);
-      if (!res.ok) return null;
-      const blob = await res.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
+    return fetchUrlAsDataUrl(photo.imageUrl);
   }
-  return null;
+  // 标记为云端但缺 URL 时，再试本地缓存
+  return loadLocalMeasureImage(orderId, photo.id);
 }
 
 async function uploadCloudImage(
@@ -386,31 +395,21 @@ export function MeasureWorkspace({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
-      {editing ? (
-        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-stone-200 bg-white px-3 py-2 sm:px-4">
-          <p className="min-w-0 truncate text-sm font-semibold text-stone-900">{title}</p>
-          <button
-            type="button"
-            className="shrink-0 rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
-            onClick={onClose}
-          >
-            关闭
-          </button>
-        </div>
-      ) : (
-      <div className="flex flex-col gap-2 border-b border-stone-200 bg-white px-3 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-stone-100 pt-[env(safe-area-inset-top,0)] pb-[env(safe-area-inset-bottom,0)]">
+      {/* 标注编辑时不再叠一层顶栏，把垂直空间留给画布 */}
+      {editing ? null : (
+      <div className="flex shrink-0 flex-col gap-1.5 border-b border-stone-200 bg-white px-3 py-2 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-stone-900">{title}</p>
-          <p className="text-xs text-stone-500">
+          <p className="hidden text-xs text-stone-500 sm:block">
             现场拍照或图纸测距 · 多图可切换 · 超过 1 张自动 ZIP
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-          <div className="flex overflow-hidden rounded-full border border-stone-200 text-xs">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:justify-end sm:gap-2">
+          <div className="flex min-w-0 overflow-x-auto rounded-full border border-stone-200 text-xs [-webkit-overflow-scrolling:touch]">
               <button
                 type="button"
-                className={`px-3 py-1.5 ${
+                className={`shrink-0 px-3 py-2 sm:py-1.5 ${
                   workMode === "site"
                     ? "bg-teal-700 text-white"
                     : "bg-white text-stone-600 hover:bg-stone-50"
@@ -421,7 +420,7 @@ export function MeasureWorkspace({
               </button>
               <button
                 type="button"
-                className={`px-3 py-1.5 ${
+                className={`shrink-0 px-3 py-2 sm:py-1.5 ${
                   workMode === "drawing"
                     ? "bg-teal-700 text-white"
                     : "bg-white text-stone-600 hover:bg-stone-50"
@@ -433,7 +432,7 @@ export function MeasureWorkspace({
             </div>
           <button
             type="button"
-            className="rounded-full border border-stone-200 px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-50"
+            className="shrink-0 rounded-full border border-stone-200 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 sm:py-1.5"
             onClick={onClose}
           >
             关闭
@@ -442,7 +441,13 @@ export function MeasureWorkspace({
       </div>
       )}
 
-      <div className={`min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4 ${editing ? "pt-2" : ""}`}>
+      <div
+        className={
+          editing
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+            : "min-h-0 flex-1 overflow-auto px-3 py-3 sm:px-4"
+        }
+      >
         {editing ? (
           <MeasureAnnotator
             key={editing.id}
@@ -587,11 +592,11 @@ export function MeasureWorkspace({
                   {photos.map((photo, index) => (
                     <li
                       key={photo.id}
-                      className="flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/40 p-3"
+                      className="flex min-h-[52px] items-stretch gap-1 rounded-xl border border-teal-100 bg-teal-50/40 p-1.5 sm:p-3"
                     >
                       <button
                         type="button"
-                        className="min-w-0 flex-1 text-left"
+                        className="min-h-[44px] min-w-0 flex-1 rounded-lg px-2 py-2 text-left active:bg-teal-100/60"
                         disabled={busyId === photo.id || exportBusy}
                         onClick={() => void openPhotoAt(index)}
                       >
@@ -603,11 +608,12 @@ export function MeasureWorkspace({
                           {photo.storage === "cloud" ? "云端" : "本地"} · 标注{" "}
                           {photo.annotations?.length ?? 0}
                           {busyId === photo.id ? " · 加载中…" : ""}
+                          <span className="ml-1 text-teal-700">点此标注 ›</span>
                         </p>
                       </button>
                       <button
                         type="button"
-                        className="shrink-0 rounded-full px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                        className="shrink-0 self-center rounded-full px-3 py-2 text-xs text-red-700 hover:bg-red-50"
                         onClick={() => void handleDelete(photo)}
                       >
                         删除

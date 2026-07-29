@@ -226,10 +226,15 @@ export function MeasureAnnotator({
         wrap.parentElement?.clientWidth ?? 0,
         Math.min(window.innerWidth - 24, 1040),
       )
-      const maxH = Math.min(
-        window.innerHeight * (window.innerWidth < 640 ? 0.66 : 0.68),
-        window.innerWidth < 640 ? 560 : 760,
-      )
+      // 手机端优先用画布容器实际高度（全屏 flex 剩余空间），避免再按 66vh 二次裁切
+      const wrapH = wrap.clientHeight
+      const maxH =
+        window.innerWidth < 640 && wrapH > 120
+          ? wrapH
+          : Math.min(
+              window.innerHeight * (window.innerWidth < 640 ? 0.66 : 0.68),
+              window.innerWidth < 640 ? 560 : 760,
+            )
       // 按容器等比适配；手机端尽量用满宽度以放大操作区
       const scale = Math.min(
         maxW / Math.max(1, img.naturalWidth),

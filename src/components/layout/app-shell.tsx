@@ -34,17 +34,17 @@ export function AppShell({
     >
       {/* min-w-0：防止导航/筛选项把整页撑出视口后被 overflow-hidden 裁切且无法滑动 */}
       <header className="vi-glass-header min-w-0">
-        <div className="vi-shell-inner mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-2 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-3">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="vi-shell-inner mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-1.5 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
             <Link
               href="/"
-              className="vi-logo-mark size-9 shrink-0 text-sm"
+              className="vi-logo-mark size-8 shrink-0 text-sm sm:size-9"
               aria-label="返回首页"
             >
               派
             </Link>
             <div className="min-w-0">
-              <h1 className="vi-heading-section truncate text-base sm:text-[17px]">
+              <h1 className="vi-heading-section truncate text-[15px] sm:text-[17px]">
                 {title}
               </h1>
               {description ? (

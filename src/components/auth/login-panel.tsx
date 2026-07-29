@@ -121,8 +121,8 @@ export function LoginPanel({
       <div
         className={
           variant === "home"
-            ? "relative flex items-center gap-3"
-            : "relative flex flex-wrap items-center gap-2"
+            ? "relative flex max-w-full items-center gap-1.5 sm:gap-3"
+            : "relative flex max-w-full flex-wrap items-center gap-1.5 sm:gap-2"
         }
       >
         <div className="hidden text-right text-sm min-[480px]:block sm:block">
@@ -150,7 +150,7 @@ export function LoginPanel({
           ) : null}
         </div>
         <p
-          className="max-w-[5.5rem] truncate text-sm font-medium min-[480px]:hidden"
+          className="max-w-[4.5rem] truncate text-sm font-medium min-[480px]:hidden"
           style={{ color: "var(--label-primary)" }}
           title={user.displayName}
         >
@@ -159,12 +159,19 @@ export function LoginPanel({
         <Button
           type="button"
           variant="ghost"
-          className="hidden text-xs min-[480px]:inline-flex"
+          size="sm"
+          className="h-8 px-2 text-xs"
           onClick={() => setPasswordOpen((v) => !v)}
         >
           改密
         </Button>
-        <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-xs text-slate-700 sm:border sm:border-slate-200 sm:bg-white"
+          onClick={handleLogout}
+        >
           退出
         </Button>
         {isAdminAccess(user) ? (

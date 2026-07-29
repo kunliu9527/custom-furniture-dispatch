@@ -10,27 +10,31 @@ export function HomeHeader() {
   const { user, siteBranding } = useAuth();
   const headline =
     siteBranding.headlineTitle || DEFAULT_SITE_BRANDING.headlineTitle;
-  const shortTitle =
-    headline.length > 4 ? `${headline.slice(0, 4)}…` : headline;
 
   return (
-    <header className="vi-glass-header relative">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link
-          href="/"
-          className="flex min-h-[44px] items-center gap-2.5 text-sm font-semibold"
-          style={{ color: "var(--label-primary)" }}
-        >
-          <span className="vi-logo-mark size-8 text-xs" aria-hidden>
-            派
-          </span>
-          <span className="hidden sm:inline">{headline}</span>
-          <span className="sm:hidden">{shortTitle}</span>
-        </Link>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {user ? <AppNav showAuth={false} /> : null}
-          <LoginPanel variant="home" />
+    <header className="vi-glass-header relative min-w-0">
+      <div className="mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-2 px-3 py-2.5 sm:px-6 sm:py-3">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <Link
+            href="/"
+            className="flex min-h-[40px] min-w-0 items-center gap-2 text-sm font-semibold"
+            style={{ color: "var(--label-primary)" }}
+          >
+            <span className="vi-logo-mark size-8 shrink-0 text-xs" aria-hidden>
+              派
+            </span>
+            <span className="truncate sm:hidden">派单工作台</span>
+            <span className="hidden truncate sm:inline">{headline}</span>
+          </Link>
+          <div className="shrink-0">
+            <LoginPanel variant="home" />
+          </div>
         </div>
+        {user ? (
+          <div className="min-w-0 w-full">
+            <AppNav showAuth={false} />
+          </div>
+        ) : null}
       </div>
     </header>
   );
