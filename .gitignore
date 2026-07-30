@@ -28,8 +28,11 @@
 # local exports / one-off workbooks
 /exports/
 
-# Cursor local agent artifacts (keep project skills if committed separately)
+# Cursor IDE local artifacts (not part of the app runtime)
 /.cursor/
+
+# Understand Anything / agent knowledge-graph cache (local only)
+/.ua/
 
 # misc
 .DS_Store
