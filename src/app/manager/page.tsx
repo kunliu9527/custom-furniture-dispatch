@@ -192,9 +192,11 @@ function ManagerPageContent() {
 
   const handleOpenGanttOrder = useCallback(
     (order: Order) => {
-      router.push(managerLookupHref(order.id));
+      // 仅 query 变化的同路由跳转：router.push 在生产模式会静默失效，
+      // 按 Next.js 指引使用原生 history API（自动同步 useSearchParams → 深链定位）
+      window.history.pushState(null, "", managerLookupHref(order.id));
     },
-    [router],
+    [],
   );
 
   const applyManagerLookupForOrder = useCallback(
