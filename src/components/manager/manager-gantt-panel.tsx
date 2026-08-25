@@ -19,8 +19,9 @@ import type { Order, OrderStatus, StoreName } from "@/lib/types";
 
 const PX_PER_DAY = 20;
 const LABEL_WIDTH = 176;
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 44;
 const AXIS_HEIGHT = 26;
+const PAGE_SIZE = 80;
 
 const RANGE_OPTIONS = [
   { value: 30, label: "30天" },
@@ -64,6 +65,7 @@ export function ManagerGanttPanel({
   const [rangeDays, setRangeDays] = useState<number>(90);
   const [statusGroup, setStatusGroup] = useState<StatusGroup>("all");
   const [storeFilter, setStoreFilter] = useState<StoreName | "全部">("全部");
+  const [visibleLimit, setVisibleLimit] = useState<number>(PAGE_SIZE);
 
   const storeOptions = useMemo(() => getDispatchStoreOptions(), []);
   const windowStartMs = nowMs - rangeDays * GANTT_DAY_MS;
@@ -93,6 +95,12 @@ export function ManagerGanttPanel({
         return b.order.createdAt.localeCompare(a.order.createdAt);
       });
   }, [orders, nowMs, storeFilter, statusGroup, windowStartMs]);
+
+  // 分页渲染：限制 DOM 规模，避免大订单量时页面卡顿
+  const visibleRows = useMemo(
+    () => rows.slice(0, visibleLimit),
+    [rows, visibleLimit],
+  );
 
   const xAt = (ms: number) =>
     Math.max(0, ((ms - windowStartMs) / GANTT_DAY_MS) * PX_PER_DAY);
@@ -146,7 +154,10 @@ export function ManagerGanttPanel({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setRangeDays(opt.value)}
+                onClick={() => {
+                  setRangeDays(opt.value);
+                  setVisibleLimit(PAGE_SIZE);
+                }}
                 className={`vi-segmented-item px-3 py-1.5 text-xs ${
                   rangeDays === opt.value ? "vi-segmented-item-active" : ""
                 }`}
@@ -163,7 +174,10 @@ export function ManagerGanttPanel({
               <button
                 key={opt.value}
                 type="button"
-                onClick={() => setStatusGroup(opt.value)}
+                onClick={() => {
+                  setStatusGroup(opt.value);
+                  setVisibleLimit(PAGE_SIZE);
+                }}
                 className={`vi-segmented-item px-3 py-1.5 text-xs ${
                   statusGroup === opt.value ? "vi-segmented-item-active" : ""
                 }`}
@@ -178,9 +192,10 @@ export function ManagerGanttPanel({
           <select
             className="vi-field h-8 w-auto max-w-[10rem] px-2 text-xs"
             value={storeFilter}
-            onChange={(e) =>
-              setStoreFilter(e.target.value as StoreName | "全部")
-            }
+            onChange={(e) => {
+              setStoreFilter(e.target.value as StoreName | "全部");
+              setVisibleLimit(PAGE_SIZE);
+            }}
             aria-label="门店筛选"
           >
             <option value="全部">全部</option>
@@ -204,7 +219,8 @@ export function ManagerGanttPanel({
           </p>
         </div>
       ) : (
-        <div className="max-h-[65vh] overflow-auto">
+        <>
+          <div className="max-h-[65vh] overflow-auto">
           <div
             className="relative"
             style={{ width: LABEL_WIDTH + contentWidth, minWidth: "100%" }}
@@ -249,7 +265,7 @@ export function ManagerGanttPanel({
             </div>
 
             {/* 订单行 */}
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <div
                 key={row.order.id}
                 className="flex border-b border-[var(--separator)]"
@@ -259,13 +275,21 @@ export function ManagerGanttPanel({
                   onClick={() => onOpenOrder(row.order)}
                   className="sticky left-0 z-[1] flex shrink-0 cursor-pointer items-center gap-2 border-r border-[var(--separator)] bg-[var(--bg-primary)] px-3 text-left transition-colors duration-[var(--duration-fast)] hover:bg-[var(--fill-quaternary)]"
                   style={{ width: LABEL_WIDTH, height: ROW_HEIGHT }}
-                  title={row.order.address}
+                  title={`${row.order.address} · ${row.order.customerName}`}
                 >
-                  <span
-                    className="min-w-0 flex-1 truncate text-[13px] font-medium"
-                    style={{ color: "var(--label-primary)" }}
-                  >
-                    {row.order.customerName}
+                  <span className="flex min-w-0 flex-1 flex-col items-start justify-center">
+                    <span
+                      className="w-full truncate text-[13px] font-medium"
+                      style={{ color: "var(--label-primary)" }}
+                    >
+                      {row.order.address}
+                    </span>
+                    <span
+                      className="w-full truncate text-[11px]"
+                      style={{ color: "var(--label-tertiary)" }}
+                    >
+                      {row.order.customerName}
+                    </span>
                   </span>
                   <span className="shrink-0">
                     <StatusBadge status={row.order.status} />
@@ -311,6 +335,19 @@ export function ManagerGanttPanel({
             ))}
           </div>
         </div>
+        {rows.length > visibleLimit ? (
+          <div className="border-t border-[var(--separator)] px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setVisibleLimit((v) => v + PAGE_SIZE)}
+              className="w-full rounded-lg border border-[var(--separator)] bg-[var(--bg-secondary)] py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] hover:bg-[var(--fill-quaternary)]"
+              style={{ color: "var(--label-primary)" }}
+            >
+              显示更多（已显示 {visibleLimit} / {rows.length} 单）
+            </button>
+          </div>
+        ) : null}
+        </>
       )}
 
       {/* 图例 */}
