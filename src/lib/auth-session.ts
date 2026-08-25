@@ -20,6 +20,8 @@ export interface StoredAuthSession {
   loggedInAt: number;
   lastActiveAt: number;
   passwordRevision: string;
+  /** 会话所属公司（默认公司为 undefined 以兼容旧会话） */
+  companyId?: string;
 }
 
 export type SessionExpiryReason =
@@ -44,6 +46,7 @@ export function createStoredAuthSession(
     loggedInAt: now,
     lastActiveAt: now,
     passwordRevision: computePasswordRevision(authUser),
+    companyId: user.companyId ?? authUser.companyId,
   };
 }
 
@@ -115,6 +118,7 @@ export function validateAuthSessionRecord(
     position: found.position,
     homeStore: found.homeStore,
     assignedStores: found.assignedStores,
+    companyId: record.companyId,
   };
 
   if (!sessionUsersEqual(record.user, liveUser)) {

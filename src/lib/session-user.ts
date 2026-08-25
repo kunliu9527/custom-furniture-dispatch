@@ -11,7 +11,7 @@ export function resolveLiveSessionUser(
   const staff = staffRecords.find((row) => row.name === session.username);
   if (!staff) return null;
 
-  const auth = staffToAuthUser(staff);
+  const auth = staffToAuthUser(staff, session.companyId);
   return {
     username: auth.username,
     displayName: auth.displayName,
@@ -20,13 +20,14 @@ export function resolveLiveSessionUser(
     position: staff.position,
     homeStore: auth.homeStore,
     assignedStores: auth.assignedStores,
+    companyId: session.companyId,
   };
 }
 
 /** 仅账号/权限/角色变化时重置看板（不受云端名册门店覆盖影响） */
 export function getSessionResetKey(user: SessionUser | null): string {
   if (!user) return "";
-  return `${user.username}|${user.accessLevel}|${user.role}|${user.position ?? ""}`;
+  return `${user.username}|${user.accessLevel}|${user.role}|${user.position ?? ""}|${user.companyId ?? ""}`;
 }
 
 export function sessionUsersEqual(
@@ -40,6 +41,7 @@ export function sessionUsersEqual(
     a.accessLevel === b.accessLevel &&
     a.position === b.position &&
     a.homeStore === b.homeStore &&
+    (a.companyId ?? "") === (b.companyId ?? "") &&
     JSON.stringify(a.assignedStores ?? []) ===
       JSON.stringify(b.assignedStores ?? [])
   );

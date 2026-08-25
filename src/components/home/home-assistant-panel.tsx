@@ -1,10 +1,15 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { describeAssistantDataScope } from "@/lib/assistant/scope";
+import { useOrders } from "@/context/orders-context";
+import {
+  describeAssistantDataScope,
+  resolveAssistantScopedOrders,
+} from "@/lib/assistant/scope";
 import { readStoredAuthSession } from "@/lib/auth-session";
+import { exportOrdersToCsv } from "@/lib/order-list-export";
 import { ACCESS_LEVEL_LABELS } from "@/lib/staff-access";
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
@@ -35,18 +40,36 @@ function saveCachedToken(username: string, token: string, expiresAt: number) {
  */
 export function HomeAssistantPanel() {
   const { user, isHydrated } = useAuth();
+  const { orders } = useOrders();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [scopeLabel, setScopeLabel] = useState("");
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
+  const [exportHint, setExportHint] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  const scopedOrders = useMemo(() => {
+    if (!user) return [];
+    return resolveAssistantScopedOrders(orders, user);
+  }, [orders, user]);
 
   useEffect(() => {
     if (!user) return;
     setScopeLabel(describeAssistantDataScope(user));
   }, [user]);
+
+  function handleExportOrders() {
+    if (!user) return;
+    if (scopedOrders.length === 0) {
+      setExportHint("当前权限范围内暂无订单可导出");
+      return;
+    }
+    setExportHint("");
+    const label = `权限内订单-${describeAssistantDataScope(user)}`;
+    exportOrdersToCsv(scopedOrders, label);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +107,7 @@ export function HomeAssistantPanel() {
       body: JSON.stringify({
         username: user.username,
         passwordRevision: session.passwordRevision,
+        companyId: user.companyId,
       }),
     });
     const data = (await res.json()) as {
@@ -167,7 +191,7 @@ export function HomeAssistantPanel() {
       aria-labelledby="home-assistant-title"
     >
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-[var(--separator)] px-4 py-3">
-        <div>
+        <div className="min-w-0">
           <h2
             id="home-assistant-title"
             className="text-[17px] font-semibold"
@@ -184,15 +208,40 @@ export function HomeAssistantPanel() {
             {" · 只读查询"}
           </p>
         </div>
-        {llmReady === false ? (
-          <p
-            className="text-[12px] font-medium"
-            style={{ color: "var(--system-orange)" }}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportOrders}
+            className="vi-btn vi-btn-secondary shrink-0 text-[13px]"
+            disabled={scopedOrders.length === 0}
+            title={
+              scopedOrders.length === 0
+                ? "当前权限范围内暂无订单"
+                : `导出权限内全部订单（${scopedOrders.length} 笔）`
+            }
           >
-            未配置大模型密钥
-          </p>
-        ) : null}
+            导出订单
+            {scopedOrders.length > 0 ? `（${scopedOrders.length}）` : ""}
+          </button>
+          {llmReady === false ? (
+            <p
+              className="text-[12px] font-medium"
+              style={{ color: "var(--system-orange)" }}
+            >
+              未配置大模型密钥
+            </p>
+          ) : null}
+        </div>
       </div>
+      {exportHint ? (
+        <p
+          className="px-4 pt-2 text-[12px]"
+          style={{ color: "var(--system-orange)" }}
+          role="status"
+        >
+          {exportHint}
+        </p>
+      ) : null}
 
       <div
         ref={listRef}

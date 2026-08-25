@@ -4,6 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { BOARD_META } from "@/lib/board-meta";
 import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 import type { NavHref } from "@/lib/nav-access";
+import Link from "next/link";
 
 const WORKFLOW = [
   "未派单",
@@ -105,9 +106,18 @@ export function HomeGuestLanding() {
           })}
         </div>
 
-        <p className="mt-8 text-center text-sm text-slate-500">
-          请使用右上角登录进入工作台
-        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row sm:gap-4">
+          <Link
+            href="/register"
+            className="inline-flex items-center rounded-full bg-indigo-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700"
+          >
+            注册新公司
+            <span className="ml-1.5" aria-hidden>
+              →
+            </span>
+          </Link>
+          <p className="text-sm text-slate-500">或使用右上角登录进入工作台</p>
+        </div>
       </div>
     </div>
   );

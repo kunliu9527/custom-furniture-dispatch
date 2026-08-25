@@ -1,3 +1,4 @@
+import { companyQualifiedKey } from "./active-company";
 import {
   CUSTOM_POSITIONS_STORAGE_KEY,
   CUSTOM_STORES_STORAGE_KEY,
@@ -17,6 +18,11 @@ export const AUTH_SESSION_STORAGE_KEY = `${APP_STORAGE_PREFIX}auth-session-v1`;
 export const LAST_LOGIN_USERNAME_KEY = `${APP_STORAGE_PREFIX}last-login-username`;
 
 export const ORDERS_STORAGE_KEY = `${APP_STORAGE_PREFIX}data-v13`;
+
+/** 当前公司生效的订单本地镜像 key（默认公司保持原 key，其它公司带公司后缀） */
+export function ordersStorageKey(): string {
+  return companyQualifiedKey(ORDERS_STORAGE_KEY);
+}
 
 export const LEGACY_ORDERS_STORAGE_KEYS = [
   `${APP_STORAGE_PREFIX}data-v12`,
@@ -57,7 +63,10 @@ export const AUTHOR_CREDIT_STORAGE_KEY = "author-credit-clicks";
 
 export function isStaffConfigStorageKey(key: string | null): boolean {
   if (!key) return false;
-  return (STAFF_CONFIG_STORAGE_KEYS as readonly string[]).includes(key);
+  // 兼容默认公司的原 key 与其它公司的 `${key}:${companyId}` 后缀 key
+  return (STAFF_CONFIG_STORAGE_KEYS as readonly string[]).some(
+    (base) => key === base || key.startsWith(`${base}:`),
+  );
 }
 
 export function isAppLocalStorageKey(key: string): boolean {

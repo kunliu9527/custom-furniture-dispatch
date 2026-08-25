@@ -96,8 +96,20 @@ import {
   getCachedStaffConfig,
   patchSnapshotCache,
   isSnapshotDirty,
+  setActiveCompanyId as setCacheActiveCompany,
   subscribeSnapshot,
 } from "@/lib/snapshot-cache";
+import { fetchCompanies } from "@/lib/companies-api";
+import {
+  DEFAULT_COMPANY_ID,
+  DEFAULT_COMPANY_NAME,
+  isDefaultCompany,
+  type CompanyInfo,
+} from "@/lib/company";
+import {
+  getActiveCompanyId,
+  setActiveCompanyId as setStoreActiveCompanyId,
+} from "@/lib/active-company";
 import type { StaffConfigSnapshot } from "@/lib/server/snapshot-types";
 import { isRemoteSyncEnabled } from "@/lib/sync-config";
 import { dedupePhysicalStores } from "@/lib/assigned-stores";
@@ -138,6 +150,21 @@ interface AuthContextValue {
   designerHomeStoreIndex: DesignerHomeStoreIndex;
   isHydrated: boolean;
   staffRecords: StaffRecord[];
+  /** 当前生效公司（数据/门店/名册均按此公司隔离） */
+  activeCompanyId: string;
+  /** 当前公司显示名 */
+  companyName: string;
+  /** 全部公司列表（id + name），供登录下拉、管理员切换公司 */
+  companies: CompanyInfo[];
+  refreshCompanies: () => Promise<void>;
+  /** 管理员切换当前公司（仅 admin 可用） */
+  switchActiveCompany: (
+    companyId: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
+  /** 登录前选择公司（任何用户）：切换生效公司并加载该公司名册 */
+  selectLoginCompany: (
+    companyId: string,
+  ) => Promise<{ ok: boolean; error?: string }>;
   login: (
     username: string,
     password: string,
@@ -209,6 +236,7 @@ function toSession(user: AuthUser): SessionUser {
     position: user.position,
     homeStore: user.homeStore,
     assignedStores: user.assignedStores,
+    companyId: user.companyId,
   };
 }
 
@@ -239,6 +267,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const staffRemoteReadyRef = useRef(false);
   const sessionUserRef = useRef<SessionUser | null>(null);
   sessionUserRef.current = sessionUser;
+  const [activeCompanyId, setActiveCompanyIdState] = useState<string>(() =>
+    getActiveCompanyId(),
+  );
+  const [companies, setCompanies] = useState<CompanyInfo[]>([]);
+
+  /** 切换生效公司：同步模块级（localStorage key）、快照缓存与 React 状态 */
+  const applyActiveCompany = useCallback((companyId: string) => {
+    setStoreActiveCompanyId(companyId);
+    setCacheActiveCompany(companyId);
+    setActiveCompanyIdState(companyId);
+  }, []);
+
+  const companyName = useMemo(() => {
+    if (isDefaultCompany(activeCompanyId)) return DEFAULT_COMPANY_NAME;
+    return (
+      companies.find((c) => c.id === activeCompanyId)?.name ??
+      activeCompanyId
+    );
+  }, [activeCompanyId, companies]);
+
+  const refreshCompanies = useCallback(async () => {
+    try {
+      const list = await fetchCompanies();
+      setCompanies(list);
+    } catch {
+      /* 列表获取失败时保持现状（登录/切换仍可用默认公司） */
+    }
+  }, []);
 
   const clearAuthSession = useCallback(() => {
     const username = sessionUserRef.current?.username;
@@ -293,15 +349,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const allStaffRecords = useMemo(
     () =>
-      buildMergedStaffRecords({
-        customStaff,
-        accessOverrides,
-        passwordOverrides,
-        homeStoreOverrides,
-        extraStoreOverrides,
-        phoneOverrides,
-        removedStaffIds,
-      }),
+      buildMergedStaffRecords(
+        {
+          customStaff,
+          accessOverrides,
+          passwordOverrides,
+          homeStoreOverrides,
+          extraStoreOverrides,
+          phoneOverrides,
+          removedStaffIds,
+        },
+        { includeBuiltins: isDefaultCompany(activeCompanyId) },
+      ),
     [
       customStaff,
       accessOverrides,
@@ -310,6 +369,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      activeCompanyId,
     ],
   );
 
@@ -353,6 +413,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordOverrides,
         homeStoreOverrides,
         extraStoreOverrides,
+        undefined,
+        {
+          includeBuiltins: isDefaultCompany(activeCompanyId),
+          companyId: activeCompanyId,
+        },
       ),
     [
       customStaff,
@@ -360,6 +425,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordOverrides,
       homeStoreOverrides,
       extraStoreOverrides,
+      activeCompanyId,
     ],
   );
 
@@ -385,6 +451,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function init() {
+      // 先读存储会话确定所属公司，再加载该公司数据（人员名册按公司隔离）
+      const stored = readStoredAuthSession();
+      const targetCompany = stored?.companyId ?? DEFAULT_COMPANY_ID;
+      if (getActiveCompanyId() !== targetCompany) {
+        applyActiveCompany(targetCompany);
+      }
+
       let config = loadStaffConfigFromBrowser();
       if (isRemoteSyncEnabled()) {
         try {
@@ -395,7 +468,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         try {
-          const snap = await fetchLocalDevSnapshot();
+          const snap = await fetchLocalDevSnapshot(targetCompany);
           if (snap?.staffConfig) {
             config = {
               ...config,
@@ -423,9 +496,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         config.passwordOverrides,
         config.homeStoreOverrides,
         config.extraStoreOverrides,
+        undefined,
+        {
+          includeBuiltins: isDefaultCompany(targetCompany),
+          companyId: targetCompany,
+        },
       );
 
-      const stored = readStoredAuthSession();
       if (stored) {
         const expiryReason = validateAuthSessionRecord(stored, users);
         if (!expiryReason) {
@@ -443,10 +520,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     void init();
+    void refreshCompanies();
     return () => {
       cancelled = true;
     };
-  }, [applyStaffConfig]);
+  }, [applyStaffConfig, applyActiveCompany, refreshCompanies]);
 
   useEffect(() => {
     if (!isRemoteSyncEnabled()) return;
@@ -524,7 +602,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     (username: string, password: string) => {
-      const found = authenticate(authUsers, username, password);
+      // 用 ref 读取最新公司名册：登录面板可能刚切换了公司，无需等待重渲染
+      const found = authenticate(authUsersRef.current, username, password);
       if (!found) {
         return { ok: false as const, error: "账号或密码错误" };
       }
@@ -540,12 +619,128 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         position: session.position,
       };
     },
-    [authUsers],
+    [],
+  );
+
+  /** 登录前选择公司：切换生效公司并加载该公司名册，使 login 立即按该公司认证 */
+  const selectLoginCompany = useCallback(
+    async (companyId: string) => {
+      if (companyId === activeCompanyId) return { ok: true as const };
+      applyActiveCompany(companyId);
+
+      let config: StaffConfigSnapshot | null = null;
+      if (isRemoteSyncEnabled()) {
+        try {
+          await ensureSnapshotCacheReady();
+          config = getCachedStaffConfig();
+        } catch {
+          /* 忽略：继续用浏览器镜像 */
+        }
+      } else {
+        try {
+          const snap = await fetchLocalDevSnapshot(companyId);
+          if (snap?.staffConfig) {
+            const browser = loadStaffConfigFromBrowser();
+            config = {
+              ...browser,
+              ...snap.staffConfig,
+              siteBranding:
+                snap.staffConfig.siteBranding ?? browser.siteBranding,
+              commissionSettings:
+                snap.staffConfig.commissionSettings ??
+                browser.commissionSettings,
+            };
+          }
+        } catch {
+          /* 忽略：保持现有配置 */
+        }
+      }
+
+      if (config) {
+        applyStaffConfig(config);
+        authUsersRef.current = buildAuthUsers(
+          config.customStaff,
+          config.accessOverrides,
+          config.passwordOverrides,
+          config.homeStoreOverrides,
+          config.extraStoreOverrides,
+          undefined,
+          {
+            includeBuiltins: isDefaultCompany(companyId),
+            companyId,
+          },
+        );
+      }
+      return { ok: true as const };
+    },
+    [activeCompanyId, applyActiveCompany, applyStaffConfig],
   );
 
   const logout = useCallback(() => {
     clearAuthSession();
   }, [clearAuthSession]);
+
+  /** 管理员切换当前公司（数据/人员/门店均切换到该公司；admin 账号在各公司均存在） */
+  const switchActiveCompany = useCallback(
+    async (companyId: string) => {
+      if (!liveUser || !isAdminAccess(liveUser)) {
+        return { ok: false as const, error: "仅管理员可切换公司" };
+      }
+      const company = companies.find((c) => c.id === companyId);
+      if (!company) {
+        return { ok: false as const, error: "公司不存在" };
+      }
+      if (companyId === activeCompanyId) return { ok: true as const };
+
+      applyActiveCompany(companyId);
+
+      if (isRemoteSyncEnabled()) {
+        try {
+          await ensureSnapshotCacheReady();
+        } catch {
+          /* 快照缓存会通知连接错误；本地镜像兜底 */
+        }
+      } else {
+        try {
+          const snap = await fetchLocalDevSnapshot(companyId);
+          if (snap?.staffConfig) {
+            const browser = loadStaffConfigFromBrowser();
+            const config: StaffConfigSnapshot = {
+              ...browser,
+              ...snap.staffConfig,
+              siteBranding:
+                snap.staffConfig.siteBranding ?? browser.siteBranding,
+              commissionSettings:
+                snap.staffConfig.commissionSettings ??
+                browser.commissionSettings,
+            };
+            applyStaffConfig(config);
+          }
+        } catch {
+          /* 保持现有配置 */
+        }
+      }
+
+      // 更新会话公司归属：刷新/重进后停留在该公司
+      const current = sessionUserRef.current;
+      if (current) {
+        const nextUser: SessionUser = { ...current, companyId };
+        setSessionUser(nextUser);
+        const stored = readStoredAuthSession();
+        if (stored) {
+          writeStoredAuthSession({ ...stored, user: nextUser, companyId });
+        }
+      }
+      return { ok: true as const };
+    },
+    [
+      liveUser,
+      companies,
+      activeCompanyId,
+      applyActiveCompany,
+      applyStaffConfig,
+    ],
+  );
 
   const changeOwnPassword = useCallback(
     (currentPassword: string, newPassword: string) => {
@@ -609,15 +804,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!nameCheck.ok) return nameCheck;
       const name = data.name.trim();
 
-      const merged = buildMergedStaffRecords({
-        customStaff,
-        accessOverrides,
-        passwordOverrides,
-        homeStoreOverrides,
-        extraStoreOverrides,
-        phoneOverrides,
-        removedStaffIds,
-      });
+      const merged = buildMergedStaffRecords(
+        {
+          customStaff,
+          accessOverrides,
+          passwordOverrides,
+          homeStoreOverrides,
+          extraStoreOverrides,
+          phoneOverrides,
+          removedStaffIds,
+        },
+        { includeBuiltins: isDefaultCompany(activeCompanyId) },
+      );
       if (merged.some((s) => s.name === name)) {
         return { ok: false, error: "该姓名已存在" };
       }
@@ -675,6 +873,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       siteBranding,
       commissionSettings,
       liveUser,
+      activeCompanyId,
       syncStaffConfigToRemote,
     ],
   );
@@ -1097,6 +1296,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,
+      activeCompanyId,
+      companyName,
+      companies,
+      refreshCompanies,
+      switchActiveCompany,
+      selectLoginCompany,
       siteBranding,
       commissionSettings,
       login,
@@ -1119,6 +1324,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       designerHomeStoreIndex,
       isHydrated,
       staffRecords,
+      activeCompanyId,
+      companyName,
+      companies,
+      refreshCompanies,
+      switchActiveCompany,
+      selectLoginCompany,
       siteBranding,
       commissionSettings,
       login,

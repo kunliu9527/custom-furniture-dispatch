@@ -7,7 +7,7 @@ import {
   isAppLocalStorageKey,
   isAppSessionStorageKey,
   LEGACY_ORDERS_STORAGE_KEYS,
-  ORDERS_STORAGE_KEY,
+  ordersStorageKey,
   SESSION_UI_KEY_PREFIXES,
   STAFF_CONFIG_STORAGE_KEYS,
 } from "./app-storage-keys";
@@ -102,7 +102,7 @@ export function writeFreshOrdersLocalStorage(payload: {
   if (typeof window === "undefined") return;
   removeLocalStorageKeys([...LEGACY_ORDERS_STORAGE_KEYS]);
   localStorage.setItem(
-    ORDERS_STORAGE_KEY,
+    ordersStorageKey(),
     JSON.stringify({
       orders: payload.orders,
       supplements: payload.supplements,
@@ -112,7 +112,6 @@ export function writeFreshOrdersLocalStorage(payload: {
 
 export {
   AUTH_STORAGE_KEY,
-  ORDERS_STORAGE_KEY,
   STAFF_CONFIG_STORAGE_KEYS,
   APP_STORAGE_PREFIX,
 };

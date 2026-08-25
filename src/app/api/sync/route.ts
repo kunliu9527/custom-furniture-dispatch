@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeCompanyId } from "@/lib/company";
 import {
   mergeAppSnapshot,
   normalizeStaffConfig,
@@ -13,9 +14,14 @@ function checkWriteAuth(request: Request): boolean {
   return provided === required;
 }
 
-export async function GET() {
+function resolveCompanyId(request: Request): string {
+  const url = new URL(request.url);
+  return normalizeCompanyId(url.searchParams.get("company")?.trim());
+}
+
+export async function GET(request: Request) {
   try {
-    const snapshot = await readAppSnapshot();
+    const snapshot = await readAppSnapshot(resolveCompanyId(request));
     return NextResponse.json(snapshot);
   } catch (err) {
     console.error("[api/sync] GET failed", err);
@@ -29,6 +35,7 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const companyId = resolveCompanyId(request);
     const body = (await request.json()) as SnapshotMergeInput & {
       staffConfig?: unknown;
     };
@@ -37,7 +44,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "无效的 version" }, { status: 400 });
     }
 
-    const result = await mergeAppSnapshot({
+    const result = await mergeAppSnapshot(companyId, {
       version,
       orders: Array.isArray(body.orders) ? body.orders : undefined,
       supplements: Array.isArray(body.supplements)

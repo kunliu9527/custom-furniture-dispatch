@@ -3,6 +3,10 @@
 import type { AppSnapshot, StaffConfigSnapshot } from "@/lib/server/snapshot-types";
 import { EMPTY_STAFF_CONFIG } from "@/lib/server/snapshot-types";
 import {
+  getActiveCompanyId,
+  setActiveCompanyId as setStoreActiveCompanyId,
+} from "@/lib/active-company";
+import {
   getClientSyncApiKey,
   getSyncPollIntervalMs,
   isRemoteSyncEnabled,
@@ -32,6 +36,12 @@ let syncingIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
 
 const snapshotListeners = new Set<SnapshotListener>();
 const statusListeners = new Set<StatusListener>();
+
+/** 当前公司查询串（默认公司也会带上，服务端归一处理） */
+function syncQuery(): string {
+  const id = getActiveCompanyId();
+  return id ? `?company=${encodeURIComponent(id)}` : "";
+}
 
 function snapshotPayload(snap: AppSnapshot) {
   return JSON.stringify({
@@ -75,7 +85,7 @@ function syncHeaders(): HeadersInit {
 }
 
 export async function fetchRemoteSnapshot(): Promise<AppSnapshot> {
-  const res = await apiFetch("/api/sync", { cache: "no-store" });
+  const res = await apiFetch(`/api/sync${syncQuery()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`拉取失败 (${res.status})`);
   return (await res.json()) as AppSnapshot;
 }
@@ -86,7 +96,7 @@ async function putRemoteSnapshot(body: {
   supplements: SupplementOrder[];
   staffConfig: StaffConfigSnapshot;
 }): Promise<AppSnapshot> {
-  const res = await apiFetch("/api/sync", {
+  const res = await apiFetch(`/api/sync${syncQuery()}`, {
     method: "PUT",
     headers: syncHeaders(),
     body: JSON.stringify(body),
@@ -197,7 +207,10 @@ function startPolling() {
 async function pullRemoteIfNewer() {
   if (!isRemoteSyncEnabled() || !cache || dirty || pushing) return;
   try {
+    const requestedCompany = getActiveCompanyId();
     const remote = await fetchRemoteSnapshot();
+    // 请求期间公司已切换：丢弃过期结果
+    if (getActiveCompanyId() !== requestedCompany) return;
     if (remote.version > cache.version) {
       cache = remote;
       notifySnapshot(remote);
@@ -222,7 +235,15 @@ export async function refreshRemoteSnapshot(): Promise<AppSnapshot> {
 
   notifyStatus("connecting", "正在拉取云端数据…");
   try {
+    const requestedCompany = getActiveCompanyId();
     const remote = await fetchRemoteSnapshot();
+    // 请求期间公司已切换：返回新公司的缓存
+    if (getActiveCompanyId() !== requestedCompany) {
+      const snap = await ensureSnapshotCacheReady();
+      if (!snap) throw new Error("已切换公司，请重试");
+      notifyStatus("connected", "已切换公司");
+      return snap;
+    }
     cache = remote;
     dirty = false;
     if (pushTimer) {
@@ -264,9 +285,14 @@ export function ensureSnapshotCacheReady(): Promise<AppSnapshot | null> {
   if (readyPromise) return readyPromise;
 
   readyPromise = (async () => {
+    const requestedCompany = getActiveCompanyId();
     notifyStatus("connecting");
     try {
       const snap = await fetchRemoteSnapshot();
+      // 请求期间公司已切换：丢弃过期结果，避免用旧公司数据覆盖缓存
+      if (getActiveCompanyId() !== requestedCompany) {
+        return null;
+      }
       cache = snap;
       notifySnapshot(snap);
       notifyStatus("connected");
@@ -285,4 +311,16 @@ export function ensureSnapshotCacheReady(): Promise<AppSnapshot | null> {
 export function stopSnapshotPollingForTests() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = null;
+}
+
+/**
+ * 切换当前公司（登录/会话恢复/管理员切换）。
+ * 重置缓存与 readyPromise；调用方随后应重新 ensureSnapshotCacheReady 加载该公司快照，
+ * 订阅者会通过 notifySnapshot 收到新公司数据。
+ */
+export function setActiveCompanyId(companyId: string): void {
+  setStoreActiveCompanyId(companyId);
+  cache = null;
+  readyPromise = null;
+  dirty = false;
 }

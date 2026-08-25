@@ -78,6 +78,11 @@ export interface StaffConfigSources {
   commissionSettings: CommissionSettings;
 }
 
+export interface BuildMergedStaffOptions {
+  /** 是否合并内置名册（设计师/派单人）。默认公司含内置；新注册公司仅 admin + 本公司 customStaff */
+  includeBuiltins?: boolean;
+}
+
 export function buildMergedStaffRecords(
   sources: Pick<
     StaffConfigSources,
@@ -89,9 +94,11 @@ export function buildMergedStaffRecords(
     | "phoneOverrides"
     | "removedStaffIds"
   >,
+  options: BuildMergedStaffOptions = {},
 ): StaffRecord[] {
+  const builtin = options.includeBuiltins ? BUILTIN_STAFF_RECORDS : [];
   const merged = mergeStaffRecords(
-    [ADMIN_STAFF_RECORD, ...BUILTIN_STAFF_RECORDS],
+    [ADMIN_STAFF_RECORD, ...builtin],
     sources.customStaff,
     sources.accessOverrides,
     sources.passwordOverrides,

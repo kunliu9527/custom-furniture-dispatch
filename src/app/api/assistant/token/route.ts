@@ -3,6 +3,7 @@ import { mintAssistantToken } from "@/lib/server/assistant-auth";
 import { computePasswordRevision } from "@/lib/auth-session";
 import { buildAuthUsers, authenticate, findAuthUser } from "@/lib/auth-users";
 import { isAssistantLlmConfigured } from "@/lib/server/assistant-llm";
+import { isDefaultCompany, normalizeCompanyId } from "@/lib/company";
 import { readAppSnapshot } from "@/lib/server/app-store";
 
 type TokenBody = {
@@ -10,6 +11,8 @@ type TokenBody = {
   password?: string;
   /** 与登录 session 中的 passwordRevision 一致，可免再输密码 */
   passwordRevision?: string;
+  /** 所属公司（默认万象天冠） */
+  companyId?: string;
 };
 
 /** 签发助手 token */
@@ -26,7 +29,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "缺少账号" }, { status: 400 });
   }
 
-  const snapshot = await readAppSnapshot();
+  const companyId = normalizeCompanyId(body.companyId);
+  const snapshot = await readAppSnapshot(companyId);
   const users = buildAuthUsers(
     snapshot.staffConfig.customStaff,
     snapshot.staffConfig.accessOverrides,
@@ -34,6 +38,10 @@ export async function POST(request: Request) {
     snapshot.staffConfig.homeStoreOverrides,
     snapshot.staffConfig.extraStoreOverrides,
     snapshot.staffConfig.phoneOverrides,
+    {
+      includeBuiltins: isDefaultCompany(companyId),
+      companyId,
+    },
   );
 
   let auth = null as ReturnType<typeof authenticate>;
@@ -56,6 +64,7 @@ export async function POST(request: Request) {
   const { token, expiresAt } = mintAssistantToken(
     auth.username,
     computePasswordRevision(auth),
+    companyId,
   );
 
   return NextResponse.json({

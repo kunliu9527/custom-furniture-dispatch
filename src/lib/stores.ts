@@ -1,10 +1,12 @@
+import { getActiveCompanyId } from "./active-company";
+import { isDefaultCompany } from "./company";
 import { STORES } from "./designers";
 import { loadCustomStoreNames } from "./staff-config-storage";
 import type { StoreName } from "./types";
 
 export const HEADQUARTERS_STORE = "总部" as const satisfies StoreName;
 
-/** 订单派单/统计用实体门店（不含总部） */
+/** 订单派单/统计用实体门店（不含总部）；内置门店仅属于默认公司（万象天冠） */
 export const PHYSICAL_STORES = [...STORES] as const;
 
 function dedupeStoreNames(names: string[]): StoreName[] {
@@ -19,9 +21,10 @@ function dedupeStoreNames(names: string[]): StoreName[] {
   return result;
 }
 
-/** 内置 + 自定义实体门店（不含总部） */
+/** 当前公司可用门店：默认公司 = 内置 + 本公司自定义；其它公司 = 仅本公司自定义 */
 export function getMergedPhysicalStores(): StoreName[] {
-  return dedupeStoreNames([...PHYSICAL_STORES, ...loadCustomStoreNames()]);
+  const base = isDefaultCompany(getActiveCompanyId()) ? PHYSICAL_STORES : [];
+  return dedupeStoreNames([...base, ...loadCustomStoreNames()]);
 }
 
 /** 派单录入等使用的门店列表 */

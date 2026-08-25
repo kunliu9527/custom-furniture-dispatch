@@ -18,6 +18,17 @@ export function createInitialSnapshot(): AppSnapshot {
   };
 }
 
+/** 新注册公司：全新空数据快照（不注入演示订单），人员/门店在创建时写入 staffConfig */
+export function createEmptyCompanySnapshot(): AppSnapshot {
+  return {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    orders: [],
+    supplements: [],
+    staffConfig: { ...EMPTY_STAFF_CONFIG },
+  };
+}
+
 export function normalizeStaffConfig(
   raw: Partial<StaffConfigSnapshot> | undefined,
 ): StaffConfigSnapshot {

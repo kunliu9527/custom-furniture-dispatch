@@ -40,9 +40,14 @@ export interface AuthUser {
   homeStore?: StoreName;
   assignedStores?: StoreName[];
   permissions?: string;
+  /** 账号所属公司（默认公司为 undefined，兼容旧数据） */
+  companyId?: string;
 }
 
-export function staffToAuthUser(staff: StaffRecord): AuthUser {
+export function staffToAuthUser(
+  staff: StaffRecord,
+  companyId?: string,
+): AuthUser {
   const assignedStores = resolveStaffAssignedStores(staff);
   return {
     username: staff.name,
@@ -54,7 +59,14 @@ export function staffToAuthUser(staff: StaffRecord): AuthUser {
     homeStore: staff.homeStore,
     assignedStores,
     permissions: staff.permissions,
+    companyId,
   };
+}
+
+export interface BuildAuthUsersOptions {
+  /** 是否合并内置名册（设计师/派单人）。默认公司含内置；新注册公司仅 admin + 本公司 customStaff */
+  includeBuiltins?: boolean;
+  companyId?: string;
 }
 
 export function buildAuthUsers(
@@ -64,18 +76,22 @@ export function buildAuthUsers(
   homeStoreOverrides?: StaffHomeStoreOverrides,
   extraStoreOverrides?: StaffExtraStoresOverrides,
   phoneOverrides?: StaffPhoneOverrides,
+  options: BuildAuthUsersOptions = {},
 ): AuthUser[] {
   const overrides = accessOverrides ?? loadStaffAccessOverrides();
   const passwords = passwordOverrides ?? loadStaffPasswordOverrides();
   const homeStores = homeStoreOverrides ?? loadStaffHomeStoreOverrides();
   const extraStores = extraStoreOverrides ?? loadStaffExtraStoresOverrides();
   const phones = phoneOverrides ?? loadStaffPhoneOverrides();
+  const builtin = options.includeBuiltins
+    ? BUILTIN_STAFF_RECORDS
+    : [];
   const allStaff = mergeStaffRecords(
-    [ADMIN_STAFF_RECORD, ...BUILTIN_STAFF_RECORDS],
+    [ADMIN_STAFF_RECORD, ...builtin],
     customStaff.filter(
       (s) =>
         s.name !== "admin" &&
-        !BUILTIN_STAFF_RECORDS.some((b) => b.name === s.name),
+        !builtin.some((b) => b.name === s.name),
     ),
     overrides,
     passwords,
@@ -83,7 +99,7 @@ export function buildAuthUsers(
     extraStores,
     phones,
   );
-  return allStaff.map(staffToAuthUser);
+  return allStaff.map((s) => staffToAuthUser(s, options.companyId));
 }
 
 export function findAuthUser(

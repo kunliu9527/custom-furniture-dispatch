@@ -1,3 +1,5 @@
+import { companyQualifiedKey } from "./active-company";
+
 export type StaffPasswordOverrides = Record<string, string>;
 
 export const STAFF_PASSWORD_STORAGE_KEY =
@@ -6,7 +8,9 @@ export const STAFF_PASSWORD_STORAGE_KEY =
 export function loadStaffPasswordOverrides(): StaffPasswordOverrides {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STAFF_PASSWORD_STORAGE_KEY);
+    const raw = localStorage.getItem(
+      companyQualifiedKey(STAFF_PASSWORD_STORAGE_KEY),
+    );
     if (!raw) return {};
     const parsed = JSON.parse(raw) as StaffPasswordOverrides;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -18,5 +22,8 @@ export function loadStaffPasswordOverrides(): StaffPasswordOverrides {
 export function saveStaffPasswordOverrides(
   overrides: StaffPasswordOverrides,
 ): void {
-  localStorage.setItem(STAFF_PASSWORD_STORAGE_KEY, JSON.stringify(overrides));
+  localStorage.setItem(
+    companyQualifiedKey(STAFF_PASSWORD_STORAGE_KEY),
+    JSON.stringify(overrides),
+  );
 }

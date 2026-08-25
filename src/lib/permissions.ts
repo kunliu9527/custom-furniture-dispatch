@@ -47,6 +47,13 @@ export interface SessionUser {
   homeStore?: StoreName;
   /** 设计经理所属实体门店（最多 3 个） */
   assignedStores?: StoreName[];
+  /** 所属公司（默认公司为 undefined，兼容旧会话/旧数据） */
+  companyId?: string;
+}
+
+/** 当前用户是否跨公司总管理员（admin 属于任意公司，权限不因公司切换改变） */
+export function isGlobalAdmin(user: SessionUser | null): boolean {
+  return user?.accessLevel === "admin";
 }
 
 export function isInstallerSession(user: SessionUser | null): boolean {

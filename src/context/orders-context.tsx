@@ -16,7 +16,10 @@ import {
   fetchLocalDevSnapshot,
   isLocalOrdersCacheEmpty,
 } from "@/lib/local-snapshot-bootstrap";
-import { STORAGE_KEY, LEGACY_STORAGE_KEYS } from "@/lib/constants";
+import { LEGACY_STORAGE_KEYS } from "@/lib/constants";
+import { getActiveCompanyId } from "@/lib/active-company";
+import { isDefaultCompany } from "@/lib/company";
+import { ordersStorageKey } from "@/lib/app-storage-keys";
 import {
   createCustomerToken,
   normalizeAcceptance,
@@ -233,15 +236,19 @@ function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
   if (typeof window === "undefined") {
     return { orders: INITIAL_DATA.orders, supplements: INITIAL_DATA.supplements };
   }
+  const emptyForCompany = () =>
+    isDefaultCompany(getActiveCompanyId())
+      ? INITIAL_DATA
+      : { orders: [] as Order[], supplements: [] as SupplementOrder[] };
   try {
-    let raw = localStorage.getItem(STORAGE_KEY);
+    let raw = localStorage.getItem(ordersStorageKey());
     if (!raw) {
       for (const legacyKey of LEGACY_STORAGE_KEYS) {
         raw = localStorage.getItem(legacyKey);
         if (raw) break;
       }
     }
-    if (!raw) return INITIAL_DATA;
+    if (!raw) return emptyForCompany();
     const parsed = JSON.parse(raw) as {
       orders?: unknown[];
       supplements?: unknown[];
@@ -251,18 +258,18 @@ function loadData(): { orders: Order[]; supplements: SupplementOrder[] } {
       : INITIAL_DATA.orders;
     const supplements = normalizeSupplements(parsed.supplements);
     if (orders.length === 0) {
-      return INITIAL_DATA;
+      return emptyForCompany();
     }
     return { orders, supplements };
   } catch {
-    return INITIAL_DATA;
+    return emptyForCompany();
   }
 }
 
 function persistData(orders: Order[], supplements: SupplementOrder[]) {
   try {
     localStorage.setItem(
-      STORAGE_KEY,
+      ordersStorageKey(),
       JSON.stringify({ orders, supplements }),
     );
   } catch (err) {
@@ -271,7 +278,7 @@ function persistData(orders: Order[], supplements: SupplementOrder[]) {
 }
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
-  const { user, siteBranding } = useAuth();
+  const { user, siteBranding, activeCompanyId } = useAuth();
   const actorRef = useRef("系统");
   const [orders, setOrders] = useState<Order[]>(INITIAL_DATA.orders);
   const [supplements, setSupplements] = useState<SupplementOrder[]>(
@@ -293,7 +300,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         let data = loadData();
 
         if (isLocalOrdersCacheEmpty() || data.orders.length === 0) {
-          const snap = await fetchLocalDevSnapshot();
+          const snap = await fetchLocalDevSnapshot(getActiveCompanyId());
           if (cancelled) return;
           if (snap && Array.isArray(snap.orders) && snap.orders.length > 0) {
             data = {
@@ -303,7 +310,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
               supplements: normalizeSupplements(snap.supplements),
             };
             persistData(data.orders, data.supplements);
-          } else if (data.orders.length === 0) {
+          } else if (
+            data.orders.length === 0 &&
+            isDefaultCompany(getActiveCompanyId())
+          ) {
             data = {
               orders: INITIAL_DATA.orders,
               supplements: INITIAL_DATA.supplements,
@@ -352,7 +362,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeCompanyId]);
 
   useEffect(() => {
     if (!isRemoteSyncEnabled()) return;

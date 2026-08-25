@@ -1,3 +1,4 @@
+import { companyQualifiedKey } from "./active-company";
 import type { StaffAccessLevel } from "./staff-access";
 
 export const CUSTOM_POSITIONS_STORAGE_KEY =
@@ -26,7 +27,9 @@ export function isReservedPositionName(name: string): boolean {
 export function loadCustomPositionDefinitions(): CustomPositionDefinition[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(CUSTOM_POSITIONS_STORAGE_KEY);
+    const raw = localStorage.getItem(
+      companyQualifiedKey(CUSTOM_POSITIONS_STORAGE_KEY),
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CustomPositionDefinition[];
     if (!Array.isArray(parsed)) return [];
@@ -45,7 +48,7 @@ export function saveCustomPositionDefinitions(
   definitions: CustomPositionDefinition[],
 ): void {
   localStorage.setItem(
-    CUSTOM_POSITIONS_STORAGE_KEY,
+    companyQualifiedKey(CUSTOM_POSITIONS_STORAGE_KEY),
     JSON.stringify(definitions),
   );
 }
@@ -53,7 +56,7 @@ export function saveCustomPositionDefinitions(
 export function loadCustomStoreNames(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(CUSTOM_STORES_STORAGE_KEY);
+    const raw = localStorage.getItem(companyQualifiedKey(CUSTOM_STORES_STORAGE_KEY));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -66,7 +69,10 @@ export function loadCustomStoreNames(): string[] {
 }
 
 export function saveCustomStoreNames(names: string[]): void {
-  localStorage.setItem(CUSTOM_STORES_STORAGE_KEY, JSON.stringify(names));
+  localStorage.setItem(
+    companyQualifiedKey(CUSTOM_STORES_STORAGE_KEY),
+    JSON.stringify(names),
+  );
 }
 
 export function isReservedStoreName(name: string): boolean {

@@ -3,6 +3,7 @@ import {
   defaultAccessLevelForPosition,
   permissionsTextForAccessLevel,
 } from "./staff-access";
+import { companyQualifiedKey } from "./active-company";
 import type { StaffAccessOverrides } from "./staff-access-storage";
 import type { StaffExtraStoresOverrides } from "./staff-extra-stores-storage";
 import type { StaffHomeStoreOverrides } from "./staff-home-store-storage";
@@ -16,7 +17,9 @@ export const CUSTOM_STAFF_STORAGE_KEY = "custom-furniture-dispatch-staff-v1";
 export function loadCustomStaff(): StaffRecord[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(CUSTOM_STAFF_STORAGE_KEY);
+    const raw = localStorage.getItem(
+      companyQualifiedKey(CUSTOM_STAFF_STORAGE_KEY),
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw) as StaffRecord[];
     return Array.isArray(parsed) ? parsed : [];
@@ -26,7 +29,10 @@ export function loadCustomStaff(): StaffRecord[] {
 }
 
 export function saveCustomStaff(records: StaffRecord[]): void {
-  localStorage.setItem(CUSTOM_STAFF_STORAGE_KEY, JSON.stringify(records));
+  localStorage.setItem(
+    companyQualifiedKey(CUSTOM_STAFF_STORAGE_KEY),
+    JSON.stringify(records),
+  );
 }
 
 function withAccessLevel(

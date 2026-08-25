@@ -1,11 +1,17 @@
-import { LEGACY_STORAGE_KEYS, STORAGE_KEY } from "./constants";
+import { normalizeCompanyId } from "./company";
+import { LEGACY_STORAGE_KEYS } from "./constants";
+import { ordersStorageKey } from "./app-storage-keys";
 import { INITIAL_DATA } from "./initial-data";
 import type { AppSnapshot } from "./server/snapshot-types";
 
-/** 本地模式：从本机 Next /api/sync 拉一次快照（读 data/snapshot.json，非云端轮询） */
-export async function fetchLocalDevSnapshot(): Promise<AppSnapshot | null> {
+/** 本地模式：从本机 Next /api/sync 拉一次指定公司的快照（读对应公司数据文件，非云端轮询） */
+export async function fetchLocalDevSnapshot(
+  companyId?: string,
+): Promise<AppSnapshot | null> {
   try {
-    const res = await fetch("/api/sync", { cache: "no-store" });
+    const id = normalizeCompanyId(companyId);
+    const query = id ? `?company=${encodeURIComponent(id)}` : "";
+    const res = await fetch(`/api/sync${query}`, { cache: "no-store" });
     if (!res.ok) return null;
     return (await res.json()) as AppSnapshot;
   } catch {
@@ -15,7 +21,7 @@ export async function fetchLocalDevSnapshot(): Promise<AppSnapshot | null> {
 
 export function readRawOrdersStorage(): string | null {
   if (typeof window === "undefined") return null;
-  let raw = localStorage.getItem(STORAGE_KEY);
+  let raw = localStorage.getItem(ordersStorageKey());
   if (!raw) {
     for (const legacyKey of LEGACY_STORAGE_KEYS) {
       raw = localStorage.getItem(legacyKey);

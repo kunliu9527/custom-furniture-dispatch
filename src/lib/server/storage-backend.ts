@@ -5,8 +5,9 @@ export type StorageBackendId = "kv" | "file";
 
 export interface StorageBackend {
   id: StorageBackendId;
-  readSnapshot(): Promise<AppSnapshot>;
-  writeSnapshot(snapshot: AppSnapshot): Promise<void>;
+  /** 读取指定公司的快照；文件不存在时按公司初始化空快照 */
+  readSnapshot(companyId: string): Promise<AppSnapshot>;
+  writeSnapshot(companyId: string, snapshot: AppSnapshot): Promise<void>;
 }
 
 /** Vercel 部署：配置 KV 后自动使用；本地仍可用文件存储 */

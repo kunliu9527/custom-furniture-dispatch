@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useAuth } from "@/context/auth-context";
 import { reinitializeClientApp } from "@/lib/clear-client-app-data";
 import { formatManagedStoresLabel } from "@/lib/assigned-stores";
 import { ACCESS_LEVEL_LABELS } from "@/lib/staff-access";
 import { getDefaultPathForSession } from "@/lib/role-routes";
 import { isAdminAccess } from "@/lib/permissions";
+import { DEFAULT_COMPANY_NAME } from "@/lib/company";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { loadLastLoginUsername } from "@/lib/auth-session";
@@ -22,7 +24,17 @@ export function LoginPanel({
   redirectOnLogin = true,
 }: LoginPanelProps) {
   const router = useRouter();
-  const { user, isHydrated, login, logout, changeOwnPassword } = useAuth();
+  const {
+    user,
+    isHydrated,
+    login,
+    logout,
+    changeOwnPassword,
+    companies,
+    activeCompanyId,
+    selectLoginCompany,
+    companyName,
+  } = useAuth();
   const [open, setOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [username, setUsername] = useState("");
@@ -33,6 +45,14 @@ export function LoginPanel({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [loginCompanyId, setLoginCompanyId] = useState(activeCompanyId);
+
+  useEffect(() => {
+    if (activeCompanyId !== loginCompanyId) {
+      setLoginCompanyId(activeCompanyId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCompanyId]);
 
   useEffect(() => {
     if (!isHydrated || user) return;
@@ -58,8 +78,16 @@ export function LoginPanel({
     reinitializeClientApp();
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    const targetCompany = loginCompanyId || activeCompanyId;
+    if (targetCompany && targetCompany !== activeCompanyId) {
+      const switched = await selectLoginCompany(targetCompany);
+      if (!switched.ok) {
+        setError(switched.error ?? "切换公司失败");
+        return;
+      }
+    }
     const result = login(username.trim(), password);
     if (!result.ok) {
       setError(result.error ?? "登录失败");
@@ -134,6 +162,7 @@ export function LoginPanel({
           </p>
           <p className="text-xs" style={{ color: "var(--label-secondary)" }}>
             {ACCESS_LEVEL_LABELS[user.accessLevel]}
+            {companyName ? ` · ${companyName}` : ""}
             {user.assignedStores?.length
               ? ` · ${formatManagedStoresLabel(user.assignedStores)}`
               : user.homeStore
@@ -273,9 +302,23 @@ export function LoginPanel({
             className="mt-1 text-[13px]"
             style={{ color: "var(--label-secondary)" }}
           >
-            输入账号与密码进入派单工作台
+            选择公司后输入账号与密码进入派单工作台
           </p>
           <div className="mt-4 space-y-3">
+            <Select
+              label="公司"
+              name="companyId"
+              options={
+                companies.length > 0
+                  ? companies.map((c) => ({ value: c.id, label: c.name }))
+                  : [{ value: activeCompanyId, label: DEFAULT_COMPANY_NAME }]
+              }
+              value={loginCompanyId}
+              onChange={(e) => {
+                setLoginCompanyId(e.target.value);
+                setError("");
+              }}
+            />
             <Input
               label="账号"
               name="username"

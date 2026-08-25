@@ -1,6 +1,7 @@
 import { AuthorCredit } from "@/components/home/author-credit";
 import { SyncFooterStatus } from "@/components/sync/sync-footer-status";
 import { HomeAssistantPanel } from "@/components/home/home-assistant-panel";
+import { HomeCompanyRegistrations } from "@/components/home/home-company-registrations";
 import { HomeGuestLanding } from "@/components/home/home-guest-landing";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeHero } from "@/components/home/home-hero";
@@ -18,6 +19,7 @@ export default function Home() {
         <HomeHero />
         <HomeAssistantPanel />
         <HomeStatusStrip />
+        <HomeCompanyRegistrations />
       </div>
       <SyncFooterStatus />
       <AuthorCredit />

@@ -1,3 +1,4 @@
+import { companyQualifiedKey } from "./active-company";
 import type { StaffAccessLevel } from "./staff-access";
 
 export const STAFF_ACCESS_STORAGE_KEY =
@@ -8,7 +9,7 @@ export type StaffAccessOverrides = Record<string, StaffAccessLevel>;
 export function loadStaffAccessOverrides(): StaffAccessOverrides {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STAFF_ACCESS_STORAGE_KEY);
+    const raw = localStorage.getItem(companyQualifiedKey(STAFF_ACCESS_STORAGE_KEY));
     if (!raw) return {};
     const parsed = JSON.parse(raw) as StaffAccessOverrides;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -20,5 +21,8 @@ export function loadStaffAccessOverrides(): StaffAccessOverrides {
 export function saveStaffAccessOverrides(
   overrides: StaffAccessOverrides,
 ): void {
-  localStorage.setItem(STAFF_ACCESS_STORAGE_KEY, JSON.stringify(overrides));
+  localStorage.setItem(
+    companyQualifiedKey(STAFF_ACCESS_STORAGE_KEY),
+    JSON.stringify(overrides),
+  );
 }

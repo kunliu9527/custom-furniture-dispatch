@@ -10,6 +10,7 @@ import { buildRatedPersonsSnapshot } from "@/lib/customer-ratings";
 import { resolveAcceptCustomerDisplayName } from "@/lib/customer-flow";
 import { appendWorkflowRemark } from "@/lib/workflow-remarks";
 import { readAppSnapshot, writeAppSnapshot } from "@/lib/server/app-store";
+import { listCompanies } from "@/lib/server/company-store";
 import type { AppSnapshot } from "@/lib/server/snapshot-types";
 import type {
   CustomerRatings,
@@ -53,8 +54,27 @@ function findOrderByAcceptToken(
   ) as Order | undefined;
 }
 
+/** 客户令牌不携带公司信息：遍历公司快照定位所属公司（本地规模公司数量很小） */
+async function resolveCompanyByCustomerToken(
+  kind: "sign" | "accept",
+  token: string,
+): Promise<{ companyId: string; snapshot: AppSnapshot } | null> {
+  const companies = await listCompanies();
+  for (const company of companies) {
+    const snapshot = await readAppSnapshot(company.id);
+    const order =
+      kind === "sign"
+        ? findOrderBySignToken(snapshot, token)
+        : findOrderByAcceptToken(snapshot, token);
+    if (order) return { companyId: company.id, snapshot };
+  }
+  return null;
+}
+
 export async function readSignPublicPayload(token: string) {
-  const snapshot = await readAppSnapshot();
+  const found = await resolveCompanyByCustomerToken("sign", token);
+  if (!found) return null;
+  const { snapshot } = found;
   const order = findOrderBySignToken(snapshot, token);
   if (!order?.contract) return null;
   const contract = normalizeContract(order.contract);
@@ -82,7 +102,9 @@ export async function submitCustomerSignature(input: {
   planConfirmed?: boolean;
   planConfirmRemark?: string;
 }) {
-  const snapshot = await readAppSnapshot();
+  const found = await resolveCompanyByCustomerToken("sign", input.token);
+  if (!found) return { ok: false as const, error: "not_found" };
+  const { companyId, snapshot } = found;
   const order = findOrderBySignToken(snapshot, input.token);
   if (!order?.contract) return { ok: false as const, error: "not_found" };
   const contract = normalizeContract(order.contract);
@@ -138,7 +160,7 @@ export async function submitCustomerSignature(input: {
 
   if (!patched) return { ok: false as const, error: "patch_failed" };
 
-  await writeAppSnapshot({
+  await writeAppSnapshot(companyId, {
     ...snapshot,
     version: snapshot.version + 1,
     updatedAt: at,
@@ -149,7 +171,9 @@ export async function submitCustomerSignature(input: {
 }
 
 export async function readAcceptPublicPayload(token: string) {
-  const snapshot = await readAppSnapshot();
+  const found = await resolveCompanyByCustomerToken("accept", token);
+  if (!found) return null;
+  const { snapshot } = found;
   const order = findOrderByAcceptToken(snapshot, token);
   if (!order?.acceptance) return null;
   const acceptance = normalizeAcceptance(order.acceptance);
@@ -176,7 +200,9 @@ export async function submitCustomerAcceptance(input: {
   comment?: string;
   hasInstallIssue?: boolean;
 }) {
-  const snapshot = await readAppSnapshot();
+  const found = await resolveCompanyByCustomerToken("accept", input.token);
+  if (!found) return { ok: false as const, error: "not_found" };
+  const { companyId, snapshot } = found;
   const order = findOrderByAcceptToken(snapshot, input.token);
   if (!order?.acceptance) return { ok: false as const, error: "not_found" };
   const acceptance = normalizeAcceptance(order.acceptance);
@@ -234,7 +260,7 @@ export async function submitCustomerAcceptance(input: {
 
   if (!patched) return { ok: false as const, error: "patch_failed" };
 
-  await writeAppSnapshot({
+  await writeAppSnapshot(companyId, {
     ...snapshot,
     version: snapshot.version + 1,
     updatedAt: at,

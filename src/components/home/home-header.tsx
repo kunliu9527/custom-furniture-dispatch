@@ -1,13 +1,16 @@
 "use client";
 
 import { LoginPanel } from "@/components/auth/login-panel";
+import { CompanySwitcher } from "@/components/home/company-switcher";
+import { Button } from "@/components/ui/button";
 import { AppNav } from "@/components/layout/app-nav";
 import { useAuth } from "@/context/auth-context";
+import { isAdminAccess } from "@/lib/permissions";
 import { DEFAULT_SITE_BRANDING } from "@/lib/site-branding";
 import Link from "next/link";
 
 export function HomeHeader() {
-  const { user, siteBranding } = useAuth();
+  const { user, isHydrated, siteBranding } = useAuth();
   const headline =
     siteBranding.headlineTitle || DEFAULT_SITE_BRANDING.headlineTitle;
 
@@ -26,7 +29,15 @@ export function HomeHeader() {
             <span className="truncate sm:hidden">派单工作台</span>
             <span className="hidden truncate sm:inline">{headline}</span>
           </Link>
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {isHydrated && !user ? (
+              <Link href="/register">
+                <Button type="button" variant="secondary" size="sm" className="h-8 px-2.5 text-xs">
+                  注册
+                </Button>
+              </Link>
+            ) : null}
+            {isAdminAccess(user) ? <CompanySwitcher /> : null}
             <LoginPanel variant="home" />
           </div>
         </div>

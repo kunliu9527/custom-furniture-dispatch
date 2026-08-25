@@ -1,3 +1,4 @@
+import { normalizeCompanyId } from "@/lib/company";
 import { fileStorageBackend } from "./file-storage";
 import { kvStorageBackend } from "./kv-storage";
 import {
@@ -28,21 +29,28 @@ export function getActiveStorageBackendId() {
   return getBackend().id;
 }
 
-export async function readAppSnapshot(): Promise<AppSnapshot> {
-  return getBackend().readSnapshot();
+export async function readAppSnapshot(
+  companyId?: string,
+): Promise<AppSnapshot> {
+  return getBackend().readSnapshot(normalizeCompanyId(companyId));
 }
 
-export async function writeAppSnapshot(next: AppSnapshot): Promise<void> {
-  return getBackend().writeSnapshot(next);
+export async function writeAppSnapshot(
+  companyId: string,
+  next: AppSnapshot,
+): Promise<void> {
+  return getBackend().writeSnapshot(normalizeCompanyId(companyId), next);
 }
 
 export async function mergeAppSnapshot(
+  companyId: string | undefined,
   input: SnapshotMergeInput,
 ): Promise<
   | { ok: true; snapshot: AppSnapshot }
   | { ok: false; reason: "version_conflict"; current: AppSnapshot }
 > {
-  const current = await readAppSnapshot();
+  const id = normalizeCompanyId(companyId);
+  const current = await readAppSnapshot(id);
   if (input.version !== current.version) {
     return { ok: false, reason: "version_conflict", current };
   }
@@ -53,6 +61,6 @@ export async function mergeAppSnapshot(
     supplements: input.supplements ?? current.supplements,
     staffConfig: input.staffConfig ?? current.staffConfig,
   };
-  await writeAppSnapshot(next);
+  await writeAppSnapshot(id, next);
   return { ok: true, snapshot: next };
 }

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
+    "build": "node scripts/check-prod-env.mjs && next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint",
     "ui-skills": "ui-skills",
@@ -21,6 +21,7 @@
     "daily:cron": "node scripts/daily-todos-cron.mjs",
     "daily:preview": "node scripts/daily-todos-cron.mjs --preview",
     "reinit": "npx tsx scripts/reinit-local.ts",
+    "companies:migrate": "npx tsx scripts/migrate-companies.ts",
     "bulk:skip-seed-accept": "npx tsx scripts/bulk-skip-acceptance-seed-orders.ts"
   },
   "dependencies": {

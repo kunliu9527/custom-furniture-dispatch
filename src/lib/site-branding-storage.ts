@@ -1,3 +1,4 @@
+import { companyQualifiedKey } from "./active-company";
 import {
   DEFAULT_SITE_BRANDING,
   normalizeSiteBranding,
@@ -10,7 +11,7 @@ export const SITE_BRANDING_STORAGE_KEY =
 export function loadSiteBranding(): SiteBranding {
   if (typeof window === "undefined") return { ...DEFAULT_SITE_BRANDING };
   try {
-    const raw = localStorage.getItem(SITE_BRANDING_STORAGE_KEY);
+    const raw = localStorage.getItem(companyQualifiedKey(SITE_BRANDING_STORAGE_KEY));
     if (!raw) return { ...DEFAULT_SITE_BRANDING };
     return normalizeSiteBranding(JSON.parse(raw) as Partial<SiteBranding>);
   } catch {
@@ -20,7 +21,7 @@ export function loadSiteBranding(): SiteBranding {
 
 export function saveSiteBranding(branding: SiteBranding): void {
   localStorage.setItem(
-    SITE_BRANDING_STORAGE_KEY,
+    companyQualifiedKey(SITE_BRANDING_STORAGE_KEY),
     JSON.stringify(normalizeSiteBranding(branding)),
   );
 }

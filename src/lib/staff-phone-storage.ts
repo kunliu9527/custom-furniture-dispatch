@@ -1,3 +1,5 @@
+import { companyQualifiedKey } from "./active-company";
+
 export const STAFF_PHONE_STORAGE_KEY =
   "custom-furniture-dispatch-staff-phone-v1";
 
@@ -6,7 +8,7 @@ export type StaffPhoneOverrides = Record<string, string>;
 export function loadStaffPhoneOverrides(): StaffPhoneOverrides {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STAFF_PHONE_STORAGE_KEY);
+    const raw = localStorage.getItem(companyQualifiedKey(STAFF_PHONE_STORAGE_KEY));
     if (!raw) return {};
     const parsed = JSON.parse(raw) as StaffPhoneOverrides;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -16,5 +18,8 @@ export function loadStaffPhoneOverrides(): StaffPhoneOverrides {
 }
 
 export function saveStaffPhoneOverrides(overrides: StaffPhoneOverrides): void {
-  localStorage.setItem(STAFF_PHONE_STORAGE_KEY, JSON.stringify(overrides));
+  localStorage.setItem(
+    companyQualifiedKey(STAFF_PHONE_STORAGE_KEY),
+    JSON.stringify(overrides),
+  );
 }
