@@ -1,6 +1,6 @@
 import type { ViewMode } from "./manager-stats";
 
-export type ManagerMainSection = "weekly" | "reports" | "lookup";
+export type ManagerMainSection = "weekly" | "reports" | "lookup" | "gantt";
 export type ManagerReportTab = "pending" | "alerts";
 export type ManagerWeeklyPeriodPreset = "thisWeek" | "lastWeek";
 
@@ -28,7 +28,9 @@ export function loadManagerUi(username: string | undefined): ManagerUiState | nu
           ? "weekly"
           : parsed.mainSection === "reports"
             ? "reports"
-            : "weekly";
+            : parsed.mainSection === "gantt"
+              ? "gantt"
+              : "weekly";
     const reportTab: ManagerReportTab =
       parsed.reportTab === "alerts" ? "alerts" : "pending";
     const weeklyPeriod: ManagerWeeklyPeriodPreset =

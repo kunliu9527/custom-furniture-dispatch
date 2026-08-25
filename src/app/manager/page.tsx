@@ -5,6 +5,7 @@ import { RouteGuard } from "@/components/auth/route-guard";
 import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { AnomalyTodosPanel } from "@/components/manager/anomaly-todos-panel";
 import { WeeklyDigestSummaryCard } from "@/components/manager/weekly-digest-summary-card";
+import { ManagerGanttPanel } from "@/components/manager/manager-gantt-panel";
 import { ManagerSidebar, ManagerMobileNav } from "@/components/manager/manager-sidebar";
 import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
@@ -29,7 +30,7 @@ import {
 } from "@/lib/manager-ui-persistence";
 import { SNAPSHOT_REPORT_HINT } from "@/lib/report-period-sync";
 import { parseManagerFocus, parseManagerOrderStatus } from "@/lib/manager-deep-link";
-import { resolvePendingConfirmNavigate } from "@/lib/order-action-link";
+import { resolvePendingConfirmNavigate, managerLookupHref } from "@/lib/order-action-link";
 import { EMPTY_RESULT_DRILL } from "@/lib/result-drill";
 import {
   DEFAULT_PERIOD,
@@ -189,6 +190,13 @@ function ManagerPageContent() {
     [lookup],
   );
 
+  const handleOpenGanttOrder = useCallback(
+    (order: Order) => {
+      router.push(managerLookupHref(order.id));
+    },
+    [router],
+  );
+
   const applyManagerLookupForOrder = useCallback(
     (
       order: Order,
@@ -273,6 +281,8 @@ function ManagerPageContent() {
     } else if (section === "reports") {
       // 本人账号无工单待办侧栏：深链落到订单查询，避免空白/误跳简报
       setMainSection(lookupOnly ? "lookup" : "reports");
+    } else if (section === "gantt") {
+      setMainSection("gantt");
     }
 
     if (view === "designer" && designer) {
@@ -354,6 +364,16 @@ function ManagerPageContent() {
                       异常订单按触发时间排序，最新在最上 · {SNAPSHOT_REPORT_HINT}
                     </p>
                   </div>
+                ) : mainSection === "gantt" ? (
+                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
+                    <p className="text-xs text-slate-600">
+                      流程甘特图
+                      {managerScopeLabel ? ` · ${managerScopeLabel}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500">
+                      按时间轴查看各订单阶段进度 · 点击行查看详情
+                    </p>
+                  </div>
                 ) : null
               }
               sidebar={
@@ -384,6 +404,11 @@ function ManagerPageContent() {
                   focusOrderId={focusOrderId}
                   onSelectDesigner={handleAlertDesignerSelect}
                   onOpenPendingOrder={handleOpenPendingOrder}
+                />
+              ) : mainSection === "gantt" ? (
+                <ManagerGanttPanel
+                  orders={scopedOrders}
+                  onOpenOrder={handleOpenGanttOrder}
                 />
               ) : (
                 <ManagerLookupPanel {...lookup.lookupPanelProps} />
