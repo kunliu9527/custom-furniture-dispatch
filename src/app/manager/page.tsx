@@ -199,6 +199,15 @@ function ManagerPageContent() {
     [],
   );
 
+  /** 侧栏/移动端切换区块：把当前区块写进 URL（replaceState），
+   *  保证「返回」能回到上一区块（如强定位 → 返回甘特图），避免历史栈不一致 */
+  const handleSectionChange = useCallback((section: ManagerMainSection) => {
+    const url =
+      section === "weekly" ? "/manager" : `/manager?section=${section}`;
+    window.history.replaceState(null, "", url);
+    setMainSection(section);
+  }, []);
+
   const applyManagerLookupForOrder = useCallback(
     (
       order: Order,
@@ -327,7 +336,7 @@ function ManagerPageContent() {
               mobileTabs={
                 <ManagerMobileNav
                   mainSection={mainSection}
-                  onMainSectionChange={setMainSection}
+                  onMainSectionChange={handleSectionChange}
                   personalWeeklyOnly={personalWeeklyOnly}
                 />
               }
@@ -381,7 +390,7 @@ function ManagerPageContent() {
               sidebar={
                 <ManagerSidebar
                   mainSection={mainSection}
-                  onMainSectionChange={setMainSection}
+                  onMainSectionChange={handleSectionChange}
                   personalWeeklyOnly={personalWeeklyOnly}
                 />
               }
