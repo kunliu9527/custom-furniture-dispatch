@@ -149,10 +149,10 @@ export function ModuleWorkbenchLayout({
       >
         {/* 桌面侧栏；小屏隐藏，改用顶部 mobileTabs */}
         <div
-          className={`relative hidden shrink-0 overflow-visible transition-[width] duration-200 ease-out motion-reduce:transition-none lg:block ${sidebarWidthClass}`}
+          className={`relative hidden shrink-0 overflow-visible transition-[width] duration-200 ease-out motion-reduce:transition-none lg:flex lg:flex-col ${sidebarWidthClass}`}
         >
           <aside
-            className={`flex min-h-0 flex-col overflow-hidden transition-opacity duration-150 ease-out motion-reduce:transition-none ${
+            className={`flex min-h-0 flex-1 flex-col overflow-hidden transition-opacity duration-150 ease-out motion-reduce:transition-none ${
               sidebarCollapsed
                 ? "pointer-events-none opacity-0"
                 : "opacity-100"
