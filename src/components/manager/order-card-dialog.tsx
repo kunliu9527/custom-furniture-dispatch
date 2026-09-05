@@ -4,7 +4,6 @@ import { OrderCard } from "@/components/orders/order-card";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/orders-context";
 import {
-  canEditManagerPage,
   canEditWorkflowRemarkOnOrder,
   canModifyOrderInUserScope,
   canOfflineSignContract,
@@ -20,7 +19,8 @@ interface OrderCardDialogProps {
 
 /**
  * manager 页订单详情/操作浮层：直接渲染完整 OrderCard。
- * 编辑权按 canEditManagerPage + 行级 scope 裁剪（店长/个人账号为只读查看）。
+ * 卡内操作不限制管理员——凡在当前登录数据范围内的订单即可编辑
+ * （行首点开的弹框用于完整处理;矩阵点格的快捷更新仍仅限管理员）。
  * 动作回调来自 orders-context，成功后 context 自动落盘，order 每次渲染实时取最新。
  */
 export function OrderCardDialog({ orderId, onClose }: OrderCardDialogProps) {
@@ -56,8 +56,9 @@ export function OrderCardDialog({ orderId, onClose }: OrderCardDialogProps) {
 
   if (!order) return null;
 
-  const editable =
-    canEditManagerPage(user) && canModifyOrderInUserScope(user, order);
+  // 点击行首打开的订单卡:操作不限制管理员——凡在当前登录数据范围内(scopeOrdersForUser
+  // 已过滤)即可编辑;离线签约等仍按 canOfflineSignContract 等角色权限函数执行。
+  const editable = canModifyOrderInUserScope(user, order);
   const readOnly = !editable;
   const offlineAllowed = editable && canOfflineSignContract(user);
 
