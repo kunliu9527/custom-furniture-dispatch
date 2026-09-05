@@ -1,12 +1,10 @@
 import type { ViewMode } from "./manager-stats";
 
 export type ManagerMainSection = "weekly" | "reports" | "lookup" | "gantt";
-export type ManagerReportTab = "pending" | "alerts";
 export type ManagerWeeklyPeriodPreset = "thisWeek" | "lastWeek";
 
 export interface ManagerUiState {
   mainSection: ManagerMainSection;
-  reportTab: ManagerReportTab;
   viewMode: ViewMode;
   weeklyPeriod?: ManagerWeeklyPeriodPreset;
 }
@@ -31,8 +29,6 @@ export function loadManagerUi(username: string | undefined): ManagerUiState | nu
             : parsed.mainSection === "gantt"
               ? "gantt"
               : "weekly";
-    const reportTab: ManagerReportTab =
-      parsed.reportTab === "alerts" ? "alerts" : "pending";
     const weeklyPeriod: ManagerWeeklyPeriodPreset =
       parsed.weeklyPeriod === "lastWeek" ? "lastWeek" : "thisWeek";
     const viewMode: ViewMode =
@@ -41,7 +37,7 @@ export function loadManagerUi(username: string | undefined): ManagerUiState | nu
       parsed.viewMode === "store"
         ? parsed.viewMode
         : "status";
-    return { mainSection, reportTab, viewMode, weeklyPeriod };
+    return { mainSection, viewMode, weeklyPeriod };
   } catch {
     return null;
   }

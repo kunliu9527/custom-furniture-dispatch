@@ -29,8 +29,10 @@ import {
   canUserConfirmRefund,
 } from "@/lib/permissions";
 import type { Order, WorkflowRemarkStage } from "@/lib/types";
-import type { OpenPendingOrderPayload } from "@/components/manager/pending-confirm-panel";
-import type { PendingConfirmKind } from "@/lib/pending-confirm";
+import type {
+  OpenPendingOrderPayload,
+  PendingConfirmKind,
+} from "@/lib/pending-confirm";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 

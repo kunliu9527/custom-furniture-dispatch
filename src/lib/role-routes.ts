@@ -18,7 +18,8 @@ import { getDesignerHomeStore } from "./designers";
 import type { DesignerName } from "./types";
 
 /**
- * 登录后默认入口：一线角色直达主战场，管理岗仍进今日工作台总览。
+ * 登录后默认入口：一线角色直达主战场；管理岗（设计经理/总经理/管理员）直达
+ * 「项目进程管理」经营台（简报/待办/查询/流程推进图）。
  */
 export function getDefaultPathForSession(user: SessionUser): string {
   if (isAcceptanceManagerAccess(user) || isInstallerSession(user)) {
@@ -33,7 +34,7 @@ export function getDefaultPathForSession(user: SessionUser): string {
   if (user.accessLevel === "store_manager") {
     return "/admin";
   }
-  return "/";
+  return "/manager";
 }
 
 /** 按派单人查找默认选中：店长权限优先本人（名册内），否则全部；个人派单人仅本人 */

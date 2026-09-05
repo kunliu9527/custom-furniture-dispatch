@@ -60,8 +60,8 @@ export function ManagerSidebar({
           onClick={() => onMainSectionChange("gantt")}
           className={`vi-sidebar-item vi-sidebar-item-stack ${ganttActive ? "vi-sidebar-item-active" : ""}`}
         >
-          <span className="vi-sidebar-item-title">流程甘特图</span>
-          <span className="vi-sidebar-item-hint">时间轴 · 阶段进度</span>
+          <span className="vi-sidebar-item-title">流程推进图</span>
+          <span className="vi-sidebar-item-hint">主流程列 · 达成日期</span>
         </button>
       </div>
     </div>
@@ -79,7 +79,7 @@ export function ManagerMobileNav({
       ? []
       : [{ id: "reports", label: "工单待办", hint: "最新在上" }]),
     { id: "lookup", label: "订单查询", hint: "状态 · 派单 · 设计师" },
-    { id: "gantt", label: "流程甘特图", hint: "时间轴 · 阶段进度" },
+    { id: "gantt", label: "流程推进图", hint: "主流程列 · 达成日期" },
   ];
 
   return (

@@ -51,6 +51,8 @@ interface WeeklyDigestPanelProps {
   reportScope?: ReportScope;
   storeScopeLabel?: string | null;
   personScope?: ReportPersonScope;
+  /** 本人登录(manager 页个人简报)时的自定义标题 */
+  personalTitle?: string | null;
 }
 
 export function WeeklyDigestPanel({
@@ -61,6 +63,7 @@ export function WeeklyDigestPanel({
   reportScope = "manager",
   storeScopeLabel = null,
   personScope,
+  personalTitle = null,
 }: WeeklyDigestPanelProps) {
   const { user, staffRecords } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
@@ -150,16 +153,19 @@ export function WeeklyDigestPanel({
         ];
 
   const visibleActionLines = useMemo(() => {
-    if (!globalDigest) return digest.actionLines;
-    return buildGlobalWeeklyActionLines(
-      globalDigest,
-      orders,
-      supplements,
-      weekPeriod,
-      staffRecords,
-      personScope,
-      weekRef,
-    );
+    const lines = globalDigest
+      ? buildGlobalWeeklyActionLines(
+          globalDigest,
+          orders,
+          supplements,
+          weekPeriod,
+          staffRecords,
+          personScope,
+          weekRef,
+        )
+      : digest.actionLines;
+    // 摘要卡与面板统一不展示「关注设计师」跳转行,避免与经营看板职责重叠
+    return lines.filter((line) => !line.startsWith("关注设计师"));
   }, [
     globalDigest,
     digest.actionLines,
@@ -243,7 +249,9 @@ export function WeeklyDigestPanel({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-sky-900">
-              本周管理简报
+              {reportScope === "manager" && personalTitle
+                ? personalTitle
+                : "本周管理简报"}
             </h2>
             <p className="mt-0.5 text-xs text-sky-800/90">{digest.weekLabel}</p>
           </div>

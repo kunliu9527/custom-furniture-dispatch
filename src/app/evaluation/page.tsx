@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { RouteGuard } from "@/components/auth/route-guard";
 import { AcceptanceEvaluationSection } from "@/components/evaluation/acceptance-evaluation-section";
@@ -17,7 +17,6 @@ import {
 import { ReportHub } from "@/components/shared/report-hub";
 import { EvaluationWorkbenchLayout } from "@/components/evaluation/evaluation-workbench-layout";
 import { EvaluationStatsTable } from "@/components/evaluation/evaluation-stats-table";
-import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { ManagerOrderTable } from "@/components/manager/manager-order-table";
 import { OrderAnomalySummaryLine } from "@/components/orders/order-anomaly-badges";
 import { MonthlyOverviewCard } from "@/components/evaluation/monthly-overview-card";
@@ -148,8 +147,6 @@ import {
 } from "@/lib/period-filter";
 import type { MonthlyCockpitSnapshot } from "@/lib/monthly-snapshot-types";
 import { getSessionResetKey } from "@/lib/session-user";
-import { useOrderLookupWorkbench } from "@/lib/use-order-lookup-workbench";
-import { searchOrders } from "@/lib/order-search";
 import {
   formatStrongPinEmptyMessage,
   formatStrongPinHeading,
@@ -159,14 +156,7 @@ import {
 } from "@/lib/strong-pin-order";
 import { sortOrdersNewestFirst } from "@/lib/order-utils";
 import { filterSupplementsByOrders } from "@/lib/supplement-filter";
-import type { ViewMode } from "@/lib/manager-stats";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-/** 数据 Tab（派单人/设计师/门店）→ 订单查询查找模式 */
-function evaluationViewToLookupMode(mode: EvaluationViewMode): ViewMode {
-  if (mode === "acceptance") return "status";
-  return mode;
-}
 
 const viewConfig: Record<
   EvaluationViewMode,
@@ -198,7 +188,7 @@ export default function EvaluationPage() {
   const { user, staffRecords, designerHomeStoreIndex, commissionSettings } =
     useAuth();
   const canExportCommission = canViewCommissionExport(user, commissionSettings);
-  const { orders, supplements, isHydrated, reassignOrder, setAfterSalesAmount, setOrderIssueTags } = useOrders();
+  const { orders, supplements, isHydrated } = useOrders();
   const allowedModes = useMemo(
     () => getVisibleEvaluationViewModes(user),
     [user],
@@ -252,42 +242,6 @@ export default function EvaluationPage() {
     () => scopeOrdersForEvaluationBoard(orders, user),
     [orders, user],
   );
-
-  const lookup = useOrderLookupWorkbench({
-    user,
-    scopedOrders: boardOrders,
-    orders,
-    supplements,
-    staffRecords,
-    designerHomeStoreIndex,
-    period,
-    onPeriodChange: handlePeriodChange,
-    reassignOrder,
-    setAfterSalesAmount,
-    setOrderIssueTags,
-    sessionResetKey,
-    initialViewMode: evaluationViewToLookupMode(
-      getDefaultEvaluationViewMode(user),
-    ),
-    searchHintBase: storeScoped && scopeLabel
-      ? `${scopeLabel} · 订单查询按此统计周期`
-      : "订单查询按此统计周期",
-  });
-
-  /** 订单查询与当前数据 Tab（派单人/设计师/门店）对齐 */
-  useEffect(() => {
-    if (mainSection !== "operations" || operationsSubView !== "lookup") return;
-    const mapped = evaluationViewToLookupMode(viewMode);
-    if (lookup.viewMode !== mapped) {
-      lookup.handleViewModeChange(mapped);
-    }
-  }, [
-    mainSection,
-    operationsSubView,
-    viewMode,
-    lookup.viewMode,
-    lookup.handleViewModeChange,
-  ]);
 
   useEffect(() => {
     if (!user?.username) return;
@@ -1235,21 +1189,6 @@ export default function EvaluationPage() {
                     }
                     resultCount={orderSearchResults.length}
                   />
-                ) : mainSection === "operations" &&
-                  operationsSubView === "lookup" ? (
-                  <WorkbenchPeriodSearchBar
-                    period={period}
-                    onPeriodChange={lookup.handlePeriodChange}
-                    query={lookup.searchQuery}
-                    onQueryChange={lookup.setSearchQuery}
-                    hint={lookup.lookupSearchHint}
-                    placeholder={
-                      storeScoped && scopeLabel
-                        ? `查询 ${scopeLabel} 订单：客户、电话、地址、设计师、派单人…`
-                        : "客户姓名、电话、地址、设计师、派单人、门店…"
-                    }
-                    resultCount={lookup.lookupSearchCount}
-                  />
                 ) : (
                   <PeriodFilterBar
                     value={period}
@@ -1319,12 +1258,9 @@ export default function EvaluationPage() {
                     onPeriodChange={handlePeriodChange}
                     storeScopeLabel={scopeLabel}
                     onOpenOrderLookup={() => {
-                      setMainSection("operations");
-                      setOperationsSubView("lookup");
+                      window.location.assign("/manager?section=lookup");
                     }}
                   />
-                ) : operationsSubView === "lookup" ? (
-                  <ManagerLookupPanel {...lookup.lookupPanelProps} />
                 ) : (
                 <>
                   <EvaluationCockpit

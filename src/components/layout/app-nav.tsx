@@ -12,6 +12,7 @@ interface AppNavProps {
   showAuth?: boolean;
 }
 
+/** 顶栏板块导航：扁平展示当前角色可见的板块入口 */
 export function AppNav({ showAuth = true }: AppNavProps) {
   const { user } = useAuth();
   const pathname = usePathname();

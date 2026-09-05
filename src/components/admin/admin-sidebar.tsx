@@ -53,7 +53,7 @@ export function AdminSidebar({
       </ul>
       {allowedModes.includes("dispatch") ? (
         <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-2.5 py-2 text-[10px] leading-snug text-amber-900">
-          汇总统计见「项目进程管理」与「综合系统看板」
+          工单待办与流程推进见「项目进程管理」；经营报告与数据看板见「综合系统看板」
         </p>
       ) : null}
     </div>

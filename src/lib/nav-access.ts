@@ -10,15 +10,26 @@ import {
   isPersonalManagerLookupOnly,
 } from "./permissions";
 
-export const NAV_LINKS = [
+/** 全部板块入口(角色可见性见 getVisibleNavLinks) */
+export type NavHref =
+  | "/admin"
+  | "/designer"
+  | "/manager"
+  | "/delivery"
+  | "/evaluation";
+
+export interface NavLinkItem {
+  href: NavHref;
+  label: string;
+}
+
+export const NAV_LINKS: NavLinkItem[] = [
   { href: "/admin", label: "新客户开发" },
   { href: "/designer", label: "设计师工作台" },
   { href: "/manager", label: "项目进程管理" },
   { href: "/delivery", label: "验收与交付" },
   { href: "/evaluation", label: "综合系统看板" },
-] as const;
-
-export type NavHref = (typeof NAV_LINKS)[number]["href"];
+];
 
 export function canAccessStoreDispatchPage(user: SessionUser | null): boolean {
   return canAccessAdminPage(user);
@@ -75,14 +86,9 @@ export function canViewOtherDesignersOrders(user: SessionUser | null): boolean {
   );
 }
 
-export function getVisibleNavLinks(user: SessionUser | null) {
+/** 按角色过滤后的导航入口 */
+export function getVisibleNavLinks(user: SessionUser | null): NavLinkItem[] {
   if (!user) return [];
-  if (isAcceptanceManagerAccess(user)) {
-    return NAV_LINKS.filter((item) => item.href === "/delivery");
-  }
-  if (isPersonalAccess(user) && isInstallerSession(user)) {
-    return NAV_LINKS.filter((item) => item.href === "/delivery");
-  }
   return NAV_LINKS.filter((item) => {
     if (item.href === "/admin") return canAccessStoreDispatchPage(user);
     if (item.href === "/designer") return canAccessDesignerPage(user);

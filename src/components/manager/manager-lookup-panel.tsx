@@ -66,6 +66,8 @@ export interface ManagerLookupPanelProps {
   onResultDrillChange: (drill: ResultDrillFilters) => void;
   /** 覆盖默认空列表文案（强定位 none/ambiguous 等） */
   lookupEmptyMessage?: string;
+  /** 点击表格行打开订单卡(manager 宿主传入;evaluation 只读宿主不传) */
+  onOpenOrder?: (order: Order) => void;
 }
 
 function lookupEmptyMessage(
@@ -123,6 +125,8 @@ export function ManagerLookupPanel({
   resultDrill,
   onResultDrillChange,
   lookupEmptyMessage: lookupEmptyMessageOverride,
+  /** 点击行打开订单卡(未提供则表格行不可点) */
+  onOpenOrder,
 }: ManagerLookupPanelProps) {
   const { designerHomeStoreIndex } = useAuth();
   const anomalyOptions = {
@@ -237,6 +241,7 @@ export function ManagerLookupPanel({
           onReassign={onReassign}
           onSetAfterSalesAmount={onSetAfterSalesAmount}
           onSetIssueTags={onSetIssueTags}
+          onOpenOrder={onOpenOrder}
           emptyMessage={emptyMessage}
         />
       </section>

@@ -4,8 +4,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { ManagerLookupPanel } from "@/components/manager/manager-lookup-panel";
 import { AnomalyTodosPanel } from "@/components/manager/anomaly-todos-panel";
-import { WeeklyDigestSummaryCard } from "@/components/manager/weekly-digest-summary-card";
-import { ManagerGanttPanel } from "@/components/manager/manager-gantt-panel";
+import { WeeklyDigestPanel } from "@/components/manager/weekly-digest-panel";
+import { ManagerFlowProgressPanel } from "@/components/manager/manager-flow-progress-panel";
+import { OrderCardDialog } from "@/components/manager/order-card-dialog";
 import { ManagerSidebar, ManagerMobileNav } from "@/components/manager/manager-sidebar";
 import { WorkbenchPeriodSearchBar } from "@/components/shared/workbench-period-search-bar";
 import { PeriodFilterBar } from "@/components/shared/period-filter-bar";
@@ -26,11 +27,9 @@ import {
   loadManagerUi,
   saveManagerUi,
   type ManagerMainSection,
-  type ManagerReportTab,
 } from "@/lib/manager-ui-persistence";
 import { SNAPSHOT_REPORT_HINT } from "@/lib/report-period-sync";
 import { parseManagerFocus, parseManagerOrderStatus } from "@/lib/manager-deep-link";
-import { resolvePendingConfirmNavigate, managerLookupHref } from "@/lib/order-action-link";
 import { EMPTY_RESULT_DRILL } from "@/lib/result-drill";
 import {
   DEFAULT_PERIOD,
@@ -43,11 +42,9 @@ import {
 import { resolveOrderDisplayName } from "@/lib/order-remark";
 import { getSessionResetKey } from "@/lib/session-user";
 import { useOrderLookupWorkbench } from "@/lib/use-order-lookup-workbench";
-import type { DesignerName, Order, OrderStatus } from "@/lib/types";
-import type { ViewMode } from "@/lib/manager-stats";
-import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import type { PendingConfirmKind } from "@/lib/pending-confirm";
+import type { DesignerName, Order } from "@/lib/types";
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function ManagerPage() {
   return (
@@ -64,7 +61,6 @@ export default function ManagerPage() {
 }
 
 function ManagerPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, staffRecords, designerHomeStoreIndex } = useAuth();
   const {
@@ -79,13 +75,14 @@ function ManagerPageContent() {
   const personalWeeklyOnly = lookupOnly;
   const [mainSection, setMainSection] =
     useState<ManagerMainSection>("weekly");
-  const [reportTab, setReportTab] = useState<ManagerReportTab>("pending");
   const [weeklyPeriod, setWeeklyPeriod] = useState<PeriodSelection>({
     preset: "thisWeek",
   });
   const [period, setPeriod] = useState<PeriodSelection>(DEFAULT_PERIOD);
   const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
   const [uiHydrated, setUiHydrated] = useState(false);
+  /** 最近一次已应用的深链 URL 查询串(幂等守卫用,见下方 effect) */
+  const appliedSearchRef = useRef<string | null>(null);
 
   const sessionResetKey = getSessionResetKey(user);
 
@@ -148,7 +145,6 @@ function ManagerPageContent() {
       }
     } else if (savedUi) {
       setMainSection(savedUi.mainSection);
-      setReportTab(savedUi.reportTab);
       lookup.setViewMode(savedUi.viewMode);
       if (savedUi.weeklyPeriod === "lastWeek") {
         setWeeklyPeriod({ preset: "lastWeek" });
@@ -166,11 +162,10 @@ function ManagerPageContent() {
     if (!user || !uiHydrated) return;
     saveManagerUi(user.username, {
       mainSection,
-      reportTab,
       viewMode: lookup.viewMode,
       weeklyPeriod: weeklyPeriod.preset === "lastWeek" ? "lastWeek" : "thisWeek",
     });
-  }, [user, mainSection, reportTab, lookup.viewMode, weeklyPeriod, uiHydrated]);
+  }, [user, mainSection, lookup.viewMode, weeklyPeriod, uiHydrated]);
 
   useEffect(() => {
     if (mainSection !== "reports") {
@@ -190,17 +185,15 @@ function ManagerPageContent() {
     [lookup],
   );
 
-  const handleOpenGanttOrder = useCallback(
-    (order: Order) => {
-      // 仅 query 变化的同路由跳转：router.push 在生产模式会静默失效，
-      // 按 Next.js 指引使用原生 history API（自动同步 useSearchParams → 深链定位）
-      window.history.pushState(null, "", managerLookupHref(order.id));
-    },
-    [],
-  );
+  /** 打开订单卡浮层(manager 内所有「点订单→详情/操作」的统一落点) */
+  const [cardOrderId, setCardOrderId] = useState<string | null>(null);
+  const openOrderCard = useCallback((order: Order) => {
+    setCardOrderId(order.id);
+  }, []);
 
   /** 侧栏/移动端切换区块：把当前区块写进 URL（replaceState），
-   *  保证「返回」能回到上一区块（如强定位 → 返回甘特图），避免历史栈不一致 */
+   *  保证「返回」能回到上一区块（如强定位 → 返回流程推进图），避免历史栈不一致
+   *  注:区块 id「gantt」为旧名遗留,界面已更名「流程推进图」,深链/持久化沿用旧键 */
   const handleSectionChange = useCallback((section: ManagerMainSection) => {
     const url =
       section === "weekly" ? "/manager" : `/manager?section=${section}`;
@@ -208,52 +201,23 @@ function ManagerPageContent() {
     setMainSection(section);
   }, []);
 
-  const applyManagerLookupForOrder = useCallback(
-    (
-      order: Order,
-      options?: { status?: OrderStatus | "全部"; viewMode?: ViewMode },
-    ) => {
-      setMainSection("lookup");
-      lookup.applyLookupForOrder(order, options);
-    },
-    [lookup],
-  );
-
+  /** 工单待办里的订单类动作：直接在 manager 内打开订单卡处理（指派/接单/退单等全在卡内），不再跨页跳转 */
   const handleOpenPendingOrder = useCallback(
-    ({
-      kind,
-      order,
-    }: {
-      orderId: string;
-      kind: PendingConfirmKind;
-      order: Order;
-    }) => {
-      const target = resolvePendingConfirmNavigate(user, order, kind);
-      if (!target) return;
-      if (
-        target.href.startsWith("/admin") ||
-        target.href.startsWith("/designer")
-      ) {
-        router.push(target.href);
-        return;
-      }
-      if (kind === "undispatched") {
-        applyManagerLookupForOrder(order, { status: "未派单" });
-        return;
-      }
-      if (kind === "pending-refund") {
-        applyManagerLookupForOrder(order, { status: "待退单" });
-        return;
-      }
-      if (kind === "designer-accept") {
-        applyManagerLookupForOrder(order, { status: "待量尺" });
-      }
+    ({ order }: { order: Order }) => {
+      openOrderCard(order);
     },
-    [user, router, applyManagerLookupForOrder],
+    [openOrderCard],
   );
 
   useEffect(() => {
     if (!isHydrated || !uiHydrated) return;
+
+    // 幂等守卫:仅当 URL 查询串真正变化时才应用深链定位。
+    // lookup 对象每次渲染都是新引用,若无此守卫,点击行首后只要用户再操作
+    // (打字/切筛选),effect 就会重跑并把定位弹回原订单 → 表现为「卡住/点不动」。
+    const searchKey = searchParams.toString();
+    if (appliedSearchRef.current === searchKey) return;
+    appliedSearchRef.current = searchKey;
 
     const focus = parseManagerFocus(searchParams.get("focus"));
     const section = searchParams.get("section");
@@ -378,11 +342,12 @@ function ManagerPageContent() {
                 ) : mainSection === "gantt" ? (
                   <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5">
                     <p className="text-xs text-slate-600">
-                      流程甘特图
+                      流程推进图
                       {managerScopeLabel ? ` · ${managerScopeLabel}` : ""}
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-500">
-                      按时间轴查看各订单阶段进度 · 点击行查看详情
+                      按主流程列查看每单推进 · 到达的环节填色并记录达成日期 ·
+                      点击行首查看详情
                     </p>
                   </div>
                 ) : null
@@ -396,13 +361,13 @@ function ManagerPageContent() {
               }
             >
               {mainSection === "weekly" ? (
-                <WeeklyDigestSummaryCard
+                <WeeklyDigestPanel
                   orders={scopedOrders}
                   supplements={scopedReportSupplements}
                   period={weeklyPeriod}
+                  reportScope={personalWeeklyOnly ? "manager" : "global"}
                   storeScopeLabel={personalWeeklyOnly ? null : managerScopeLabel}
                   personScope={reportPersonScope}
-                  personalMode={personalWeeklyOnly}
                   personalTitle={
                     personalWeeklyOnly
                       ? `${user?.displayName ?? "本人"} · 本周简报`
@@ -417,16 +382,24 @@ function ManagerPageContent() {
                   onOpenPendingOrder={handleOpenPendingOrder}
                 />
               ) : mainSection === "gantt" ? (
-                <ManagerGanttPanel
+                <ManagerFlowProgressPanel
                   orders={scopedOrders}
-                  onOpenOrder={handleOpenGanttOrder}
+                  onOpenOrder={openOrderCard}
                 />
               ) : (
-                <ManagerLookupPanel {...lookup.lookupPanelProps} />
+                <ManagerLookupPanel
+                  {...lookup.lookupPanelProps}
+                  onOpenOrder={openOrderCard}
+                />
               )}
             </ModuleWorkbenchLayout>
           )}
         </div>
+        {/* 订单详情/操作浮层:manager 内所有订单统一在此完整处理 */}
+        <OrderCardDialog
+          orderId={cardOrderId}
+          onClose={() => setCardOrderId(null)}
+        />
       </AppShell>
     </RouteGuard>
   );

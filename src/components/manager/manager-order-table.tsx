@@ -55,6 +55,8 @@ interface ManagerOrderTableProps {
   onDeleteOrder?: (orderId: string) => void;
   /** 转派下拉可选设计师（默认全员名册） */
   designerRoster?: readonly { name: string; homeStore: StoreName }[];
+  /** 点击行打开订单卡；未提供则行不可点 */
+  onOpenOrder?: (order: Order) => void;
 }
 
 export function ManagerOrderTable({
@@ -70,6 +72,7 @@ export function ManagerOrderTable({
   onSetIssueTags,
   onDeleteOrder,
   designerRoster = DESIGNER_ROSTER,
+  onOpenOrder,
 }: ManagerOrderTableProps) {
   const { designerHomeStoreIndex } = useAuth();
   const anomalyOptions = {
@@ -91,6 +94,9 @@ export function ManagerOrderTable({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <div className="overflow-x-auto">
+        <p className="px-2.5 pt-2 text-right text-[10px] text-slate-400 sm:hidden">
+          ← 左右滑动查看更多
+        </p>
         <table
           className={`vi-data-table w-full border-collapse text-left text-sm ${detailMode ? "min-w-[1280px]" : "min-w-[960px]"}`}
         >
@@ -153,7 +159,31 @@ export function ManagerOrderTable({
               const rowCanEditAfterSales = canEditAfterSales && !rowReadOnly;
 
               return (
-                <tr key={order.id} className="hover:bg-slate-50/50">
+                <tr
+                  key={order.id}
+                  className={`hover:bg-slate-50/50 ${
+                    onOpenOrder ? "cursor-pointer" : ""
+                  }`}
+                  onClick={
+                    onOpenOrder
+                      ? (e) => {
+                          // 行内交互(下拉/输入/按钮)不触发打开
+                          const target = e.target as HTMLElement;
+                          if (
+                            target.closest("select, input, button, a, textarea")
+                          ) {
+                            return;
+                          }
+                          onOpenOrder(order);
+                        }
+                      : undefined
+                  }
+                  title={
+                    onOpenOrder
+                      ? `${displayCustomerAddressColumn(order) || order.customerName} · 打开订单卡`
+                      : undefined
+                  }
+                >
                   <td className={tdClass}>
                     <OrderAnomalyName
                       order={order}

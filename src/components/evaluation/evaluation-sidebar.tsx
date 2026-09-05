@@ -1,5 +1,4 @@
-"use client";
-
+﻿"use client";
 
 
 import {
@@ -8,6 +7,8 @@ import {
 } from "@/components/evaluation/evaluation-side-nav";
 
 import { EvaluationViewTabs } from "@/components/evaluation/evaluation-view-tabs";
+
+import { WorkbenchMobileChips } from "@/components/workbench/workbench-mobile-chips";
 
 import type { EvaluationExportPayload } from "@/lib/evaluation-export";
 
@@ -24,13 +25,10 @@ import type {
 } from "@/lib/evaluation-ui-persistence";
 
 
-
 export type EvaluationMainSection = "operations" | "data";
 
 
-
 type EvaluationExportData = Omit<EvaluationExportPayload, "viewMode">;
-
 
 
 interface EvaluationSidebarProps {
@@ -64,7 +62,6 @@ interface EvaluationSidebarProps {
   reportScopeLabel?: string | null;
 
 }
-
 
 
 export function EvaluationSidebar({
@@ -102,13 +99,6 @@ export function EvaluationSidebar({
   const operationsActive = mainSection === "operations";
 
   const reportsNavLabel = reportScopeLabel ? `${reportScopeLabel}报告` : "全局报告";
-
-  const lookupHint = periodLabel
-
-    ? `状态 · 派单人 · 设计师 · 门店 · ${periodLabel}`
-
-    : "状态 · 派单人 · 设计师 · 门店";
-
 
 
   return (
@@ -155,36 +145,8 @@ export function EvaluationSidebar({
           </span>
         </button>
 
-        <button
-
-          type="button"
-
-          onClick={() => {
-
-            onMainSectionChange("operations");
-
-            onOperationsSubViewChange("lookup");
-
-          }}
-
-          className={`vi-sidebar-item vi-sidebar-item-stack w-full text-left ${
-            operationsActive && operationsSubView === "lookup"
-              ? "vi-sidebar-item-active"
-              : ""
-          }`}
-
-        >
-
-          <span className="vi-sidebar-item-title">订单查询</span>
-
-          <span className="vi-sidebar-item-hint line-clamp-2 leading-snug break-all">
-            {lookupHint}
-          </span>
-
-        </button>
 
       </div>
-
 
 
       <EvaluationViewTabs
@@ -214,7 +176,6 @@ export function EvaluationSidebar({
       />
 
 
-
       {mainSection === "data" ? (
 
         <EvaluationSideNav
@@ -234,7 +195,6 @@ export function EvaluationSidebar({
   );
 
 }
-
 
 
 /** 移动端：总览 + 数据板块 */
@@ -303,97 +263,25 @@ export function EvaluationMobileNav({
 
 >) {
 
-  const operationsActive = mainSection === "operations";
-
   const reportsNavLabel = reportScopeLabel ? `${reportScopeLabel}报告` : "全局报告";
-
 
 
   return (
 
     <div className="space-y-2">
 
-      <div className="flex flex-wrap gap-1.5">
-
-        <button
-
-          type="button"
-
-          onClick={() => {
-
-            onMainSectionChange("operations");
-
-            onOperationsSubViewChange("cockpit");
-
-          }}
-
-          className={`vi-filter-chip flex-1 justify-center ${
-            operationsActive && operationsSubView === "cockpit"
-              ? "vi-filter-chip-active"
-              : ""
-          }`}
-
-        >
-
-          经营驾驶舱
-
-        </button>
-
-        <button
-
-          type="button"
-
-          onClick={() => {
-
-            onMainSectionChange("operations");
-
-            onOperationsSubViewChange("reports");
-
-          }}
-
-          className={`vi-filter-chip flex-1 justify-center ${
-            operationsActive && operationsSubView === "reports"
-              ? "vi-filter-chip-active"
-              : ""
-          }`}
-
-        >
-
-          {reportsNavLabel}
-
-        </button>
-
-        <button
-
-          type="button"
-
-          onClick={() => {
-
-            onMainSectionChange("operations");
-
-            onOperationsSubViewChange("lookup");
-
-          }}
-
-          className={`vi-filter-chip w-full justify-center ${
-            operationsActive && operationsSubView === "lookup"
-              ? "vi-filter-chip-active"
-              : ""
-          }`}
-
-        >
-
-          订单查询
-          {periodLabel ? (
-            <span className="text-xs font-normal text-slate-500">
-              {" "}
-              · {periodLabel}
-            </span>
-          ) : null}
-
-        </button>
-
-      </div>
+      <WorkbenchMobileChips
+        items={[
+          { id: "cockpit", label: "经营驾驶舱" },
+          { id: "reports", label: reportsNavLabel },
+        ]}
+        value={mainSection === "operations" ? operationsSubView : ""}
+        onChange={(id) => {
+          onMainSectionChange("operations");
+          onOperationsSubViewChange(id as EvaluationOperationsSubView);
+        }}
+        layout="wrap"
+      />
 
       {mainSection === "data" ? (
         <>

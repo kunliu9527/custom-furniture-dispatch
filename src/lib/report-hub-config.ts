@@ -1,4 +1,8 @@
-export type ReportTab = "weekly" | "monthly" | "allSummary" | "history" | "pending" | "alerts";
+export type ReportTab =
+  | "weekly"
+  | "monthly"
+  | "allSummary"
+  | "history";
 
 export type ReportScope = "manager" | "global";
 
@@ -15,33 +19,24 @@ export function getAllSummaryBriefLabel(
 }
 
 export function getReportTabs(
-  scope: ReportScope,
   options?: ReportHubScopeOptions,
 ): { id: ReportTab; label: string }[] {
   const storeScoped = Boolean(options?.storeScopeLabel);
-  if (scope === "global") {
-    return [
-      {
-        id: "weekly",
-        label: storeScoped ? "本周门店简报" : "本周全局简报",
-      },
-      {
-        id: "monthly",
-        label: storeScoped ? "本月门店简报" : "本月全局简报",
-      },
-      {
-        id: "allSummary",
-        label: getAllSummaryBriefLabel(
-          storeScoped ? options?.storeScopeLabel : null,
-        ),
-      },
-      { id: "history", label: storeScoped ? "门店历史简报" : "历史简报" },
-      { id: "pending", label: "待确认" },
-      { id: "alerts", label: "需跟进" },
-    ];
-  }
   return [
-    { id: "pending", label: "待确认" },
-    { id: "alerts", label: "需跟进" },
+    {
+      id: "weekly",
+      label: storeScoped ? "本周门店简报" : "本周全局简报",
+    },
+    {
+      id: "monthly",
+      label: storeScoped ? "本月门店简报" : "本月全局简报",
+    },
+    {
+      id: "allSummary",
+      label: getAllSummaryBriefLabel(
+        storeScoped ? options?.storeScopeLabel : null,
+      ),
+    },
+    { id: "history", label: storeScoped ? "门店历史简报" : "历史简报" },
   ];
 }

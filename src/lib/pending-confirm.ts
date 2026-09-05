@@ -43,6 +43,13 @@ export interface PendingConfirmSnapshot {
   totalCount: number;
 }
 
+/** 待办清单「处理某笔订单」的回调载荷(manager 工单待办等) */
+export interface OpenPendingOrderPayload {
+  orderId: string;
+  kind: PendingConfirmKind;
+  order: Order;
+}
+
 const ORDER_KIND_ORDER: PendingConfirmKind[] = [
   "designer-accept",
   "undispatched",

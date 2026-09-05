@@ -67,8 +67,6 @@ export function periodFilterVariantForReportTab(
       return "reportMonthly";
     case "allSummary":
       return "reportAllSummary";
-    case "pending":
-    case "alerts":
     case "history":
       return "reportNeutral";
     default:
@@ -90,11 +88,8 @@ export function reportPeriodBarHint(
       const briefLabel = getAllSummaryBriefLabel(storeScopeLabel);
       return `${scope}${briefLabel} · 统计周期：全部（${ALL_SUMMARY_SCOPE_HINT}）`;
     }
-    case "pending":
-    case "alerts":
-      return `${scope}${SNAPSHOT_REPORT_HINT}`;
     case "history":
-      return `${scope}历史简报按自然周/月回溯；待办类指标见对应 Tab`;
+      return `${scope}历史简报按自然周/月回溯；工单待办在「项目进程管理」处理`;
     default:
       return scope ? scope.slice(0, -3) : "订单查询与报告按此周期";
   }

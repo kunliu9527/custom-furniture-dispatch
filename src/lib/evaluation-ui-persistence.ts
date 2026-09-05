@@ -9,7 +9,7 @@ export type EvaluationSubView =
   | "performance";
 
 export type EvaluationMainSection = "operations" | "data";
-export type EvaluationOperationsSubView = "cockpit" | "reports" | "lookup";
+export type EvaluationOperationsSubView = "cockpit" | "reports";
 
 export interface EvaluationUiState {
   mainSection: EvaluationMainSection;
@@ -48,15 +48,11 @@ export function loadEvaluationUi(
     const operationsSubView: EvaluationOperationsSubView =
       parsed.operationsSubView === "reports"
         ? "reports"
-        : parsed.operationsSubView === "lookup"
-          ? "lookup"
-          : "cockpit";
+        : "cockpit";
     const reportTab: ReportTab =
       parsed.reportTab === "monthly" ||
       parsed.reportTab === "allSummary" ||
-      parsed.reportTab === "history" ||
-      parsed.reportTab === "pending" ||
-      parsed.reportTab === "alerts"
+      parsed.reportTab === "history"
         ? parsed.reportTab
         : "weekly";
     const sub = (v: unknown, migrateWeekly = false): EvaluationSubView => {
