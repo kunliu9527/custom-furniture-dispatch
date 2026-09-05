@@ -175,6 +175,8 @@ export default function DesignerPage() {
   const [orderQuery, setOrderQuery] = useState("");
   const [focusOrderId, setFocusOrderId] = useState<string | null>(null);
   const [uiHydrated, setUiHydrated] = useState(false);
+  /** 进入板块时固化的订单顺序:推进等操作不重排,退出重进(重新挂载)再按最新状态排序 */
+  const [frozenOrderIds, setFrozenOrderIds] = useState<string[] | null>(null);
 
   const [orderPositionPin, setOrderPositionPin] = useState<{
     orderId: string;
@@ -442,6 +444,30 @@ export default function DesignerPage() {
     return list;
   }, [myOrders, statusFilter, orderQuery, focusOrderId, strongPin]);
 
+  // 冻结顺序:首次数据就绪时固化一次;期间推进/撤回等只更新卡片内容,不改变排列
+  useEffect(() => {
+    if (frozenOrderIds !== null) return;
+    if (myOrders.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 数据就绪时单次固化排序,幂等、无级联
+    setFrozenOrderIds(myOrders.map((order) => order.id));
+  }, [myOrders, frozenOrderIds]);
+
+  /** 保持进入板块时的相对顺序;新出现的订单(新单/新范围)按现有序排在末尾 */
+  const filteredOrdersStable = useMemo(() => {
+    if (frozenOrderIds === null || frozenOrderIds.length === 0) {
+      return filteredOrders;
+    }
+    const indexById = new Map<string, number>();
+    frozenOrderIds.forEach((id, i) => indexById.set(id, i));
+    const known: Order[] = [];
+    const unknown: Order[] = [];
+    for (const order of filteredOrders) {
+      (indexById.has(order.id) ? known : unknown).push(order);
+    }
+    known.sort((a, b) => (indexById.get(a.id)! - indexById.get(b.id)!));
+    return [...known, ...unknown];
+  }, [filteredOrders, frozenOrderIds]);
+
   const handleOrderStatusUpdated = useCallback(
     ({ orderId }: OrderStatusTransitionPayload) => {
       if (statusFilter !== "全部" || strongPin.kind === "pin") return;
@@ -453,9 +479,11 @@ export default function DesignerPage() {
   );
 
   const displayOrders = useMemo(() => {
-    if (statusFilter !== "全部" || !orderPositionPin) return filteredOrders;
-    return applyOrderPositionPin(filteredOrders, orderPositionPin);
-  }, [filteredOrders, orderPositionPin, statusFilter]);
+    if (statusFilter !== "全部" || !orderPositionPin) {
+      return filteredOrdersStable;
+    }
+    return applyOrderPositionPin(filteredOrdersStable, orderPositionPin);
+  }, [filteredOrdersStable, orderPositionPin, statusFilter]);
 
   useEffect(() => {
     if (statusFilter !== "全部") {
