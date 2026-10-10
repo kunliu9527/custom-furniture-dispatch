@@ -6,6 +6,11 @@ import {
   formatMoneyStat,
 } from "@/components/manager/manager-digest-stats";
 import { MonthlyDigestExtras } from "@/components/manager/monthly-digest-extras";
+import { OrderWatchlistBlock } from "@/components/manager/order-watchlist-block";
+import {
+  buildOrderWatchlist,
+  formatOrderWatchlistText,
+} from "@/lib/report-order-watchlist";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/client-api";
@@ -115,6 +120,20 @@ export function MonthlyDigestPanel({
     supplements,
   ]);
 
+  const watchlist = useMemo(
+    () =>
+      buildOrderWatchlist(orders, period, new Date(), {
+        designerNames: personScope?.designerNames ?? null,
+        dispatcherNames: personScope?.dispatcherNames ?? null,
+      }),
+    [orders, period, personScope],
+  );
+
+  const textWithWatchlist = useMemo(
+    () => [text, "", ...formatOrderWatchlistText(watchlist)].join("\n"),
+    [text, watchlist],
+  );
+
   const portfolioMetrics = useMemo(
     () => computeStorePortfolioMetrics(orders, supplements),
     [orders, supplements],
@@ -139,7 +158,7 @@ export function MonthlyDigestPanel({
 
   async function handleCopy() {
     try {
-      const ok = await copyTextToClipboard(text);
+      const ok = await copyTextToClipboard(textWithWatchlist);
       setCopyOk(ok);
       window.setTimeout(() => setCopyOk(false), 2000);
     } catch {
@@ -153,7 +172,7 @@ export function MonthlyDigestPanel({
       const res = await apiFetch("/api/weekly-digest/push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: textWithWatchlist }),
       });
       if (!res.ok) {
         setPushState("error");
@@ -310,6 +329,16 @@ export function MonthlyDigestPanel({
             leaderboardHeading="本期排行 · 综合前5"
           />
         )}
+      </div>
+
+      <div className="mt-3">
+        <DigestBriefSection
+          title="⑤ 关注订单"
+          tone="rose"
+          hint="逐单盯住动向，防止订单无管控"
+        >
+          <OrderWatchlistBlock watchlist={watchlist} />
+        </DigestBriefSection>
       </div>
 
       {visibleActionLines.length > 0 ? (

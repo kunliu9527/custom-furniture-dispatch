@@ -12,7 +12,8 @@ import {
   type CommissionRateConfig,
   type CommissionSettings,
 } from "@/lib/commission-settings";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { useContentKey } from "@/lib/use-content-key";
 
 function RateField({
   label,
@@ -60,10 +61,17 @@ export function CommissionSettingsPanel() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 云端轮询会带来「内容相同、引用全新」的 commissionSettings；只按内容签名同步草稿，
+  // 否则管理员正在编辑、尚未保存的佣金设置会被每 ~8s 一次地清回旧值。
+  const commissionSyncKey = useContentKey(commissionSettings);
+  const appliedCommissionKeyRef = useRef(commissionSyncKey);
+
   useEffect(() => {
+    if (appliedCommissionKeyRef.current === commissionSyncKey) return;
+    appliedCommissionKeyRef.current = commissionSyncKey;
     setRates(commissionSettings.rates);
     setVisibleFor(commissionSettings.visibleFor);
-  }, [commissionSettings]);
+  }, [commissionSyncKey, commissionSettings]);
 
   if (!canManageCommissionSettings(user)) {
     return null;

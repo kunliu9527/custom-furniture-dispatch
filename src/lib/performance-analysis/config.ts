@@ -71,7 +71,7 @@ export function getPerformanceAnalysisConfig(
 export const PERFORMANCE_ANALYSIS_METRIC_DEFINITIONS: Record<string, string> = {
   conversionRate: "已下单金额 ÷ 合计金额（未下单 + 已下单 + 待退单 + 已退单）",
   averageOrderAmount: "已下单金额 ÷ 已下单数量",
-  pipelineAmount: "未下单金额 + 待退单金额",
+  pipelineAmount: "存量金额 = 未下单金额（非退单且尚未下单，不含待退单）",
   refundAmount: "待退单金额 + 已退单金额",
   refundRate: "退单金额 ÷ 合计金额",
   totalRank: "按合计金额降序排名，剔除合计为 0",

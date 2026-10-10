@@ -61,13 +61,17 @@ export function exportMonthlyDesignerReport(
       formatDispatchMoney(overview.supplementAmount),
     ]),
     rowToCsvLine(["当前超时在途", String(overview.activeTimeoutCount)]),
-    rowToCsvLine(["当前在途合计", String(overview.inProgressCount)]),
+    rowToCsvLine(["当前在途合计（未完结）", String(overview.unfinishedCount)]),
+    rowToCsvLine([
+      "当前存量合计（未下单）",
+      `${overview.stockCount} / ${formatDispatchMoney(overview.stockAmount)}`,
+    ]),
   ];
 
   const headers = [
     "设计师",
     "门店",
-    "在途单",
+    "在途单（未完结）",
     "下单数",
     "下单金额",
     "转化率",
@@ -88,7 +92,7 @@ export function exportMonthlyDesignerReport(
     rowToCsvLine([
       row.label,
       row.subtitle ?? "",
-      String(row.inProgressCount),
+      String(row.unfinishedCount),
       String(row.orderedCount),
       String(row.orderedAmount),
       formatPerformanceConversion(row.orderConversionRate),

@@ -307,7 +307,7 @@ function formatWorkflowSection(
   if (!options?.skipHeader) {
     lines.push("【全流程 · 交付验收】");
     lines.push(
-      `在途：${FLOW_PIPELINE_LABEL.ordered} ${workflow.pipelineActive.已下单} · ${FLOW_PIPELINE_LABEL.installed} ${workflow.pipelineActive.已安装} · ${FLOW_PIPELINE_LABEL.accepted} ${workflow.pipelineActive.已验收}`,
+      `交付流程分布：${FLOW_PIPELINE_LABEL.ordered} ${workflow.pipelineActive.已下单} · ${FLOW_PIPELINE_LABEL.installed} ${workflow.pipelineActive.已安装} · ${FLOW_PIPELINE_LABEL.accepted} ${workflow.pipelineActive.已验收}`,
     );
   }
   lines.push(
@@ -675,6 +675,7 @@ export function globalMonthlyPrimaryStatItems(
     {
       label: `本期${AGGREGATE_KPI_LABEL.ordered}`,
       value: formatCountAmountStat(digest.orderedCount, digest.orderedAmount),
+      hint: "本期到达过已下单",
     },
     {
       label: `本期${AGGREGATE_KPI_LABEL.refundTotal}`,

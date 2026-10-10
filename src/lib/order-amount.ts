@@ -34,6 +34,17 @@ function getRefundMainAmount(order: Order): number {
   return main > 0 ? main : order.budget > 0 ? order.budget : 0;
 }
 
+/**
+ * 订单「已下单」时点的金额（主单额 + 增补），与 classifyOrderAmount 的 ordered 单元格同源。
+ * 不看到期末订单停在哪：即使之后退单，只要到达过已下单就按此金额计入。
+ */
+export function getOrderedReachedAmount(
+  order: Order,
+  supplements: SupplementOrder[],
+): number {
+  return getMainOrderAmountValue(order) + sumSupplementAmount(supplements, order.id);
+}
+
 /** 单笔订单：未下单 / 已下单 / 待退单 / 已退单 四类金额（全系统统一口径） */
 export function classifyOrderAmount(
   order: Order,

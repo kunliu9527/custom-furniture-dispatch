@@ -9,7 +9,8 @@ import {
   DEFAULT_STANDARD_CONTRACT_TEXT,
 } from "@/lib/site-branding";
 import { canManageStaff } from "@/lib/permissions";
-import { FormEvent, useEffect, useState } from "react";
+import { useContentKey } from "@/lib/use-content-key";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 export function SiteBrandingSettings() {
   const { user, siteBranding, updateSiteBranding } = useAuth();
@@ -21,11 +22,18 @@ export function SiteBrandingSettings() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 云端轮询会带来「内容相同、引用全新」的 siteBranding；只按内容签名同步草稿，
+  // 否则管理员正在编辑、尚未保存的品牌文案会被每 ~8s 一次地清回旧值。
+  const brandingSyncKey = useContentKey(siteBranding);
+  const appliedBrandingKeyRef = useRef(brandingSyncKey);
+
   useEffect(() => {
+    if (appliedBrandingKeyRef.current === brandingSyncKey) return;
+    appliedBrandingKeyRef.current = brandingSyncKey;
     setBadgeLabel(siteBranding.badgeLabel);
     setHeadlineTitle(siteBranding.headlineTitle);
     setStandardContractText(siteBranding.standardContractText);
-  }, [siteBranding]);
+  }, [brandingSyncKey, siteBranding]);
 
   if (!canManageStaff(user)) {
     return (

@@ -329,7 +329,7 @@ export function DesignerSummaryBlock({
         <p className="mt-1 leading-relaxed text-slate-700">{summary.sectionSummary}</p>
       ) : null}
       <p className="mt-1 text-slate-600">
-        在途 {summary.inProgressTotal} · 超时 {summary.timeoutTotal} · 退单{" "}
+        在途（未完结）{summary.inProgressTotal} · 超时 {summary.timeoutTotal} · 退单{" "}
         {summary.refundTotal}
         {!compact && ratingSummaryMode === "dimensionLow"
           ? ` · 维度低评 ${summary.lowDimensionTotal}`

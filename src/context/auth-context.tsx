@@ -43,6 +43,10 @@ import {
   type RemovedStaffIds,
 } from "@/lib/staff-removed-storage";
 import {
+  saveResignedStaffIds,
+  type ResignedStaffIds,
+} from "@/lib/staff-resigned-storage";
+import {
   buildMergedStaffRecords,
   buildStaffConfigSnapshot,
   clearStaffOverridesForId,
@@ -213,6 +217,11 @@ interface AuthContextValue {
     password?: string,
   ) => { ok: boolean; error?: string };
   deleteStaffMember: (staffId: string) => { ok: boolean; error?: string };
+  /** 标记/取消离职：名册保留（历史订单归属不变），离职者不参与月报人员榜且不可登录 */
+  setStaffResigned: (
+    staffId: string,
+    resigned: boolean,
+  ) => { ok: boolean; error?: string };
   siteBranding: SiteBranding;
   updateSiteBranding: (patch: Partial<SiteBranding>) => {
     ok: boolean;
@@ -254,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useState<StaffExtraStoresOverrides>({});
   const [phoneOverrides, setPhoneOverrides] = useState<StaffPhoneOverrides>({});
   const [removedStaffIds, setRemovedStaffIds] = useState<RemovedStaffIds>([]);
+  const [resignedStaffIds, setResignedStaffIds] = useState<ResignedStaffIds>([]);
   const [siteBranding, setSiteBranding] = useState<SiteBranding>({
     ...DEFAULT_SITE_BRANDING,
   });
@@ -326,6 +336,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides: StaffExtraStoresOverrides;
       phoneOverrides: StaffPhoneOverrides;
       removedStaffIds: RemovedStaffIds;
+      resignedStaffIds: ResignedStaffIds;
       siteBranding: SiteBranding;
       commissionSettings: CommissionSettings;
     }) => {
@@ -342,6 +353,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setExtraStoreOverrides(config.extraStoreOverrides);
     setPhoneOverrides(config.phoneOverrides);
     setRemovedStaffIds(config.removedStaffIds);
+    setResignedStaffIds(config.resignedStaffIds);
     setSiteBranding(normalizeSiteBranding(config.siteBranding));
     setCommissionSettings(normalizeCommissionSettings(config.commissionSettings));
     persistStaffConfigToLocalStorage(config);
@@ -358,6 +370,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           extraStoreOverrides,
           phoneOverrides,
           removedStaffIds,
+          resignedStaffIds,
         },
         { includeBuiltins: isDefaultCompany(activeCompanyId) },
       ),
@@ -369,6 +382,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      resignedStaffIds,
       activeCompanyId,
     ],
   );
@@ -431,6 +445,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const authUsersRef = useRef(authUsers);
   authUsersRef.current = authUsers;
+
+  const allStaffRecordsRef = useRef<StaffRecord[]>([]);
+  useEffect(() => {
+    allStaffRecordsRef.current = allStaffRecords;
+  }, [allStaffRecords]);
 
   const touchAuthSession = useCallback(() => {
     if (!sessionUserRef.current) return;
@@ -551,6 +570,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      resignedStaffIds,
       siteBranding,
       commissionSettings,
     });
@@ -563,6 +583,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     extraStoreOverrides,
     phoneOverrides,
     removedStaffIds,
+    resignedStaffIds,
     siteBranding,
     commissionSettings,
     syncStaffConfigToRemote,
@@ -606,6 +627,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const found = authenticate(authUsersRef.current, username, password);
       if (!found) {
         return { ok: false as const, error: "账号或密码错误" };
+      }
+      const staffRecord = allStaffRecordsRef.current.find(
+        (s) => s.name === found.username,
+      );
+      if (staffRecord?.resigned) {
+        return { ok: false as const, error: "该账号已标记离职，无法登录" };
       }
       const session = toSession(found);
       const record = createStoredAuthSession(session, found);
@@ -813,6 +840,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           extraStoreOverrides,
           phoneOverrides,
           removedStaffIds,
+          resignedStaffIds,
         },
         { includeBuiltins: isDefaultCompany(activeCompanyId) },
       );
@@ -857,6 +885,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extraStoreOverrides,
         phoneOverrides,
         removedStaffIds,
+        resignedStaffIds,
         siteBranding,
         commissionSettings,
       });
@@ -870,6 +899,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      resignedStaffIds,
       siteBranding,
       commissionSettings,
       liveUser,
@@ -1068,6 +1098,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extraStoreOverrides,
         phoneOverrides: nextPhones,
         removedStaffIds,
+        resignedStaffIds,
         siteBranding,
         commissionSettings,
       });
@@ -1084,6 +1115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       homeStoreOverrides,
       extraStoreOverrides,
       removedStaffIds,
+      resignedStaffIds,
       siteBranding,
       commissionSettings,
       syncStaffConfigToRemote,
@@ -1168,6 +1200,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPhoneOverrides(cleared.phoneOverrides);
       saveStaffPhoneOverrides(cleared.phoneOverrides);
 
+      const nextResigned = resignedStaffIds.filter((id) => id !== staffId);
+      if (nextResigned.length !== resignedStaffIds.length) {
+        setResignedStaffIds(nextResigned);
+        saveResignedStaffIds(nextResigned);
+      }
+
       syncStaffConfigToRemote({
         customStaff: nextCustom,
         accessOverrides: cleared.accessOverrides,
@@ -1176,6 +1214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extraStoreOverrides: cleared.extraStoreOverrides,
         phoneOverrides: cleared.phoneOverrides,
         removedStaffIds: nextRemoved,
+        resignedStaffIds: nextResigned,
         siteBranding,
         commissionSettings,
       });
@@ -1185,6 +1224,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [
       liveUser,
       allStaffRecords,
+      customStaff,
+      accessOverrides,
+      passwordOverrides,
+      homeStoreOverrides,
+      extraStoreOverrides,
+      phoneOverrides,
+      removedStaffIds,
+      resignedStaffIds,
+      siteBranding,
+      commissionSettings,
+      syncStaffConfigToRemote,
+    ],
+  );
+
+  const setStaffResigned = useCallback(
+    (staffId: string, resigned: boolean) => {
+      if (!liveUser || !isAdminAccess(liveUser)) {
+        return { ok: false, error: "仅管理员可设置离职状态" };
+      }
+      if (staffId === ADMIN_STAFF_RECORD.id) {
+        return { ok: false, error: "系统管理员不可标记离职" };
+      }
+      const target = allStaffRecords.find((s) => s.id === staffId);
+      if (!target) {
+        return { ok: false, error: "未找到该人员" };
+      }
+      if (resigned && target.name === liveUser.username) {
+        return { ok: false, error: "不能将自己标记为离职" };
+      }
+      if (resignedStaffIds.includes(staffId) === resigned) {
+        return { ok: true };
+      }
+
+      const next = resigned
+        ? [...new Set([...resignedStaffIds, staffId])]
+        : resignedStaffIds.filter((id) => id !== staffId);
+
+      setResignedStaffIds(next);
+      saveResignedStaffIds(next);
+      syncStaffConfigToRemote({
+        customStaff,
+        accessOverrides,
+        passwordOverrides,
+        homeStoreOverrides,
+        extraStoreOverrides,
+        phoneOverrides,
+        removedStaffIds,
+        resignedStaffIds: next,
+        siteBranding,
+        commissionSettings,
+      });
+      return { ok: true };
+    },
+    [
+      liveUser,
+      allStaffRecords,
+      resignedStaffIds,
       customStaff,
       accessOverrides,
       passwordOverrides,
@@ -1221,6 +1317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extraStoreOverrides,
         phoneOverrides,
         removedStaffIds,
+        resignedStaffIds,
         siteBranding: next,
         commissionSettings,
       });
@@ -1236,6 +1333,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      resignedStaffIds,
       commissionSettings,
       syncStaffConfigToRemote,
     ],
@@ -1269,6 +1367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         extraStoreOverrides,
         phoneOverrides,
         removedStaffIds,
+        resignedStaffIds,
         siteBranding,
         commissionSettings: next,
       });
@@ -1284,6 +1383,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       extraStoreOverrides,
       phoneOverrides,
       removedStaffIds,
+      resignedStaffIds,
       siteBranding,
       syncStaffConfigToRemote,
     ],
@@ -1316,6 +1416,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateStaffExtraStores,
       resetStaffPassword,
       deleteStaffMember,
+      setStaffResigned,
       updateSiteBranding,
       updateCommissionSettings,
     }),
@@ -1344,6 +1445,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateStaffExtraStores,
       resetStaffPassword,
       deleteStaffMember,
+      setStaffResigned,
       updateSiteBranding,
       updateCommissionSettings,
     ],

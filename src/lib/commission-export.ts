@@ -109,7 +109,7 @@ export function exportCommissionDraftCsv(
     rowToCsvLine([
       "设计师",
       "门店",
-      "在途单",
+      "在途单（未完结）",
       "下单数",
       "下单金额",
       "增补金额",
@@ -123,7 +123,7 @@ export function exportCommissionDraftCsv(
       rowToCsvLine([
         row.label,
         row.subtitle ?? "",
-        String(row.inProgressCount),
+        String(row.unfinishedCount),
         String(row.orderedCount),
         formatDispatchMoney(row.orderedAmount),
         formatDispatchMoney(

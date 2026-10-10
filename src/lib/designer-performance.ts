@@ -8,7 +8,7 @@ import {
   classifyDispatcherOrder,
   formatOrderConversionRate,
 } from "./evaluation-stats";
-import { formatDispatchMoney } from "./dispatch-totals";
+import { formatDispatchMoney, getOrderTotalDispatch } from "./dispatch-totals";
 import {
   filterOrdersByPeriod,
   filterSupplementsByPeriod,
@@ -18,12 +18,17 @@ import {
 } from "./period-filter";
 import { isRefundStatus } from "./order-utils";
 import { buildEffectiveDesignerRoster } from "./personnel-roster";
-import type { StaffRecord } from "./staff-roster";
+import {
+  countReportInProgress,
+  isReportStockOrder,
+  measureReportOrderedReached,
+} from "./report-metric-definitions";
+import { buildResignedStaffNameSet, type StaffRecord } from "./staff-roster";
 import { summarizeDesignerActivity } from "./order-events";
 import { getStageTimeoutAlert } from "./stage-intervals";
 import type { FlowOrderStatus, Order, SupplementOrder } from "./types";
 
-const IN_PROGRESS_STATUSES: FlowOrderStatus[] = [
+export const IN_PROGRESS_STATUSES: FlowOrderStatus[] = [
   "待量尺",
   "已量尺",
   "已出图",
@@ -37,7 +42,10 @@ export interface DesignerPerformanceRow {
   key: string;
   label: string;
   subtitle?: string;
+  /** 进行中主流程（待量尺→已签约）单数：设计师负荷判断口径 */
   inProgressCount: number;
+  /** 报表「在途」：非退单且未验收（未派单→已安装），当前快照口径 */
+  unfinishedCount: number;
   orderedCount: number;
   orderedAmount: number;
   orderConversionRate: number | null;
@@ -62,7 +70,13 @@ export interface MonthlyReportOverview {
   refundCount: number;
   supplementAmount: number;
   activeTimeoutCount: number;
+  /** 进行中主流程（待量尺→已签约）单数：负荷口径 */
   inProgressCount: number;
+  /** 报表「在途」：非退单且未验收（未派单→已安装），当前快照口径 */
+  unfinishedCount: number;
+  /** 报表「存量」：非退单且未下单（未派单→已签约） */
+  stockCount: number;
+  stockAmount: number;
 }
 
 function isInProgress(order: Order): boolean {
@@ -172,6 +186,7 @@ export function buildDesignerPerformanceRow(
   }
 
   const inProgressCount = loadOrders.filter(isInProgress).length;
+  const unfinishedCount = countReportInProgress(loadOrders);
   const orderedCount = personOrders.filter(
     (o) =>
       !isRefundStatus(o.status) &&
@@ -221,6 +236,7 @@ export function buildDesignerPerformanceRow(
     label: designer,
     subtitle,
     inProgressCount,
+    unfinishedCount,
     orderedCount,
     orderedAmount,
     orderConversionRate,
@@ -265,11 +281,13 @@ export function getDesignerPerformanceRows(
   const allowedNames = nameFilter ? new Set(nameFilter) : null;
   const designerIndex = buildDesignerHomeStoreIndex(staffRecords);
   const roster = buildEffectiveDesignerRoster(staffRecords, designerIndex);
+  const resignedNames = buildResignedStaffNameSet(staffRecords);
   const seen = new Set<string>();
   const rows: DesignerPerformanceRow[] = [];
 
   for (const profile of roster) {
     if (allowedNames && !allowedNames.has(profile.name)) continue;
+    if (resignedNames.has(profile.name)) continue;
     seen.add(profile.name);
     rows.push(
       buildDesignerPerformanceRow(
@@ -286,6 +304,7 @@ export function getDesignerPerformanceRows(
   for (const order of filteredOrders) {
     if (!order.designer || seen.has(order.designer)) continue;
     if (allowedNames && !allowedNames.has(order.designer)) continue;
+    if (resignedNames.has(order.designer)) continue;
     seen.add(order.designer);
     rows.push(
       buildDesignerPerformanceRow(
@@ -314,15 +333,15 @@ export function getMonthlyReportOverview(
   const filteredOrders = filterOrdersByPeriod(orders, period);
   const filteredSupplements = filterSupplementsByPeriod(supplements, period);
 
-  let orderedCount = 0;
-  let orderedAmount = 0;
+  // 本期已下单量 = 本期「到达过」已下单的订单（节点口径），与本期安装/验收一致；
+  // 不再用「本期有活动 ∩ 当前状态已下单」，避免把早于/晚于本期下单的订单算进本期。
+  const orderedReached = measureReportOrderedReached(orders, supplements, period);
+
   let refundCount = 0;
   let supplementAmount = 0;
 
   for (const order of filteredOrders) {
     const parts = classifyDispatcherOrder(order, filteredSupplements);
-    orderedCount += parts.ordered.count;
-    orderedAmount += parts.ordered.amount;
     refundCount += parts.pendingRefund.count + parts.confirmedRefund.count;
   }
 
@@ -334,16 +353,26 @@ export function getMonthlyReportOverview(
     getStageTimeoutAlert(o),
   ).length;
   const inProgressCount = orders.filter(isInProgress).length;
+  const unfinishedCount = countReportInProgress(orders);
+  const stockOrders = orders.filter(isReportStockOrder);
+  const stockCount = stockOrders.length;
+  const stockAmount = stockOrders.reduce(
+    (sum, order) => sum + getOrderTotalDispatch(order, supplements),
+    0,
+  );
 
   return {
     periodLabel: formatPeriodLabel(period),
     orderCount: filteredOrders.length,
-    orderedCount,
-    orderedAmount,
+    orderedCount: orderedReached.count,
+    orderedAmount: orderedReached.amount,
     refundCount,
     supplementAmount,
     activeTimeoutCount,
     inProgressCount,
+    unfinishedCount,
+    stockCount,
+    stockAmount,
   };
 }
 

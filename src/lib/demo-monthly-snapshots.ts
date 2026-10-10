@@ -26,6 +26,9 @@ export function buildDemoMonthlySnapshots(
         supplementAmount: Math.round(12_000 * factor),
         activeTimeoutCount: Math.max(1, 4 - Math.floor(i / 3)),
         inProgressCount: Math.round(6 * factor),
+        unfinishedCount: Math.round(8 * factor),
+        stockCount: Math.round(3 * factor),
+        stockAmount: Math.round(60_000 * factor),
       },
       designers: [
         {

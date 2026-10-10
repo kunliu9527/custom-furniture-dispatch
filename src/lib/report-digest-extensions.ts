@@ -201,7 +201,8 @@ export function buildDesignerPeriodSummary(
     supplements,
   );
 
-  const inProgressTotal = performance.reduce((s, r) => s + r.inProgressCount, 0);
+  // 报表「在途」＝未完结快照（非退单且未验收），与设计师负荷口径区分
+  const inProgressTotal = performance.reduce((s, r) => s + r.unfinishedCount, 0);
   const timeoutTotal = performance.reduce((s, r) => s + r.timeoutCount, 0);
   const refundTotal = performance.reduce((s, r) => s + r.refundCount, 0);
   const badReviewTotal = countBadAcceptanceReviews(orders);

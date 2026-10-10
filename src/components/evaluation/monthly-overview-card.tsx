@@ -3,6 +3,7 @@
 import type { MonthlyReportOverview } from "@/lib/designer-performance";
 import { formatDispatchMoney } from "@/lib/dispatch-totals";
 import { AGGREGATE_KPI_LABEL } from "@/lib/metric-display-labels";
+import { REPORT_METRIC_DEFINITIONS } from "@/lib/report-metric-definitions";
 import type { OrderIssueTag } from "@/lib/types";
 
 interface MonthlyOverviewCardProps {
@@ -14,7 +15,7 @@ export function MonthlyOverviewCard({
   overview,
   issueTagStats = [],
 }: MonthlyOverviewCardProps) {
-  const items = [
+  const items: { label: string; value: string; hint?: string }[] = [
     { label: "周期订单", value: String(overview.orderCount) },
     { label: AGGREGATE_KPI_LABEL.ordered, value: String(overview.orderedCount) },
     {
@@ -27,7 +28,16 @@ export function MonthlyOverviewCard({
       value: formatDispatchMoney(overview.supplementAmount),
     },
     { label: "当前超时", value: String(overview.activeTimeoutCount) },
-    { label: "在途合计", value: String(overview.inProgressCount) },
+    {
+      label: "在途合计",
+      value: String(overview.unfinishedCount),
+      hint: REPORT_METRIC_DEFINITIONS.inProgress.definition,
+    },
+    {
+      label: "存量合计",
+      value: `${overview.stockCount} · ${formatDispatchMoney(overview.stockAmount)}`,
+      hint: REPORT_METRIC_DEFINITIONS.stock.definition,
+    },
   ];
 
   return (
@@ -35,9 +45,9 @@ export function MonthlyOverviewCard({
       <p className="text-sm font-semibold text-blue-900">
         {overview.periodLabel} · 总览
       </p>
-      <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         {items.map((item) => (
-          <div key={item.label}>
+          <div key={item.label} title={item.hint}>
             <dt className="text-[11px] text-blue-600/80">{item.label}</dt>
             <dd className="text-sm font-semibold tabular-nums text-slate-900">
               {item.value}

@@ -28,6 +28,8 @@ export interface StaffRecord {
   permissions: string;
   /** 联系电话 */
   phone?: string;
+  /** 已离职：保留名册（历史归属不变），月报人员榜排除且不可登录 */
+  resigned?: boolean;
 }
 
 export const POSITION_PERMISSIONS: Record<string, string> = {
@@ -94,4 +96,13 @@ export const ADMIN_STAFF_RECORD: StaffRecord = {
 export function getDefaultPasswordForStaff(staff: StaffRecord): string {
   if (staff.id === ADMIN_STAFF_RECORD.id) return ADMIN_DEFAULT_PASSWORD;
   return DEFAULT_PASSWORD;
+}
+
+/** 离职人员姓名集合：月报人员榜/关注名单据此排除；订单总量统计不排除 */
+export function buildResignedStaffNameSet(
+  staffRecords: StaffRecord[] = [],
+): Set<string> {
+  return new Set(
+    staffRecords.filter((row) => row.resigned).map((row) => row.name),
+  );
 }

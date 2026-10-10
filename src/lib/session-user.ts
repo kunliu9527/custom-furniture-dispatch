@@ -10,6 +10,8 @@ export function resolveLiveSessionUser(
   if (!session) return null;
   const staff = staffRecords.find((row) => row.name === session.username);
   if (!staff) return null;
+  // 离职账号：名册保留（历史订单归属不变），但不再保持会话
+  if (staff.resigned) return null;
 
   const auth = staffToAuthUser(staff, session.companyId);
   return {

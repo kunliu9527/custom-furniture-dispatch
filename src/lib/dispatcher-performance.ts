@@ -10,7 +10,7 @@ import {
   getPeriodBounds,
   type PeriodSelection,
 } from "./period-filter";
-import type { StaffRecord } from "./staff-roster";
+import { buildResignedStaffNameSet, type StaffRecord } from "./staff-roster";
 import type { Order, SupplementOrder } from "./types";
 
 export interface DispatcherPerformanceRow {
@@ -154,14 +154,18 @@ export function getDispatcherPerformanceRows(
   period?: PeriodSelection,
 ): DispatcherPerformanceRow[] {
   const periodOrders = period ? filterOrdersByPeriod(orders, period) : orders;
-  const roster = getEffectiveDispatcherRoster(staffRecords);
-  const names =
+  const resignedNames = buildResignedStaffNameSet(staffRecords);
+  const roster = getEffectiveDispatcherRoster(staffRecords).filter(
+    (d) => !resignedNames.has(d.name),
+  );
+  const names = (
     dispatcherNames ??
     [
       ...new Set(
         periodOrders.map((o) => normalizeDispatcherName(o.dispatcherName)),
       ),
-    ].filter(Boolean);
+    ].filter(Boolean)
+  ).filter((name) => !resignedNames.has(name));
   const rosterSet = new Set(roster.map((d) => d.name));
   const orderedNames = [
     ...roster.filter((d) => names.includes(d.name)).map((d) => d.name),

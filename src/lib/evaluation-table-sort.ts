@@ -47,7 +47,7 @@ export type RankingSortColumn =
 
 export type DesignerPerformanceSortColumn =
   | "label"
-  | "inProgressCount"
+  | "unfinishedCount"
   | "orderedCount"
   | "orderedAmount"
   | "orderConversionRate"
@@ -310,8 +310,8 @@ export function sortDesignerPerformanceRowsByColumn(
     switch (sort.column) {
       case "label":
         return compareStrings(a.label, b.label, sort.direction);
-      case "inProgressCount":
-        return compareNumbers(a.inProgressCount, b.inProgressCount, sort.direction);
+      case "unfinishedCount":
+        return compareNumbers(a.unfinishedCount, b.unfinishedCount, sort.direction);
       case "orderedCount":
         return (
           compareNumbers(a.orderedAmount, b.orderedAmount, sort.direction) ||

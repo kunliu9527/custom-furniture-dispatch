@@ -41,6 +41,7 @@ import {
 } from "@/lib/workbench-period-persistence";
 import { resolveOrderDisplayName } from "@/lib/order-remark";
 import { getSessionResetKey } from "@/lib/session-user";
+import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 import { useOrderLookupWorkbench } from "@/lib/use-order-lookup-workbench";
 import type { DesignerName, Order } from "@/lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
@@ -118,7 +119,12 @@ function ManagerPageContent() {
     sessionResetKey,
   });
 
-  useEffect(() => {
+  /**
+   * 恢复本账号的 UI 偏好（区块/周期）与角色默认筛选。
+   * 触发键只取「会话范围 + 是否查询台专版」：
+   * 云端轮询会让 staffRecords 引用抖动，若直接依赖它，经理每 ~8s 就被重置回默认筛选/区块。
+   */
+  const hydrateManagerUi = useCallback(() => {
     if (!user) return;
     const savedPeriod = loadWorkbenchPeriod(user.username);
     if (savedPeriod) setPeriod(savedPeriod);
@@ -151,7 +157,12 @@ function ManagerPageContent() {
       }
     }
     setUiHydrated(true);
-  }, [user, lookupOnly, staffRecords]);
+  }, [user, lookupOnly, staffRecords, lookup]);
+
+  useOnSessionScopeChange(
+    `${sessionResetKey}|${lookupOnly ? "lookup" : "full"}`,
+    hydrateManagerUi,
+  );
 
   useEffect(() => {
     if (!user || !uiHydrated) return;

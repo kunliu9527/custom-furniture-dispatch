@@ -19,7 +19,7 @@ import {
   filterSupplementsByPeriod,
   type PeriodSelection,
 } from "./period-filter";
-import type { StaffRecord } from "./staff-roster";
+import { buildResignedStaffNameSet, type StaffRecord } from "./staff-roster";
 import { sumSupplementAmount } from "./supplement-utils";
 import type { Order, StoreName, SupplementOrder } from "./types";
 
@@ -456,11 +456,16 @@ interface InstallerRawMetrics {
   ratedCount: number;
 }
 
-function buildInstallerRawMetrics(orders: Order[]): InstallerRawMetrics[] {
+function buildInstallerRawMetrics(
+  orders: Order[],
+  staffRecords: StaffRecord[] = [],
+): InstallerRawMetrics[] {
   const map = new Map<string, InstallerRawMetrics & { installDays: number[] }>();
+  const resignedNames = buildResignedStaffNameSet(staffRecords);
 
   for (const order of filterDeliveryOrders(orders)) {
     const name = order.installation?.installerName?.trim() || "未指定";
+    if (resignedNames.has(name)) continue;
     const existing = map.get(name) ?? {
       name,
       completedCount: 0,
@@ -712,15 +717,24 @@ export function buildDesignerRankInsights(
   return { ranked, bottomRanked };
 }
 
-function scoreInstallers(orders: Order[]): RoleScoreEntry[] {
-  const rawMetrics = buildInstallerRawMetrics(orders);
-  const ratingAggregates = aggregatePersonRatings(orders, "installer");
+function scoreInstallers(
+  orders: Order[],
+  staffRecords: StaffRecord[] = [],
+): RoleScoreEntry[] {
+  const rawMetrics = buildInstallerRawMetrics(orders, staffRecords);
+  const resignedNames = buildResignedStaffNameSet(staffRecords);
+  const ratingAggregates = aggregatePersonRatings(orders, "installer").filter(
+    (a) => !resignedNames.has(a.personName),
+  );
   const ratingByName = new Map(
     ratingAggregates.map((a) => [a.personName, a]),
   );
 
   const eligible = rawMetrics.filter(
-    (m) => m.name !== "未指定" && m.completedCount >= MIN_PERSON_RANK_SAMPLE,
+    (m) =>
+      m.name !== "未指定" &&
+      !resignedNames.has(m.name) &&
+      m.completedCount >= MIN_PERSON_RANK_SAMPLE,
   );
   if (eligible.length === 0) {
     return ratingAggregates
@@ -871,7 +885,7 @@ export function buildSmartLeaderboards(
   return {
     dispatcherTop5: scoreDispatchers(evalRows, perfRows),
     designerTop5: scoreDesigners(designerRows, periodOrders, periodSupplements),
-    installerTop5: scoreInstallers(periodOrders),
+    installerTop5: scoreInstallers(periodOrders, staffRecords),
     storeTotalAmountTop5,
     storeOrderedAmountTop5,
     storeCompositeTop5,

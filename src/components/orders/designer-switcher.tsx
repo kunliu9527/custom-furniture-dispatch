@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { DesignerName, StoreName } from "@/lib/types";
 import {
   getEffectiveDesignerRoster,
   getEffectiveDesignersInStores,
 } from "@/lib/designer-staff-store";
 import { useAuth } from "@/context/auth-context";
+import { useContentKey } from "@/lib/use-content-key";
 
 interface DesignerSwitcherProps {
   value: DesignerName;
@@ -21,16 +22,31 @@ export function DesignerSwitcher({
   stores = null,
 }: DesignerSwitcherProps) {
   const { designerHomeStoreIndex, staffRecords } = useAuth();
-  const roster = stores?.length
-    ? getEffectiveDesignersInStores(stores, designerHomeStoreIndex, staffRecords)
-    : getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords);
+  const roster = useMemo(
+    () =>
+      stores?.length
+        ? getEffectiveDesignersInStores(
+            stores,
+            designerHomeStoreIndex,
+            staffRecords,
+          )
+        : getEffectiveDesignerRoster(designerHomeStoreIndex, staffRecords),
+    [stores, designerHomeStoreIndex, staffRecords],
+  );
+
+  // 名册内容签名：云端轮询会让 staffRecords 引用抖动，直接依赖 roster 会每次重跑
+  const rosterNames = useMemo(() => roster.map((d) => d.name), [roster]);
+  const selectionKey = `${useContentKey(rosterNames)}|${value}`;
+  const appliedSelectionKeyRef = useRef(selectionKey);
 
   // 受控 value 不在 option 里时，浏览器会「假显示」第一项，筛选却对不上
   useEffect(() => {
+    if (appliedSelectionKeyRef.current === selectionKey) return;
+    appliedSelectionKeyRef.current = selectionKey;
     if (roster.length === 0) return;
     if (roster.some((d) => d.name === value)) return;
     onChange(roster[0].name as DesignerName);
-  }, [roster, value, onChange]);
+  }, [selectionKey, roster, value, onChange]);
 
   const selectValue = roster.some((d) => d.name === value)
     ? value

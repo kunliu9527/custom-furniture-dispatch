@@ -34,6 +34,11 @@ import {
   saveRemovedStaffIds,
   type RemovedStaffIds,
 } from "./staff-removed-storage";
+import {
+  loadResignedStaffIds,
+  saveResignedStaffIds,
+  type ResignedStaffIds,
+} from "./staff-resigned-storage";
 import type { StaffConfigSnapshot } from "./server/snapshot-types";
 import {
   getCachedSnapshot,
@@ -74,6 +79,7 @@ export interface StaffConfigSources {
   extraStoreOverrides: StaffExtraStoresOverrides;
   phoneOverrides: StaffPhoneOverrides;
   removedStaffIds: RemovedStaffIds;
+  resignedStaffIds: ResignedStaffIds;
   siteBranding: SiteBranding;
   commissionSettings: CommissionSettings;
 }
@@ -93,6 +99,7 @@ export function buildMergedStaffRecords(
     | "extraStoreOverrides"
     | "phoneOverrides"
     | "removedStaffIds"
+    | "resignedStaffIds"
   >,
   options: BuildMergedStaffOptions = {},
 ): StaffRecord[] {
@@ -106,9 +113,11 @@ export function buildMergedStaffRecords(
     sources.extraStoreOverrides,
     sources.phoneOverrides,
   );
-  if (!sources.removedStaffIds.length) return merged;
   const removed = new Set(sources.removedStaffIds);
-  return merged.filter((row) => !removed.has(row.id));
+  const resigned = new Set(sources.resignedStaffIds);
+  return merged
+    .filter((row) => !removed.has(row.id))
+    .map((row) => (resigned.has(row.id) ? { ...row, resigned: true } : row));
 }
 
 export function clearStaffOverridesForId(
@@ -159,6 +168,7 @@ export function buildStaffConfigSnapshot(
     extraStoreOverrides: sources.extraStoreOverrides,
     phoneOverrides: sources.phoneOverrides,
     removedStaffIds: [...new Set(sources.removedStaffIds)],
+    resignedStaffIds: [...new Set(sources.resignedStaffIds)],
     customPositions: loadCustomPositionDefinitions(),
     customStores: loadCustomStoreNames(),
     siteBranding: normalizeSiteBranding(sources.siteBranding),
@@ -175,6 +185,7 @@ export function loadStaffConfigFromBrowser(): StaffConfigSnapshot {
     extraStoreOverrides: loadStaffExtraStoresOverrides(),
     phoneOverrides: loadStaffPhoneOverrides(),
     removedStaffIds: loadRemovedStaffIds(),
+    resignedStaffIds: loadResignedStaffIds(),
     siteBranding: loadSiteBranding(),
     commissionSettings: loadCommissionSettings(),
   });
@@ -190,6 +201,7 @@ export function persistStaffConfigToLocalStorage(
   saveStaffExtraStoresOverrides(config.extraStoreOverrides);
   saveStaffPhoneOverrides(config.phoneOverrides);
   saveRemovedStaffIds(config.removedStaffIds);
+  saveResignedStaffIds(config.resignedStaffIds);
   saveCustomPositionDefinitions(config.customPositions);
   saveCustomStoreNames(config.customStores);
   saveSiteBranding(normalizeSiteBranding(config.siteBranding));

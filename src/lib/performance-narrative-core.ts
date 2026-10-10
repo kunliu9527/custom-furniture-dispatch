@@ -24,7 +24,7 @@ export const PERSON_NARRATIVE_INTRO = "";
 export const STORE_NARRATIVE_INTRO = "";
 
 export const PERSON_NARRATIVE_FOOTNOTE =
-  "转化率 = 已下单金额 ÷ 合计金额 · 平均下单值 = 已下单金额 ÷ 已下单数量 · 存量订单 = 未下单金额 + 待退单金额 · 退单率 = 退单金额 ÷ 合计金额 · 排名已剔除合计为 0 · 转化评价需 ≥5 单";
+  "转化率 = 已下单金额 ÷ 合计金额 · 平均下单值 = 已下单金额 ÷ 已下单数量 · 存量金额 = 未下单金额（非退单且尚未下单） · 退单率 = 退单金额 ÷ 合计金额 · 排名已剔除合计为 0 · 转化评价需 ≥5 单";
 
 export const DESIGNER_NARRATIVE_FOOTNOTE =
   `按订单 designer 归集 · ${PERSON_NARRATIVE_FOOTNOTE}`;
@@ -79,8 +79,9 @@ export function narrativeDataRows(
   return rows.filter((r) => !r.isWorkflowSummary && r.totalAmount > 0);
 }
 
+/** 存量金额：非退单且尚未下单部分（待退单已可退，不计入存量） */
 export function pipelineAmount(row: DispatcherEvaluationRow): number {
-  return row.notOrdered.amount + row.pendingRefund.amount;
+  return row.notOrdered.amount;
 }
 
 export function refundAmount(row: DispatcherEvaluationRow): number {
@@ -335,7 +336,7 @@ function analyzeTopPerformer(
   } else if (snap.pipelineShare >= 0.45) {
     if (m.avgOrderLevel === "high") {
       clauses.push(
-        `未成交与待退单合计占 ${pctText(snap.pipelineShare)}，且客单不低，单笔推进慢会直接拖慢回款`,
+        `存量（未下单）占 ${pctText(snap.pipelineShare)}，且客单不低，单笔推进慢会直接拖慢回款`,
       );
     } else {
       clauses.push(
@@ -344,7 +345,7 @@ function analyzeTopPerformer(
     }
   } else if (snap.pipelineShare >= 0.3 && m.conversionLevel !== "high") {
     clauses.push(
-      `仍有约 ${pctText(snap.pipelineShare)} 预算在途，要把"接单优势"尽快兑现为成交`,
+      `仍有约 ${pctText(snap.pipelineShare)} 预算尚未下单，要把"接单优势"尽快兑现为成交`,
     );
   }
 

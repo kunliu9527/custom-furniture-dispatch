@@ -42,6 +42,7 @@ import {
   getEffectiveDispatcherRoster,
 } from "@/lib/dispatchers";
 import type { StaffRecord } from "@/lib/staff-roster";
+import { getSessionResetKey } from "@/lib/session-user";
 import {
   sortByHomeStore,
   sortStoresByPreferred,
@@ -305,8 +306,19 @@ export function DispatchForm({
     return roster;
   }, [sortedDesigners, entryOnlyAllowed, lockedDesignerName, isDirectMode]);
 
-  useEffect(() => {
-    resetFormForTab(effectiveTab);
+  // 表单重置键：仅由语义值（会话范围 + 表单默认值）决定。
+  // 云端同步轮询会用「内容相同、引用全新」的人员名册覆盖 AuthContext，
+  // 若把 staffRecords / designerHomeStoreIndex 直接放进 deps，录入中的表单会被反复清空
+  // （回归自 72bfbd6；该 deps 曾被 1156418 修复删除）。
+  const formDefaultsKey = useMemo(() => {
+    const initial = buildInitial(
+      lockedDispatcherName,
+      lockedDesignerName,
+      preferredStore,
+      designerHomeStoreIndex,
+      staffRecords,
+    );
+    return `${initial.dispatchStore}|${initial.dispatcherName ?? ""}|${initial.designer ?? ""}`;
   }, [
     lockedDispatcherName,
     lockedDesignerName,
@@ -314,6 +326,12 @@ export function DispatchForm({
     designerHomeStoreIndex,
     staffRecords,
   ]);
+  const formResetKey = `${getSessionResetKey(user)}|${formDefaultsKey}`;
+
+  useEffect(() => {
+    resetFormForTab(effectiveTab);
+    // 仅在会话范围或表单默认值真正变化时重置，忽略同步轮询带来的引用抖动
+  }, [formResetKey]);
 
   function switchTab(tab: DispatchFormTab) {
     if (tab === activeTab) return;

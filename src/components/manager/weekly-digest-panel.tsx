@@ -10,6 +10,8 @@ import {
 import {
   WeeklyDigestExtras,
 } from "@/components/manager/monthly-digest-extras";
+import { StoreDesignerBriefBlock } from "@/components/manager/store-designer-brief";
+import { buildStoreDesignerBrief } from "@/lib/store-designer-brief";
 import { useAuth } from "@/context/auth-context";
 import { apiFetch } from "@/lib/client-api";
 import { copyTextToClipboard } from "@/lib/secure-clipboard";
@@ -122,6 +124,16 @@ export function WeeklyDigestPanel({
   const portfolioMetrics = useMemo(
     () => computeStorePortfolioMetrics(orders, supplements),
     [orders, supplements],
+  );
+
+  const designerBriefs = useMemo(
+    () =>
+      buildStoreDesignerBrief(orders, staffRecords, {
+        weekRef,
+        storeScopeLabel,
+        designerNames: personScope?.designerNames ?? null,
+      }),
+    [orders, staffRecords, weekRef, storeScopeLabel, personScope],
   );
 
   const workflowStats =
@@ -307,6 +319,12 @@ export function WeeklyDigestPanel({
                     stats={workflowStats}
                   />
                 ) : null}
+
+                {designerBriefs.length > 0 ? (
+                  <DigestBriefSection title="④ 设计简报" tone="neutral">
+                    <StoreDesignerBriefBlock briefs={designerBriefs} />
+                  </DigestBriefSection>
+                ) : null}
               </div>
 
               <WeeklyDigestExtras
@@ -318,6 +336,11 @@ export function WeeklyDigestPanel({
           ) : (
             <>
               <ManagerDigestStats items={stats} />
+              {designerBriefs.length > 0 ? (
+                <DigestBriefSection title="设计简报" tone="neutral">
+                  <StoreDesignerBriefBlock briefs={designerBriefs} />
+                </DigestBriefSection>
+              ) : null}
               <WeeklyDigestExtras
                 weeklyAnomalies={digest.weeklyAnomalies}
                 designerSummary={digest.designerSummary}

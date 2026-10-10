@@ -100,7 +100,7 @@ export function DesignerPerformanceTable({
               />
               <SortableTh
                 label="在途"
-                column="inProgressCount"
+                column="unfinishedCount"
                 activeColumn={sort.column}
                 direction={sort.direction}
                 onSort={handleSort}
@@ -206,7 +206,7 @@ export function DesignerPerformanceTable({
                     </span>
                   ) : null}
                 </td>
-                <td className="px-3 py-2.5 tabular-nums">{row.inProgressCount}</td>
+                <td className="px-3 py-2.5 tabular-nums">{row.unfinishedCount}</td>
                 <td className="px-3 py-2.5 tabular-nums">{row.orderedCount}</td>
                 <td className="px-3 py-2.5 tabular-nums font-medium text-blue-700">
                   {row.orderedAmount > 0
@@ -244,7 +244,7 @@ export function DesignerPerformanceTable({
       </div>
       <p className="text-[11px] leading-relaxed text-slate-400">
         月操作/月推进来自操作日志（自本功能上线后累计）。
-        在途为当前进行中主流程单；超时为当前环节已超 SLA 的在途单。
+        在途＝非退单且未验收（未派单→已安装，当前快照口径）；超时为当前环节已超 SLA 的在途单。
         均出图/均总周期仅统计本周期内已有记录的订单。
       </p>
     </div>

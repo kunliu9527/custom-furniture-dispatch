@@ -51,6 +51,7 @@ export function StaffManagement() {
     updateStaffPhone,
     resetStaffPassword,
     deleteStaffMember,
+    setStaffResigned,
   } = useAuth();
   const [panel, setPanel] = useState<StaffPanel>("roster");
   const [configRevision, setConfigRevision] = useState(0);
@@ -72,6 +73,7 @@ export function StaffManagement() {
   );
   const [resetMessage, setResetMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
+  const [resignMessage, setResignMessage] = useState("");
 
   const positionOptions = useMemo(
     () => getAddablePositionOptions(),
@@ -93,6 +95,7 @@ export function StaffManagement() {
         row.position.toLowerCase().includes(q) ||
         row.homeStore.toLowerCase().includes(q) ||
         (row.extraStores ?? []).some((s) => s.toLowerCase().includes(q)) ||
+        (row.resigned ? "已离职" : "在岗").includes(q) ||
         ACCESS_LEVEL_LABELS[row.accessLevel].toLowerCase().includes(q),
     );
   }, [staffRecords, searchQuery]);
@@ -248,6 +251,28 @@ export function StaffManagement() {
     }
     setDeleteMessage(`已删除「${target.name}」`);
     window.setTimeout(() => setDeleteMessage(""), 3000);
+  }
+
+  function handleToggleResigned(staffId: string, resigned: boolean) {
+    const target = staffRecords.find((s) => s.id === staffId);
+    if (!target) return;
+    if (
+      resigned &&
+      !window.confirm(
+        `确定将「${target.name}」标记为离职？标记后该账号无法登录，且不参与月报人员榜；历史订单与总量统计保持不变，可随时复职。`,
+      )
+    ) {
+      return;
+    }
+    const result = setStaffResigned(staffId, resigned);
+    if (!result.ok) {
+      setResignMessage(result.error ?? "设置失败");
+      return;
+    }
+    setResignMessage(
+      resigned ? `已将「${target.name}」标记为离职` : `已恢复「${target.name}」在岗`,
+    );
+    window.setTimeout(() => setResignMessage(""), 3000);
   }
 
   function handleResetCustom(staffId: string) {
@@ -420,7 +445,7 @@ export function StaffManagement() {
                   <Input
                     label="搜索"
                     name="staffSearch"
-                    placeholder="姓名、电话、岗位、门店设置、权限…"
+                    placeholder="姓名、电话、岗位、门店设置、权限、在岗状态…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -440,6 +465,11 @@ export function StaffManagement() {
                     {deleteMessage}
                   </span>
                 ) : null}
+                {resignMessage ? (
+                  <span className="text-sm text-emerald-600">
+                    {resignMessage}
+                  </span>
+                ) : null}
               </div>
             </div>
             <div
@@ -447,7 +477,7 @@ export function StaffManagement() {
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
               <div className="overflow-x-auto">
-                <table className="vi-data-table w-full min-w-[1180px] text-left text-sm">
+                <table className="vi-data-table w-full min-w-[1300px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-medium uppercase tracking-wide text-slate-500">
                       <th className="px-4 py-3">姓名</th>
@@ -456,6 +486,7 @@ export function StaffManagement() {
                       <th className="px-4 py-3">门店设置</th>
                       <th className="px-4 py-3">权限设置</th>
                       <th className="px-4 py-3">说明</th>
+                      <th className="px-4 py-3">状态</th>
                       <th className="px-4 py-3">来源</th>
                       <th className="px-4 py-3">重置密码</th>
                       <th className="px-4 py-3">操作</th>
@@ -465,7 +496,14 @@ export function StaffManagement() {
                     {filteredStaff.map((row) => {
                       const isSystemAdmin = isSystemAdminStaffRecord(row);
                       return (
-                        <tr key={row.id} className="hover:bg-slate-50/50">
+                        <tr
+                          key={row.id}
+                          className={
+                            row.resigned
+                              ? "bg-slate-50/70 text-slate-500"
+                              : "hover:bg-slate-50/50"
+                          }
+                        >
                           <td className="px-4 py-3 font-medium text-slate-900">
                             {row.name}
                           </td>
@@ -542,6 +580,33 @@ export function StaffManagement() {
                           </td>
                           <td className="max-w-[220px] px-4 py-3 text-xs text-slate-600">
                             {ACCESS_LEVEL_DESCRIPTIONS[row.accessLevel]}
+                          </td>
+                          <td className="px-4 py-3">
+                            {isSystemAdmin ? (
+                              <span className="text-xs text-slate-400">在岗</span>
+                            ) : (
+                              <div className="flex min-w-[132px] flex-col items-start gap-1.5">
+                                <span
+                                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                                    row.resigned
+                                      ? "bg-slate-200 text-slate-600"
+                                      : "bg-emerald-50 text-emerald-700"
+                                  }`}
+                                >
+                                  {row.resigned ? "已离职" : "在岗"}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                  onClick={() =>
+                                    handleToggleResigned(row.id, !row.resigned)
+                                  }
+                                >
+                                  {row.resigned ? "复职" : "标记离职"}
+                                </Button>
+                              </div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-slate-500">
                             {BUILTIN_STAFF_RECORDS.some((b) => b.id === row.id) ||

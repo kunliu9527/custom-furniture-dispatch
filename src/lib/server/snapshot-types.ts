@@ -20,6 +20,8 @@ export interface StaffConfigSnapshot {
   phoneOverrides: StaffPhoneOverrides;
   /** 已删除的内置人员 id（builtin-disp-* / builtin-des-*） */
   removedStaffIds: string[];
+  /** 已打「离职」标签的人员 id（保留名册，月报人员榜排除、不可登录） */
+  resignedStaffIds: string[];
   customPositions: CustomPositionDefinition[];
   customStores: string[];
   siteBranding: SiteBranding;
@@ -40,6 +42,7 @@ export const EMPTY_STAFF_CONFIG: StaffConfigSnapshot = {
   extraStoreOverrides: {},
   phoneOverrides: {},
   removedStaffIds: [],
+  resignedStaffIds: [],
   customPositions: [],
   customStores: [],
   siteBranding: { ...DEFAULT_SITE_BRANDING },

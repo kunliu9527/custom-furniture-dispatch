@@ -44,16 +44,21 @@ export function AssignDesignerPanel({
   const [forceOverCapacity, setForceOverCapacity] = useState(false);
   const [error, setError] = useState("");
 
+  const canOverride = canOverrideDispatchLimit(user);
+  /** 预选设计师是否已超限：取布尔值而非 orders 数组，避免云端轮询的引用抖动 */
+  const defaultDesignerBlocked = defaultDesigner
+    ? isDispatchBlocked(countDesignerInProgress(orders, defaultDesigner))
+    : false;
+
   useEffect(() => {
     if (!defaultDesigner) return;
     setDesigner(defaultDesigner);
-    const blocked = isDispatchBlocked(
-      countDesignerInProgress(orders, defaultDesigner),
-    );
-    if (blocked && canOverrideDispatchLimit(user)) {
+    if (defaultDesignerBlocked && canOverride) {
       setForceOverCapacity(true);
     }
-  }, [defaultDesigner, orders, user]);
+    // 仅在「预选设计师 / 其超限状态 / 超额权限」真正变化时重置预选，
+    // 否则云端轮询带来的新 orders 引用会把用户手动选好的设计师覆盖回默认值
+  }, [defaultDesigner, defaultDesignerBlocked, canOverride]);
 
   const personalDispatcher = isPersonalDispatcherLookup(user);
 
@@ -77,7 +82,6 @@ export function AssignDesignerPanel({
     ? countDesignerInProgress(orders, designer)
     : 0;
   const dispatchBlocked = designer ? isDispatchBlocked(inProgressCount) : false;
-  const canOverride = canOverrideDispatchLimit(user);
   const crossStoreBlocked =
     personalDispatcher &&
     Boolean(designer) &&

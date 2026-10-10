@@ -77,6 +77,7 @@ import { canAccessDesignerPage } from "@/lib/nav-access";
 import { getDesignerDefaultName } from "@/lib/role-routes";
 
 import { getSessionResetKey } from "@/lib/session-user";
+import { useOnSessionScopeChange } from "@/lib/use-on-session-scope-change";
 
 import {
 
@@ -192,15 +193,29 @@ export default function DesignerPage() {
 
   const showSwitcher = canUseDesignerSwitcher(user);
 
-  const designerLookupStores = resolveDesignerLookupStores(user);
+  // resolveDesignerLookupStores 每次调用都可能返回新数组（如 [user.homeStore]），
+  // 不 memo 的话依赖它的 effect 会在每次渲染都重跑
+  const designerLookupStores = useMemo(
+    () => resolveDesignerLookupStores(user),
+    [user],
+  );
 
   const sessionResetKey = getSessionResetKey(user);
+
+  /**
+   * 工作台 UI 重置键：只取语义值。
+   * 云端轮询会让 staffRecords / designerHomeStoreIndex 引用抖动，
+   * 若把它们放进 effect 依赖，默认设计师/状态筛选/统计周期会被每 ~8s 重置一次。
+   */
+  const designerUiResetKey = `${sessionResetKey}|${lockedName ?? ""}|${
+    designerLookupStores?.join(",") ?? "all"
+  }|${getDesignerDefaultName(user) ?? ""}`;
 
   const supplementView = isDesignerSupplementView(statusFilter);
 
 
 
-  useEffect(() => {
+  const hydrateDesignerUi = useCallback(() => {
 
     const name = getDesignerDefaultName(user);
 
@@ -270,7 +285,11 @@ export default function DesignerPage() {
 
     setUiHydrated(true);
 
-  }, [sessionResetKey, lockedName, designerLookupStores, designerHomeStoreIndex, user, staffRecords]);
+  }, [lockedName, designerLookupStores, designerHomeStoreIndex, user, staffRecords]);
+
+  // 仅在会话范围 / 固定设计师 / 门店范围真正变化时重新初始化工作台，
+  // 忽略云端轮询带来的对象引用抖动
+  useOnSessionScopeChange(designerUiResetKey, hydrateDesignerUi);
 
 
 

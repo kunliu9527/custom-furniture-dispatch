@@ -20,7 +20,7 @@ import {
 } from "./order-store-attribution";
 import { buildDesignerHomeStoreIndex } from "./designer-staff-store";
 import { buildEffectiveDesignerRoster } from "./personnel-roster";
-import type { StaffRecord } from "./staff-roster";
+import { buildResignedStaffNameSet, type StaffRecord } from "./staff-roster";
 import { createEmptyStatusCounts } from "./manager-stats";
 import { STORES } from "./designers";
 import type { Order, OrderStatus, StoreName, SupplementOrder } from "./types";
@@ -269,9 +269,11 @@ export function getDispatcherEvaluationRows(
   const seen = new Set<string>();
   const dataRows: DispatcherEvaluationRow[] = [];
   const roster = getEffectiveDispatcherRoster(staffRecords);
+  const resignedNames = buildResignedStaffNameSet(staffRecords);
 
   for (const profile of roster) {
     if (allowedNames && !allowedNames.has(profile.name)) continue;
+    if (resignedNames.has(profile.name)) continue;
     seen.add(profile.name);
     const personOrders = orders.filter(
       (o) => normalizeDispatcherName(o.dispatcherName) === profile.name,
@@ -290,6 +292,7 @@ export function getDispatcherEvaluationRows(
   const extraNames = new Set<string>();
   for (const order of orders) {
     const name = normalizeDispatcherName(order.dispatcherName);
+    if (resignedNames.has(name)) continue;
     if (!seen.has(name)) extraNames.add(name);
   }
 
